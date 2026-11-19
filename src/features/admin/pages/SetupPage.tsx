@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { getBackendStatus, startBackend } from "../../../../web/bridge/backendClient"
 import { ToastProvider } from "../../../shared/ui/toast/ToastProvider"
 import { ConfirmProvider } from "../../../shared/ui/confirm/ConfirmProvider"
 import { useConfirm } from "../../../shared/ui/confirm/ConfirmProvider"
@@ -18,6 +19,11 @@ function SetupContent() {
   const status = useBackendStatus()
   const confirm = useConfirm()
   const [resetMessage, setResetMessage] = useState<string | null>(null)
+
+  // Connect with the saved settings straight away so the real status is shown.
+  useEffect(() => {
+    if (getBackendStatus().state === "idle") void startBackend().catch(() => {})
+  }, [])
 
   const resetLocal = async () => {
     const ok = await confirm({

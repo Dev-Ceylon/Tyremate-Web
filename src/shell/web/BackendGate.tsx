@@ -30,10 +30,16 @@ export function BackendGate({ children }: { children: ReactNode }) {
             {status.error}
           </p>
           <div className="header-actions">
-            <button type="button" className="primary-action" onClick={() => void restartBackend().catch(() => {})}>
-              Retry
-            </button>
-            {status.code !== "LOCKED" ? (
+            {status.code === "CODE_LOAD" ? (
+              <button type="button" className="primary-action" onClick={() => window.location.reload()}>
+                Reload page
+              </button>
+            ) : (
+              <button type="button" className="primary-action" onClick={() => void restartBackend().catch(() => {})}>
+                Retry
+              </button>
+            )}
+            {status.code !== "LOCKED" && status.code !== "CODE_LOAD" ? (
               <Link className="secondary-action" href="/setup">
                 Database settings
               </Link>

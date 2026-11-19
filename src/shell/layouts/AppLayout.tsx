@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { NavLink, Outlet } from "@/lib/router"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { NavLink, Outlet, useLocation } from "@/lib/router"
 import { useAuthContext } from "../../features/auth/hooks/AuthProvider"
 import { NotificationListModal } from "../../features/notification/components/NotificationListModal"
 import { useNotificationPanel } from "../../features/notification/hooks/useNotificationPanel"
@@ -9,6 +9,7 @@ import { NavDropdown } from "../../shared/ui/navDropdown/NavDropdown"
 import { Icons } from "../../shared/ui/icons/icon"
 import PermissionGate from "../../shared/components/PermissionGate"
 import { DefaultPasswordBanner } from "../web/DefaultPasswordBanner"
+import { BrandLogo } from "../web/BrandLogo"
 
 export default function AppLayout() {
   const { logout, user } = useAuthContext()
@@ -22,11 +23,54 @@ export default function AppLayout() {
     openNotifications,
   } = useNotificationPanel()
   const [isPrinterModalOpen, setPrinterModalOpen] = useState(false)
+  // Below 1024px the navigation lives in a slide-in drawer.
+  const [isMenuOpen, setMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const navRef = useRef<HTMLElement>(null)
+  const location = useLocation()
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+    document.body.classList.add("tm-menu-open")
+    navRef.current?.querySelector<HTMLElement>("a, button")?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.body.classList.remove("tm-menu-open")
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [isMenuOpen])
 
   return (
     <>
-      <header className="top-nav panel">
-        <nav className="top-nav-links" aria-label="Main navigation">
+      <header className={`top-nav panel${isMenuOpen ? " is-menu-open" : ""}`}>
+        <NavLink className="top-nav-brand" to="/" aria-label="TyreMate home">
+          <BrandLogo size={30} />
+          <span>TyreMate</span>
+        </NavLink>
+
+        <nav
+          ref={navRef}
+          id="main-navigation"
+          className="top-nav-links"
+          aria-label="Main navigation"
+        >
+          <div className="top-nav-drawer-header">
+            <span className="top-nav-drawer-title">Menu</span>
+            <button type="button" className="icon-button" aria-label="Close menu" onClick={closeMenu}>
+              <Icons.X size={20} />
+            </button>
+          </div>
           <NavLink className="ghost-link" to="/">
             Home
           </NavLink>
@@ -142,6 +186,9 @@ export default function AppLayout() {
               ]}
             />
           </PermissionGate>
+          <button className="secondary-action top-nav-drawer-signout" onClick={logout} type="button">
+            Sign Out
+          </button>
         </nav>
 
 
@@ -152,8 +199,9 @@ export default function AppLayout() {
             <Icons.HelpCircle size={18} />
           </NavLink>
 
-          <NavLink className="ghost-link" to="/account" title={user?.username}>
-            {user?.displayName || user?.username || "Account"}
+          <NavLink className="ghost-link top-nav-account" to="/account" title={user?.username} aria-label="My account">
+            <Icons.User size={18} />
+            <span className="top-nav-account-name">{user?.displayName || user?.username || "Account"}</span>
           </NavLink>
 
           <button
@@ -182,15 +230,28 @@ export default function AppLayout() {
           </button>
 
           <button
-            className="secondary-action"
+            className="secondary-action top-nav-signout"
             onClick={logout}
             type="button"
           >
             Sign Out
           </button>
 
+          <button
+            ref={menuButtonRef}
+            className="icon-button top-nav-menu-toggle"
+            type="button"
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+            aria-controls="main-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {isMenuOpen ? <Icons.X size={22} /> : <Icons.Menu size={22} />}
+          </button>
+
         </div>
       </header>
+      {isMenuOpen ? <div className="top-nav-backdrop" aria-hidden="true" onClick={closeMenu} /> : null}
 
       {user?.usingDefaultPassword ? <DefaultPasswordBanner /> : null}
 

@@ -14,6 +14,8 @@ import {
   Trash2,
   Pencil,
   CircleHelp,
+  Menu,
+  X,
 } from "lucide-react";
 
 export const Icons = {
@@ -30,4 +32,6 @@ export const Icons = {
   Trash: Trash2,
   Edit: Pencil,
   HelpCircle: CircleHelp,
+  Menu,
+  X,
 };

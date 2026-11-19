@@ -26,6 +26,12 @@ const nextConfig = {
       ...config.resolve.alias,
       // The backend still does require("electron"); point it at the web shim.
       electron: path.join(root, "backend/platform/electron.js"),
+      // bcryptjs imports Node's "crypto" only as a fallback for platforms without
+      // Web Crypto. Next.js would otherwise bundle crypto-browserify (~325 KB) as
+      // a chunk the backend worker must load before it can start; an alias
+      // (unlike resolve.fallback) cannot be overridden by Next's module rules.
+      crypto: false,
+      "node:crypto": false,
     }
     config.resolve.fallback = {
       ...config.resolve.fallback,
