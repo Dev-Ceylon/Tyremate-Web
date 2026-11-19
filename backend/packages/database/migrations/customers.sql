@@ -1,0 +1,40 @@
+CREATE TABLE IF NOT EXISTS CustomerM (
+  CustomerID INTEGER PRIMARY KEY AUTOINCREMENT,
+  CustomerCode TEXT NOT NULL UNIQUE,
+  Name TEXT NOT NULL,
+  TinNo TEXT,
+  VatNo TEXT,
+  NoOfInquiries INTEGER NOT NULL DEFAULT 0,
+  NoOfActualOrders INTEGER NOT NULL DEFAULT 0,
+  TotalPurchasedValue REAL NOT NULL DEFAULT 0,
+  Birthday TEXT
+);
+
+CREATE TABLE IF NOT EXISTS CustomerContact (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  CustomerID INTEGER NOT NULL,
+  PhoneNumber TEXT NOT NULL,
+  IsPrimary INTEGER NOT NULL DEFAULT 0 CHECK (IsPrimary IN (0, 1)),
+  FOREIGN KEY (CustomerID) REFERENCES CustomerM(CustomerID)
+);
+
+CREATE TABLE IF NOT EXISTS CustomerEmail (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  CustomerID INTEGER NOT NULL,
+  EmailAddress TEXT NOT NULL,
+  IsPrimary INTEGER NOT NULL DEFAULT 0 CHECK (IsPrimary IN (0, 1)),
+  FOREIGN KEY (CustomerID) REFERENCES CustomerM(CustomerID)
+);
+
+CREATE TABLE IF NOT EXISTS CustomerAddress (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  CustomerID INTEGER NOT NULL,
+  AddressType TEXT, -- e.g., 'Home', 'Office', 'Billing', 'Shipping'
+  AddressLine1 TEXT,
+  AddressLine2 TEXT,
+  City TEXT,
+  State TEXT,
+  PostalCode TEXT,
+  IsPrimary INTEGER NOT NULL DEFAULT 0 CHECK (IsPrimary IN (0, 1)),
+  FOREIGN KEY (CustomerID) REFERENCES CustomerM(CustomerID)
+);

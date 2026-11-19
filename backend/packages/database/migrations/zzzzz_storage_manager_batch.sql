@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS StorageManagerBatch (
+  Id INTEGER PRIMARY KEY AUTOINCREMENT,
+  StorageManagerID INTEGER NOT NULL,
+  DOT TEXT,
+  Qty INTEGER NOT NULL DEFAULT 0 CHECK (Qty >= 0),
+  CreatedBy TEXT,
+  createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (StorageManagerID) REFERENCES StorageManager(Id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_storage_manager_batch_smid ON StorageManagerBatch (StorageManagerID);

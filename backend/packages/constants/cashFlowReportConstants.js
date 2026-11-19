@@ -1,0 +1,112 @@
+/**
+ * Constants and lookups for Cash Flow & Daily Treasury Reporting
+ */
+
+const DATE_PRESETS = {
+  TODAY: "today",
+  YESTERDAY: "yesterday",
+  THIS_WEEK: "this_week",
+  LAST_WEEK: "last_week",
+  THIS_MONTH: "this_month",
+  LAST_MONTH: "last_month",
+  THIS_QUARTER: "this_quarter",
+  THIS_YEAR: "this_year",
+  LAST_YEAR: "last_year",
+  LAST_7_DAYS: "last_7_days",
+  LAST_30_DAYS: "last_30_days",
+  CUSTOM: "custom",
+}
+
+const DATE_PRESET_LABELS = {
+  [DATE_PRESETS.TODAY]: "Today",
+  [DATE_PRESETS.YESTERDAY]: "Yesterday",
+  [DATE_PRESETS.THIS_WEEK]: "This Week",
+  [DATE_PRESETS.LAST_WEEK]: "Last Week",
+  [DATE_PRESETS.THIS_MONTH]: "This Month (MTD)",
+  [DATE_PRESETS.LAST_MONTH]: "Last Month",
+  [DATE_PRESETS.THIS_QUARTER]: "This Quarter (QTD)",
+  [DATE_PRESETS.THIS_YEAR]: "This Year (YTD)",
+  [DATE_PRESETS.LAST_YEAR]: "Last Year",
+  [DATE_PRESETS.LAST_7_DAYS]: "Last 7 Days",
+  [DATE_PRESETS.LAST_30_DAYS]: "Last 30 Days",
+  [DATE_PRESETS.CUSTOM]: "Custom Date Range",
+}
+
+const {
+  PAYMENT_TYPE_CODES,
+  PAYMENT_TYPE_NAMES,
+  PAYMENT_INSTRUMENT_CODES,
+  PAYMENT_METHOD_FILTERS,
+  PAYMENT_METHOD_FILTER_LABELS,
+} = require("./paymentTypeConstants")
+
+const FLOW_TYPES = {
+  ALL: "ALL",
+  INFLOW: "INFLOW",
+  OUTFLOW: "OUTFLOW",
+}
+
+const FLOW_TYPE_LABELS = {
+  [FLOW_TYPES.ALL]: "All Movements",
+  [FLOW_TYPES.INFLOW]: "Cash In (Inflow)",
+  [FLOW_TYPES.OUTFLOW]: "Cash Out (Outflow)",
+}
+
+// Payment method filter codes unified with core database PaymentTypeCode
+const PAYMENT_METHODS = {
+  ALL: PAYMENT_METHOD_FILTERS.ALL,
+  CASH: PAYMENT_TYPE_CODES.CASH, // "csh"
+  BANK_TRANSFER: PAYMENT_TYPE_CODES.BANK_TRANSFER, // "btr"
+  CHEQUE: PAYMENT_TYPE_CODES.CHEQUE, // "chq"
+}
+
+const PAYMENT_METHOD_LABELS = {
+  [PAYMENT_METHODS.ALL]: "All Instruments",
+  [PAYMENT_METHODS.CASH]: PAYMENT_TYPE_NAMES[PAYMENT_TYPE_CODES.CASH],
+  [PAYMENT_METHODS.BANK_TRANSFER]: PAYMENT_TYPE_NAMES[PAYMENT_TYPE_CODES.BANK_TRANSFER],
+  [PAYMENT_METHODS.CHEQUE]: PAYMENT_TYPE_NAMES[PAYMENT_TYPE_CODES.CHEQUE],
+}
+
+// Legacy uppercase aliases for backwards compatibility
+const PAYMENT_METHOD_KEYS = {
+  ALL: "ALL",
+  CASH: "CASH",
+  BANK_TRANSFER: "BANK_TRANSFER",
+  CHEQUE: "CHEQUE",
+}
+
+const CHEQUE_STATUSES = {
+  ALL: "ALL",
+  COLLECTED: "COLLECTED",
+  PENDING: "PENDING",
+}
+
+const CHART_INTERVALS = {
+  DAY: "day",
+  WEEK: "week",
+  MONTH: "month",
+  YEAR: "year",
+}
+
+const CHART_INTERVAL_LABELS = {
+  [CHART_INTERVALS.DAY]: "Daily",
+  [CHART_INTERVALS.WEEK]: "Weekly",
+  [CHART_INTERVALS.MONTH]: "Monthly",
+  [CHART_INTERVALS.YEAR]: "Yearly",
+}
+
+module.exports = {
+  DATE_PRESETS,
+  DATE_PRESET_LABELS,
+  FLOW_TYPES,
+  FLOW_TYPE_LABELS,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHOD_KEYS,
+  PAYMENT_TYPE_CODES,
+  PAYMENT_TYPE_NAMES,
+  PAYMENT_INSTRUMENT_CODES,
+  CHEQUE_STATUSES,
+  CHART_INTERVALS,
+  CHART_INTERVAL_LABELS,
+}
