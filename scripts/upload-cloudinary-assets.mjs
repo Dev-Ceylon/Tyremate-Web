@@ -89,7 +89,9 @@ async function main() {
     return
   }
   if (!process.env.CLOUDINARY_URL) {
-    console.log("CLOUDINARY_URL not set - skipping asset upload (the site falls back to bundled copies).")
+    const message = "CLOUDINARY_URL not set - skipping asset upload (the site falls back to bundled copies)."
+    // Surface it in the GitHub Actions run summary, not just the log.
+    console.log(process.env.GITHUB_ACTIONS ? `::notice title=Cloudinary assets not uploaded::${message}` : message)
     return
   }
   const creds = parseCloudinaryUrl(process.env.CLOUDINARY_URL)

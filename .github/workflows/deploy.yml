@@ -23,8 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -60,8 +60,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -81,7 +81,20 @@ jobs:
       - name: Build
         run: npm run build
       - run: touch out/.nojekyll
-      - uses: actions/configure-pages@v5
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          # GITHUB_TOKEN cannot switch Pages on. If the optional PAGES_ADMIN_TOKEN
+          # secret (a token with repository administration rights) is present,
+          # the action enables Pages with "GitHub Actions" as the source.
+          token: ${{ secrets.PAGES_ADMIN_TOKEN || github.token }}
+          enablement: ${{ secrets.PAGES_ADMIN_TOKEN != '' }}
+      - name: Explain how to enable GitHub Pages
+        if: failure() && steps.pages.outcome == 'failure'
+        run: |
+          echo "::error title=GitHub Pages is not enabled::Open Settings -> Pages -> Build and deployment -> Source and choose 'GitHub Actions', then re-run this job. Private repositories need a paid GitHub plan for Pages. Alternatively add a PAGES_ADMIN_TOKEN secret so this workflow can enable Pages itself."
+          exit 1
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
