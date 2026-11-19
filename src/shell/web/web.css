@@ -494,3 +494,99 @@ img { max-width: 100%; height: auto; }
 .page-header > .report-custom-date-bar { grid-column: 1 / -1; }
 .report-view-tabs { flex-wrap: wrap; }
 .report-view-tabs .filter-tab { white-space: nowrap; }
+
+/* ---------------------------------------------------------------------------
+   System-wide alignment pass (second round)
+   --------------------------------------------------------------------------- */
+
+/* Action cards (overview pages, gate pass, master data, storage manager):
+   equal columns, and the card's action sits at the bottom so buttons line up
+   across a row. */
+.content-grid:has(> .info-panel > .header-actions:last-child) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: stretch;
+}
+.info-panel:has(> .header-actions:last-child),
+.info-panel:has(> .text-link:last-child) {
+  display: flex;
+  flex-direction: column;
+}
+.info-panel > .header-actions:last-child,
+.info-panel > .text-link:last-child {
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+.info-panel > .header-actions:last-child { justify-content: flex-start; }
+.info-panel > .text-link:last-child { align-self: flex-start; }
+
+/* Summary metric cards wrap evenly instead of leaving an orphan card. */
+.stock-summary-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+
+/* List fields (mobile numbers, emails, addresses, assigned tyres): the "+"
+   sits next to its label, not at the far edge of a wide form. */
+.contractor-tyre-field-header { justify-content: flex-start; }
+.contractor-tyre-add-button { width: 30px; height: 30px; font-size: 1.1rem; flex: none; }
+.contractor-tyre-field .pending-numbers-list:empty::before {
+  content: "None added yet";
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+/* Report headers: title + toolbar on one line, view tabs on their own row. */
+.page-header:has(> .report-header-top) {
+  flex-direction: column;
+  align-items: stretch;
+}
+.report-header-top > .header-actions { justify-content: flex-end; }
+.page-header > .report-view-tabs,
+.page-header > .report-custom-date-bar { width: 100%; }
+
+/* Tables: numbers typed into right-aligned columns line up with the heading;
+   action buttons stay on one line; short values (dates, codes, amounts) are
+   never broken across lines (see shell/web/tableCells.ts). */
+td.text-right > .text-input,
+td.text-right > input { text-align: right; }
+td:has(> button, > .table-actions, > a.secondary-action) { white-space: nowrap; }
+td:has(> button) > button + button { margin-left: 6px; }
+.tm-cell-nowrap { white-space: nowrap; }
+
+/* Filter bars: the input fills its labelled slot. */
+.table-filter-field > .text-input { flex: 1 1 auto; }
+
+/* User manual: padded like every other card and as wide as the page. */
+.tm-manual {
+  max-width: none;
+  padding: clamp(18px, 3vw, 40px);
+  margin-top: var(--space-5);
+}
+.tm-manual > p, .tm-manual > ul, .tm-manual > ol, .tm-manual > blockquote { max-width: 80ch; }
+.tm-manual > figure { max-width: 72rem; }
+.tm-manual hr { width: 100%; border: 0; border-top: 1px solid var(--color-border); margin: 0; }
+.tm-manual .tm-table-wrap, .tm-manual table { max-width: 100%; }
+.report-header-top > div:first-child { flex: 1 1 360px; min-width: 0; }
+.report-header-top > .header-actions { flex: 0 1 auto; align-self: flex-start; }
+
+/* Forms inside dialogs look the same wherever the dialog is opened from. */
+.app-modal .login-form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.app-modal .login-form .field-label { display: grid; gap: 6px; align-content: start; }
+.app-modal .login-form .login-form-full-span,
+.app-modal .login-form > .header-actions { grid-column: 1 / -1; }
+.app-modal .login-form > .header-actions:last-child,
+.app-modal form > .header-actions:last-child,
+.app-modal .contractor-tyre-modal-actions {
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+@media (max-width: 640px) {
+  .app-modal .login-form { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Printer list: status badge and actions sit in one row at the right. */
+.notification-list-item-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

@@ -10,6 +10,7 @@ import { Icons } from "../../shared/ui/icons/icon"
 import PermissionGate from "../../shared/components/PermissionGate"
 import { DefaultPasswordBanner } from "../web/DefaultPasswordBanner"
 import { BrandLogo } from "../web/BrandLogo"
+import { installTableCellWrapping } from "../web/tableCells"
 
 export default function AppLayout() {
   const { logout, user } = useAuthContext()
@@ -33,6 +34,9 @@ export default function AppLayout() {
   useEffect(() => {
     setMenuOpen(false)
   }, [location.pathname])
+
+  // Keep short table values (dates, codes, amounts) on one line app-wide.
+  useEffect(() => installTableCellWrapping(document.body), [])
 
   useEffect(() => {
     if (!isMenuOpen) return
