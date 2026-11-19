@@ -8,6 +8,7 @@ export function useLowStock() {
   const loadLowStock = () => {
     Promise.all([tyreService.getLowStockCount(), consumableService.getLowStockCount()])
       .then(([tyres, consumables]) => setCount(tyres.Count + consumables.Count))
+      .catch(() => {})
   }
 
   useEffect(() => {

@@ -13,7 +13,10 @@ export function useTodaySales() {
   const [summary, setSummary] = useState<SoTodaySalesSummary>({ OrderCount: 0, TotalSale: 0 })
 
   const loadTodaySales = () => {
-    salesOrderService.getTodaySalesSummary(toLocalDate(new Date())).then(setSummary)
+    salesOrderService
+      .getTodaySalesSummary(toLocalDate(new Date()))
+      .then(setSummary)
+      .catch(() => {})
   }
 
   useEffect(() => {

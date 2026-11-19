@@ -35,11 +35,38 @@ function columnsOf(db: CompatDatabase, table: string): string[] {
 /** Drops every user table, index, view and trigger in `db` (within the caller's transaction). */
 function dropAll(db: CompatDatabase): void {
   const objects = userObjects(db).filter((o) => !o.name.startsWith("sqlite_"))
-  for (const kind of ["trigger", "view", "index", "table"]) {
-    for (const o of objects.filter((x) => x.type === kind)) {
-      db.exec(`DROP ${kind.toUpperCase()} IF EXISTS ${quoteIdent(o.name)}`)
+  for (const kind of ["trigger", "view"]) {
+    for (const o of objects.filter((x) => x.type === kind)) db.exec(`DROP ${kind.toUpperCase()} IF EXISTS ${quoteIdent(o.name)}`)
+  }
+  // Empty every table first (FKs are deferred inside the copy transaction)...
+  const tables = objects.filter((x) => x.type === "table").map((x) => x.name)
+  for (const t of tables) db.exec(`DELETE FROM ${quoteIdent(t)}`)
+  // ...then drop children before parents: DROP TABLE on a child checks its
+  // foreign keys and fails with "no such table" once the parent is gone.
+  for (const t of dropOrder(db, tables)) db.exec(`DROP TABLE IF EXISTS ${quoteIdent(t)}`)
+}
+
+/** Orders tables so that every table is dropped before the tables it references. */
+export function dropOrder(db: CompatDatabase, tables: string[]): string[] {
+  const parents = new Map<string, Set<string>>()
+  for (const t of tables) {
+    const fks = db.prepare(`PRAGMA foreign_key_list(${quoteIdent(t)})`).all() as { table: string }[]
+    parents.set(t, new Set(fks.map((fk) => fk.table).filter((p) => p !== t && tables.includes(p))))
+  }
+  const order: string[] = []
+  const remaining = new Set(tables)
+  while (remaining.size > 0) {
+    // A table can go once no remaining table references it.
+    const referenced = new Set<string>()
+    for (const t of remaining) for (const p of parents.get(t) ?? []) if (remaining.has(p)) referenced.add(p)
+    let next = [...remaining].filter((t) => !referenced.has(t))
+    if (next.length === 0) next = [[...remaining][0]] // cycle: break it arbitrarily
+    for (const t of next) {
+      order.push(t)
+      remaining.delete(t)
     }
   }
+  return order
 }
 
 export interface CloneResult {

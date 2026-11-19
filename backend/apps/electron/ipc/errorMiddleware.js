@@ -16,7 +16,7 @@
 const { ipcMain } = require("electron")
 const { sessionStore } = require("../auth/sessionStore")
 const devTempLockService = require("../../../packages/services/devTempLockService")
-const { UnauthorizedError, toClientError } = require("../../../packages/errors/appErrors")
+const { UnauthorizedError, ForbiddenError, toClientError } = require("../../../packages/errors/appErrors")
 const { logError } = require("../../../packages/errors/errorLogger")
 
 /**
@@ -85,7 +85,7 @@ function registerIpcHandler(channel, options = {}, fn) {
     }
 
     if (permission && !checkPermission(user, permission)) {
-      throw buildClientError(new UnauthorizedError("Unauthorized"), {
+      throw buildClientError(new ForbiddenError(`You do not have permission to perform this action (${permission})`), {
         channel,
         silent: true,
         user,

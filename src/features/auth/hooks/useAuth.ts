@@ -47,5 +47,9 @@ export function useAuth() {
     setUser(null)
   }
 
-  return { user, login, logout, loading }
+  const refreshUser = async () => {
+    setUser(await authService.getCurrentUser())
+  }
+
+  return { user, login, logout, loading, refreshUser }
 }

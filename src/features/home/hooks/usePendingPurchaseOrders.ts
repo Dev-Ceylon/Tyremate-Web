@@ -5,7 +5,11 @@ export function usePendingPurchaseOrders() {
   const [count, setCount] = useState(0)
 
   const loadPendingPurchaseOrders = () => {
-    purchaseOrderService.getPendingPOCount().then(({ Count }) => setCount(Count))
+    purchaseOrderService
+      .getPendingPOCount()
+      .then(({ Count }) => setCount(Count))
+      // Roles without po.view keep the default; the backend already logged it.
+      .catch(() => {})
   }
 
   useEffect(() => {

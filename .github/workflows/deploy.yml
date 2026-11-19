@@ -1,0 +1,89 @@
+name: Test and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME || 'dkj22lm1g' }}
+
+jobs:
+  test:
+    name: Unit, integration and E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Unit + integration tests (native SQLite vs sql.js vs libSQL)
+        run: npm test
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Build static site (E2E base path)
+        run: npm run build:pages
+      - name: E2E tests
+        run: npx playwright test --trace off
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  deploy:
+    name: Build and deploy
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Resolve base path
+        # Project sites live at https://<owner>.github.io/<repo>/. Set the
+        # repository variable CUSTOM_DOMAIN=true when serving from a domain root.
+        run: |
+          if [ "${{ vars.CUSTOM_DOMAIN }}" = "true" ]; then base=""; else base="/${{ github.event.repository.name }}"; fi
+          echo "NEXT_PUBLIC_BASE_PATH=$base" >> "$GITHUB_ENV"
+      - name: Publish static assets to Cloudinary
+        # Signed upload with the API secret stored as a GitHub secret; skipped
+        # (with bundled fallbacks) when the secret is not configured.
+        run: node scripts/upload-cloudinary-assets.mjs
+        env:
+          CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
+      - name: Build
+        run: npm run build
+      - run: touch out/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - id: deployment
+        uses: actions/deploy-pages@v4

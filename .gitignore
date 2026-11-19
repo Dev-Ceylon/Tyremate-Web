@@ -18,3 +18,4 @@ next-env.d.ts
 backend/platform/*.generated.js
 public/sql-wasm.wasm
 src/features/help/manual.generated.ts
+public/manual/

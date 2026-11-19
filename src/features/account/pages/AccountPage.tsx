@@ -5,7 +5,7 @@ import { useToast } from "../../../shared/ui/toast/ToastProvider"
 
 export default function AccountPage() {
   const ids = useId()
-  const { user } = useAuthContext()
+  const { user, refreshUser } = useAuthContext()
   const { showToast } = useToast()
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
@@ -22,6 +22,7 @@ export default function AccountPage() {
     setSaving(true)
     try {
       await window.api.auth.changePassword(current, next)
+      await refreshUser()
       setCurrent("")
       setNext("")
       setRepeat("")

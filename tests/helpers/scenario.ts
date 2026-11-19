@@ -175,6 +175,9 @@ export async function runScenario(backend: BootedBackend): Promise<Step[]> {
   await call("logout cashier", "auth:clearUser")
   await call("login cashier new password", "auth-login", { username: "cashier1", password: "secret-2" })
   if (created) await call("cashier sees SOs", "so:getAll")
+  // Dashboard widget outside the cashier's permissions: forbidden, NOT a lost session.
+  await call("cashier PO count forbidden", "po:getPendingPOCount")
+  await call("cashier still signed in", "auth:getUser")
 
   return steps
 }

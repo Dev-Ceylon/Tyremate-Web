@@ -109,7 +109,7 @@ function assertSettingsManager() {
   const user = currentUser()
   const perms = user?.permissions ?? []
   if (!perms.includes("god") && !perms.includes("settings.manage")) {
-    throw new Error("Unauthorized: only administrators can manage the database")
+    throw new Error("You do not have permission to manage the database (settings.manage)")
   }
 }
 

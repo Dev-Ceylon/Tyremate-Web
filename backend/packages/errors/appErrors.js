@@ -55,6 +55,18 @@ class UnauthorizedError extends AppError {
   }
 }
 
+/**
+ * Signed in, but the role lacks the permission. Deliberately does NOT contain
+ * the word "Unauthorized": the renderer treats that as an expired session and
+ * signs the user out (which used to log Cashiers out of the dashboard).
+ */
+class ForbiddenError extends AppError {
+  constructor(message = "You do not have permission to perform this action", options) {
+    super("FORBIDDEN", message, options)
+    this.name = "ForbiddenError"
+  }
+}
+
 class InternalError extends AppError {
   constructor(message, options) {
     super("INTERNAL", message, { expose: false, ...options })
@@ -101,6 +113,7 @@ module.exports = {
   NotFoundError,
   ConflictError,
   UnauthorizedError,
+  ForbiddenError,
   InternalError,
   toClientError,
 }

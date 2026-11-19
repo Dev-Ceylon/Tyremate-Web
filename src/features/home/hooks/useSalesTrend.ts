@@ -18,7 +18,10 @@ export function useSalesTrend() {
     const toDate = toLocalDate(today)
     const fromDate = new Date(today)
     fromDate.setDate(fromDate.getDate() - 29)
-    salesOrderService.getSalesTrendSummary(toLocalDate(fromDate), toDate).then(setPoints)
+    salesOrderService
+      .getSalesTrendSummary(toLocalDate(fromDate), toDate)
+      .then(setPoints)
+      .catch(() => {})
   }, [])
 
   const visiblePoints = useMemo(() => {

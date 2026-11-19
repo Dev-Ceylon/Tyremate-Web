@@ -62,12 +62,16 @@ describe("business scenario", () => {
       "cashier change password",
       "login cashier new password",
       "cashier sees SOs",
+      "cashier still signed in",
     ]
     for (const name of mustSucceed) {
       expect(byName[name], name).toBeDefined()
       expect(byName[name].error, name).toBeUndefined()
       expect(byName[name].ok, name).toBe(true)
     }
+    expect(byName["cashier PO count forbidden"].error).toMatch(/do not have permission.*\(po\.view\)/)
+    expect(byName["cashier PO count forbidden"].error).not.toMatch(/Unauthorized/)
+    expect((byName["cashier still signed in"].value as { username: string }).username).toBe("cashier1")
     for (const name of [
       "unauthenticated list",
       "login wrong password",

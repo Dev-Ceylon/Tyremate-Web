@@ -59,7 +59,12 @@ console.log(
   `prepare: ${migrations.length} migrations, ${repeatable.length} repeatable, ${Object.keys(templates).length} templates, schema ${schemaHash}`,
 )
 
-// 3. User manual for the in-app Help page.
+// 3. User manual for the in-app Help page (+ fallback copies of its screenshots;
+//    the primary copies are served from Cloudinary).
+mkdirSync(join(root, "public/manual"), { recursive: true })
+for (const file of readdirSync(join(root, "docs/images"))) {
+  copyFileSync(join(root, "docs/images", file), join(root, "public/manual", file))
+}
 const manual = readFileSync(join(root, "docs/USER_MANUAL.md"), "utf-8")
 writeFileSync(
   join(root, "src/features/help/manual.generated.ts"),
