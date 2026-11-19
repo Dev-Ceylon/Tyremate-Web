@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs"
 import path from "node:path"
 import { test as base, expect, type Page } from "@playwright/test"
+import { MANUAL_IMAGES_VERSION } from "../../src/shell/web/assets"
 
 const root = path.resolve(__dirname, "../..")
 
@@ -24,7 +25,8 @@ async function simulateCloudinaryCdn(page: Page, log: ErrorLog) {
     if (match) {
       const id = match[1]
       if (id === "logo.svg" || id === "favicon.svg") file = path.join(root, "public", id)
-      const manual = /^manual\/(.+)$/.exec(id)
+      // manual/<version>/<name> -> docs/images/<name>.png (only the current version exists)
+      const manual = new RegExp(`^manual/${MANUAL_IMAGES_VERSION}/([^/]+)$`).exec(id)
       if (manual) file = path.join(root, "docs/images", `${manual[1]}.png`)
     }
     if (file && existsSync(file)) {

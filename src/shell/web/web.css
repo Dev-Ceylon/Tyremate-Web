@@ -81,13 +81,6 @@
 .tm-table th { color: var(--color-text-muted); font-weight: 600; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; }
 .tm-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tm-danger-zone { border: 1px solid rgba(185, 28, 28, 0.3); border-radius: var(--radius-md); padding: var(--space-4); display: grid; gap: var(--space-3); }
-.tm-manual { display: grid; gap: var(--space-6); max-width: 70rem; }
-.tm-manual figure { margin: 0; display: grid; gap: var(--space-2); }
-.tm-manual img { width: 100%; height: auto; border-radius: var(--radius-md); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
-.tm-manual figcaption { font-size: var(--text-sm); color: var(--color-text-muted); }
-.tm-manual h2 { margin-top: var(--space-4); }
-.tm-manual table { border-collapse: collapse; font-size: var(--text-sm); }
-.tm-manual th, .tm-manual td { border: 1px solid var(--color-border); padding: 0.35rem 0.6rem; }
 .tm-toc { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
 /* ------------------------------------------------------------------ */
@@ -554,16 +547,6 @@ td:has(> button) > button + button { margin-left: 6px; }
 /* Filter bars: the input fills its labelled slot. */
 .table-filter-field > .text-input { flex: 1 1 auto; }
 
-/* User manual: padded like every other card and as wide as the page. */
-.tm-manual {
-  max-width: none;
-  padding: clamp(18px, 3vw, 40px);
-  margin-top: var(--space-5);
-}
-.tm-manual > p, .tm-manual > ul, .tm-manual > ol, .tm-manual > blockquote { max-width: 80ch; }
-.tm-manual > figure { max-width: 72rem; }
-.tm-manual hr { width: 100%; border: 0; border-top: 1px solid var(--color-border); margin: 0; }
-.tm-manual .tm-table-wrap, .tm-manual table { max-width: 100%; }
 .report-header-top > div:first-child { flex: 1 1 360px; min-width: 0; }
 .report-header-top > .header-actions { flex: 0 1 auto; align-self: flex-start; }
 
@@ -590,3 +573,20 @@ td:has(> button) > button + button { margin-left: 6px; }
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+/* Sidebar / drawer: the reminders count sits at the end of its own row. */
+.top-nav-links .reminder-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.top-nav-links .reminder-badge {
+  position: static;
+  flex: none;
+  border: 0;
+}
+
+/* Table cells with a name and a code under it. */
+td > .flex-column { display: flex; flex-direction: column; gap: 2px; }

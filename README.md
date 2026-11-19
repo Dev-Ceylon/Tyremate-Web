@@ -95,6 +95,21 @@ Admin → Database → *Copy data to remote database*. Any self-hosted
    The public cloud name is set in `.env.production` (or the `CLOUDINARY_CLOUD_NAME`
    repository variable).
 
+### Updating the user manual screenshots
+
+The manual (`docs/USER_MANUAL.md`, shown in-app at `/help`) uses screenshots of
+the web app in `docs/images`. To retake them after UI changes:
+
+```bash
+npm run build:pages
+node scripts/capture-manual-screenshots.mjs   # fills a fresh in-browser database with sample records
+```
+
+Then bump `MANUAL_IMAGES_VERSION` in `src/shell/web/assets.ts` and in
+`scripts/upload-cloudinary-assets.mjs`, so the CDN serves the new set (the upload
+step never overwrites existing images). Until the new set is on Cloudinary, the
+Help page shows the bundled copies.
+
 ### Deploying to GitHub Pages
 
 `.github/workflows/deploy.yml` runs type checking and all tests on every push and

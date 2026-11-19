@@ -17,6 +17,8 @@ import { fileURLToPath } from "node:url"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..")
 const FOLDER = process.env.NEXT_PUBLIC_CLOUDINARY_STATIC_FOLDER || "tyremate/static"
+// Keep in sync with MANUAL_IMAGES_VERSION in src/shell/web/assets.ts.
+const MANUAL_IMAGES_VERSION = "v2"
 
 export function parseCloudinaryUrl(url) {
   const match = /^cloudinary:\/\/([^:]+):([^@]+)@([^/?#]+)/.exec(url || "")
@@ -42,7 +44,7 @@ export function listAssets() {
   ]
   const manualDir = join(root, "docs/images")
   for (const file of readdirSync(manualDir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort()) {
-    assets.push({ path: join(manualDir, file), publicId: `${FOLDER}/manual/${basename(file, extname(file))}` })
+    assets.push({ path: join(manualDir, file), publicId: `${FOLDER}/manual/${MANUAL_IMAGES_VERSION}/${basename(file, extname(file))}` })
   }
   return assets
 }

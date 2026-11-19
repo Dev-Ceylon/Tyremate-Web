@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css"
 import "../src/index.css"
 import "../src/App.css"
 import "../src/shell/web/web.css"
+import "../src/shell/web/help.css"
 import ClientRoot from "../src/shell/ClientRoot"
 import { brandAsset } from "../src/shell/web/assets"
 

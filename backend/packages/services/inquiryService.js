@@ -200,7 +200,7 @@ exports.createInquiry = (payload) => {
     navigationPath: `/inquiries/${inquiryId}`
   });
 
-  return this.getInquiryById(inquiryId);
+  return exports.getInquiryById(inquiryId);
 };
 
 exports.updateInquiry = (id, payload) => {
@@ -257,7 +257,7 @@ exports.updateInquiry = (id, payload) => {
 
   updateTransaction();
 
-  return this.getInquiryById(normalizedId);
+  return exports.getInquiryById(normalizedId);
 };
 
 exports.deleteInquiry = (id) => {
@@ -290,7 +290,7 @@ exports.updateInquiryStatus = (id, status) => {
 
   statusTransaction();
 
-  return this.getInquiryById(normalizedId);
+  return exports.getInquiryById(normalizedId);
 };
 
 exports.addReminder = (inquiryId, payload) => {
@@ -338,7 +338,7 @@ exports.deleteReminder = (reminderId) => {
 };
 
 exports.prepareForSOConversion = (id) => {
-  const inquiry = this.getInquiryById(id);
+  const inquiry = exports.getInquiryById(id);
 
   if (inquiry.IsAdminApproved !== 1) {
     throw new Error("Cannot convert to Sales Order: Inquiry must be Admin Approved first.");
