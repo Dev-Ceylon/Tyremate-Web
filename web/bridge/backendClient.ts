@@ -104,6 +104,29 @@ function onWorkerMessage(event: MessageEvent<FromWorker>) {
   }
 }
 
+const RELOAD_GUARD_KEY = "tyremate.reloadedForCodeLoad"
+
+/** importScripts / chunk loading failures (e.g. stale tab after a redeploy). */
+export function isCodeLoadFailure(message: string): boolean {
+  return /importScripts|Loading chunk|ChunkLoadError|failed to fetch dynamically imported module/i.test(message)
+}
+
+/**
+ * After a redeploy, an already-open tab references worker chunks that no
+ * longer exist. Reload once to pick up the new version; the guard prevents a
+ * reload loop when the file is genuinely unreachable.
+ */
+function reloadOnceForNewVersion(): boolean {
+  try {
+    if (window.sessionStorage.getItem(RELOAD_GUARD_KEY)) return false
+    window.sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now()))
+  } catch {
+    return false
+  }
+  window.location.reload()
+  return true
+}
+
 /** Starts (or restarts) the backend worker with the saved database configuration. */
 export function startBackend(config: DatabaseConfig = loadDatabaseConfig()): Promise<void> {
   stopBackend()
@@ -117,6 +140,11 @@ export function startBackend(config: DatabaseConfig = loadDatabaseConfig()): Pro
       if (msg.type === "ready") {
         w.removeEventListener("message", onInit)
         setStatus({ state: "ready", config, info: msg.info })
+        try {
+          window.sessionStorage.removeItem(RELOAD_GUARD_KEY)
+        } catch {
+          // ignore
+        }
         resolve()
       } else if (msg.type === "initError") {
         w.removeEventListener("message", onInit)
@@ -127,8 +155,13 @@ export function startBackend(config: DatabaseConfig = loadDatabaseConfig()): Pro
     w.addEventListener("message", onInit)
     w.addEventListener("message", onWorkerMessage)
     w.addEventListener("error", (event) => {
-      const error = event.message || "The backend worker crashed"
-      setStatus({ state: "error", config, error })
+      const raw = event.message || "The backend worker crashed"
+      if (isCodeLoadFailure(raw) && reloadOnceForNewVersion()) return
+      const error = isCodeLoadFailure(raw)
+        ? "Part of the application could not be downloaded. The site may have just been updated, or the network/firewall blocked the file. Reload the page to try again." +
+          `\n\nDetails: ${raw}`
+        : raw
+      setStatus({ state: "error", config, error, code: isCodeLoadFailure(raw) ? "CODE_LOAD" : undefined })
       reject(new Error(error))
     })
   })
