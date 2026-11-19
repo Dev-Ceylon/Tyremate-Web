@@ -21,24 +21,26 @@ export function ViolationFSFODetails({ violation }: ViolationFSFODetailsProps) {
         {details.AvailableBatches && details.AvailableBatches.length > 0 && (
           <div className="fsfo-available-batches">
             <h5>Available Older Batches</h5>
-            <table className="product-table">
-              <thead>
-                <tr>
-                  <th>Batch ID</th>
-                  <th>DOT</th>
-                  <th className="text-right">Qty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {details.AvailableBatches.map((batch: { BatchID: number; DOT: string; Qty: number }) => (
-                  <tr key={batch.BatchID}>
-                    <td>{batch.BatchID}</td>
-                    <td><span className="badge badge-violation fsfo">{batch.DOT}</span></td>
-                    <td className="text-right">{batch.Qty}</td>
+            <div className="tm-table-scroll">
+              <table className="product-table">
+                <thead>
+                  <tr>
+                    <th>Batch ID</th>
+                    <th>DOT</th>
+                    <th className="text-right">Qty</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {details.AvailableBatches.map((batch: { BatchID: number; DOT: string; Qty: number }) => (
+                    <tr key={batch.BatchID}>
+                      <td>{batch.BatchID}</td>
+                      <td><span className="badge badge-violation fsfo">{batch.DOT}</span></td>
+                      <td className="text-right">{batch.Qty}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

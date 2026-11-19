@@ -38,41 +38,43 @@ export default function PurchaseOrderCreatePage() {
   }
 
   return (
-    <section className="table-panel panel panel-strong">
-      <div className="table-panel-header">
-        <div>
-          <p className="section-label">Purchase Order</p>
-          <h2>Create Purchase Order{inquiryId ? ` from Inquiry #${inquiryId}` : ""}</h2>
+    <main className="app-shell">
+      <section className="table-panel panel panel-strong">
+        <div className="table-panel-header">
+          <div>
+            <p className="section-label">Purchase Order</p>
+            <h2>Create Purchase Order{inquiryId ? ` from Inquiry #${inquiryId}` : ""}</h2>
+          </div>
         </div>
-      </div>
 
-      {formState.initializing ? <p className="hero-text">Loading options...</p> : null}
-      {formState.error ? <p className="hero-text">{formState.error}</p> : null}
+        {formState.initializing ? <p className="hero-text">Loading options...</p> : null}
+        {formState.error ? <p className="hero-text">{formState.error}</p> : null}
 
-      <PurchaseOrderForm
-        state={formState}
-        actions={formActions}
-        onOpenCreateTyre={() => setIsCreateTyreOpen(true)}
-        onCancel={handleCancel}
-      />
-
-      {modalState.activeLine && (
-        <SupplierSelectionModal
-          isOpen={modalState.isOpen}
-          onClose={modalActions.onClose}
-          tyreId={modalState.activeLine.TyreID}
-          tyreLabel={modalState.tyreLabel}
-          lineQty={modalState.activeLine.Qty}
-          existingSuppliers={modalState.activeLine.Suppliers}
-          onConfirm={modalActions.onConfirm}
+        <PurchaseOrderForm
+          state={formState}
+          actions={formActions}
+          onOpenCreateTyre={() => setIsCreateTyreOpen(true)}
+          onCancel={handleCancel}
         />
-      )}
 
-      <CreateTyreDialog
-        isOpen={isCreateTyreOpen}
-        onClose={() => setIsCreateTyreOpen(false)}
-        onCreated={handleTyreCreated}
-      />
-    </section>
+        {modalState.activeLine && (
+          <SupplierSelectionModal
+            isOpen={modalState.isOpen}
+            onClose={modalActions.onClose}
+            tyreId={modalState.activeLine.TyreID}
+            tyreLabel={modalState.tyreLabel}
+            lineQty={modalState.activeLine.Qty}
+            existingSuppliers={modalState.activeLine.Suppliers}
+            onConfirm={modalActions.onConfirm}
+          />
+        )}
+
+        <CreateTyreDialog
+          isOpen={isCreateTyreOpen}
+          onClose={() => setIsCreateTyreOpen(false)}
+          onCreated={handleTyreCreated}
+        />
+      </section>
+    </main>
   )
 }

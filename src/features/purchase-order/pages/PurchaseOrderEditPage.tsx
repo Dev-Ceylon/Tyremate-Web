@@ -53,44 +53,46 @@ export default function PurchaseOrderEditPage() {
   const tyreLabel = selectedTyre ? `${selectedTyre.Brand} / ${selectedTyre.Size} / ${selectedTyre.Pattern}` : ""
 
   return (
-    <section className="table-panel panel panel-strong">
-      <div className="table-panel-header">
-        <div>
-          <p className="section-label">Purchase Order</p>
-          <h2>Edit Purchase Order #{poId}</h2>
+    <main className="app-shell">
+      <section className="table-panel panel panel-strong">
+        <div className="table-panel-header">
+          <div>
+            <p className="section-label">Purchase Order</p>
+            <h2>Edit Purchase Order #{poId}</h2>
+          </div>
         </div>
-      </div>
 
-      {initializing ? <p className="hero-text">Loading order details...</p> : null}
-      {error ? <p className="hero-text error-text">{error}</p> : null}
+        {initializing ? <p className="hero-text">Loading order details...</p> : null}
+        {error ? <p className="hero-text error-text">{error}</p> : null}
 
-      <PurchaseOrderForm 
-        state={{ formData, lines, tyres, initializing, submitting, error }} 
-        actions={{ 
-          onChangeDate: (val) => updateField("Date", val),
-          onAddLine: addLine,
-          onRemoveLine: removeLine,
-          onUpdateLine: updateLine,
-          onOpenSupplierModal: setActiveLineId,
-          onSubmit: handleSubmit,
-          onCancel: () => navigate("/purchase-orders")
-        }} 
-      />
-
-      {activeLine && (
-        <SupplierSelectionModal
-          isOpen={!!activeLineId}
-          onClose={() => setActiveLineId(null)}
-          tyreId={activeLine.TyreID}
-          tyreLabel={tyreLabel}
-          lineQty={activeLine.Qty}
-          existingSuppliers={activeLine.Suppliers}
-          onConfirm={(suppliers) => {
-            setLineSuppliers(activeLine.id, suppliers)
-            setActiveLineId(null)
-          }}
+        <PurchaseOrderForm 
+          state={{ formData, lines, tyres, initializing, submitting, error }} 
+          actions={{ 
+            onChangeDate: (val) => updateField("Date", val),
+            onAddLine: addLine,
+            onRemoveLine: removeLine,
+            onUpdateLine: updateLine,
+            onOpenSupplierModal: setActiveLineId,
+            onSubmit: handleSubmit,
+            onCancel: () => navigate("/purchase-orders")
+          }} 
         />
-      )}
-    </section>
+
+        {activeLine && (
+          <SupplierSelectionModal
+            isOpen={!!activeLineId}
+            onClose={() => setActiveLineId(null)}
+            tyreId={activeLine.TyreID}
+            tyreLabel={tyreLabel}
+            lineQty={activeLine.Qty}
+            existingSuppliers={activeLine.Suppliers}
+            onConfirm={(suppliers) => {
+              setLineSuppliers(activeLine.id, suppliers)
+              setActiveLineId(null)
+            }}
+          />
+        )}
+      </section>
+    </main>
   )
 }

@@ -101,7 +101,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
             </select>
           </label>
 
-          <div className="header-actions">
+          <div className="header-actions form-inline-action">
             <button type="button" className="secondary-action" onClick={actions.onOpenCreateCustomer}>
               + New Customer
             </button>

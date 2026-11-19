@@ -18,41 +18,43 @@ export function StorageLocationTypesTable({
   }
 
   return (
-    <table className="product-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {storageLocationTypes.map((type) => (
-          <tr key={type.Id}>
-            <td>{type.LocationTypeCode || "-"}</td>
-            <td>{type.LocationTypeName || "-"}</td>
-            <td>
-              <div className="table-actions">
-                <button
-                  type="button"
-                  className="secondary-action table-action"
-                  onClick={() => onEdit?.(type)}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="secondary-action table-action"
-                  onClick={() => onDelete?.(type)}
-                  disabled={deletingId === type.Id}
-                >
-                  {deletingId === type.Id ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </td>
+    <div className="tm-table-scroll">
+      <table className="product-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {storageLocationTypes.map((type) => (
+            <tr key={type.Id}>
+              <td>{type.LocationTypeCode || "-"}</td>
+              <td>{type.LocationTypeName || "-"}</td>
+              <td>
+                <div className="table-actions">
+                  <button
+                    type="button"
+                    className="secondary-action table-action"
+                    onClick={() => onEdit?.(type)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-action table-action"
+                    onClick={() => onDelete?.(type)}
+                    disabled={deletingId === type.Id}
+                  >
+                    {deletingId === type.Id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

@@ -120,7 +120,7 @@ export function DagForm({ state, actions }: DagFormProps) {
             </select>
           </label>
 
-          <div className="header-actions">
+          <div className="header-actions form-inline-action">
             <button
               className="secondary-action"
               type="button"

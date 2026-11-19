@@ -51,64 +51,66 @@ export function ManageBatchModal({
                 DOT format: <strong>WWYY</strong> — 2-digit week (01–53) + 2-digit year (e.g.{" "}
                 <strong>2526</strong> = week 25 of 2026).
               </p>
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    <th className="text-right">#</th>
-                    <th>DOT</th>
-                    <th className="text-right">Qty</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {drafts.length === 0 && (
+              <div className="tm-table-scroll">
+                <table className="product-table">
+                  <thead>
                     <tr>
-                      <td colSpan={4} className="secondary-text">
-                        No batches entered yet. Add a batch for each DOT the supplier will send.
-                      </td>
+                      <th className="text-right">#</th>
+                      <th>DOT</th>
+                      <th className="text-right">Qty</th>
+                      <th></th>
                     </tr>
-                  )}
-                  {drafts.map((draft, index) => {
-                    const dotError = dotErrors[draft.localId]
-                    return (
-                      <tr key={draft.localId}>
-                        <td className="text-right secondary-text">{index + 1}</td>
-                        <td>
-                          <input
-                            className="text-input"
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="WWYY e.g. 2526"
-                            maxLength={4}
-                            value={draft.DOT}
-                            onChange={(event) => actions.update(draft.localId, { DOT: event.target.value })}
-                          />
-                          {dotError && <span className="validation-error">{dotError}</span>}
-                        </td>
-                        <td>
-                          <input
-                            className="text-input"
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="Qty"
-                            value={draft.Qty}
-                            onChange={(event) => actions.update(draft.localId, { Qty: event.target.value })}
-                          />
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="secondary-action"
-                            onClick={() => actions.removeRow(draft.localId)}
-                          >
-                            Remove
-                          </button>
+                  </thead>
+                  <tbody>
+                    {drafts.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="secondary-text">
+                          No batches entered yet. Add a batch for each DOT the supplier will send.
                         </td>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                    )}
+                    {drafts.map((draft, index) => {
+                      const dotError = dotErrors[draft.localId]
+                      return (
+                        <tr key={draft.localId}>
+                          <td className="text-right secondary-text">{index + 1}</td>
+                          <td>
+                            <input
+                              className="text-input"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="WWYY e.g. 2526"
+                              maxLength={4}
+                              value={draft.DOT}
+                              onChange={(event) => actions.update(draft.localId, { DOT: event.target.value })}
+                            />
+                            {dotError && <span className="validation-error">{dotError}</span>}
+                          </td>
+                          <td>
+                            <input
+                              className="text-input"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Qty"
+                              value={draft.Qty}
+                              onChange={(event) => actions.update(draft.localId, { Qty: event.target.value })}
+                            />
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="secondary-action"
+                              onClick={() => actions.removeRow(draft.localId)}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="modal-actions">

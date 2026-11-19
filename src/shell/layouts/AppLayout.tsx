@@ -52,7 +52,7 @@ export default function AppLayout() {
   }, [isMenuOpen])
 
   return (
-    <>
+    <div className="tm-app">
       <header className={`top-nav panel${isMenuOpen ? " is-menu-open" : ""}`}>
         <NavLink className="top-nav-brand" to="/" aria-label="TyreMate home">
           <BrandLogo size={30} />
@@ -269,6 +269,6 @@ export default function AppLayout() {
         isOpen={isPrinterModalOpen}
         onClose={() => setPrinterModalOpen(false)}
       />
-    </>
+    </div>
   )
 }

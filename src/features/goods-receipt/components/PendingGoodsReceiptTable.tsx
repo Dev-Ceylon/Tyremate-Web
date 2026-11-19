@@ -30,88 +30,90 @@ export const PendingGoodsReceiptTable = ({
   }
 
   return (
-    <table className="product-table">
-      <thead>
-        <tr>
-          <th>PO</th>
-          <th>Supplier</th>
-          <th>Tyre</th>
-          <th className="text-center">Allocated</th>
-          <th className="text-center">Received</th>
-          <th className="text-center">Pending</th>
-          <th>Expected</th>
-          <th>Location</th>
-          <th className="text-center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((row) => {
-          const isOverdue = !!row.ExpectedDeliveryDate && row.ExpectedDeliveryDate < localToday()
+    <div className="tm-table-scroll">
+      <table className="product-table">
+        <thead>
+          <tr>
+            <th>PO</th>
+            <th>Supplier</th>
+            <th>Tyre</th>
+            <th className="text-center">Allocated</th>
+            <th className="text-center">Received</th>
+            <th className="text-center">Pending</th>
+            <th>Expected</th>
+            <th>Location</th>
+            <th className="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row) => {
+            const isOverdue = !!row.ExpectedDeliveryDate && row.ExpectedDeliveryDate < localToday()
 
-          return (
-            <tr key={row.PoTyresSupplierID}>
-              <td>
-                <button
-                  type="button"
-                  className="text-link"
-                  onClick={() => onOpenPurchaseOrder(row.POID)}
-                >
-                  #{row.POID}
-                </button>
-              </td>
-              <td>
-                <span className="mono-text">{row.SupplierCode}</span>
-                <div className="secondary-text">{row.SupplierName}</div>
-              </td>
-              <td>{formatTyreLabel(row)}</td>
-              <td className="text-center mono-text">{row.AllocatedQty}</td>
-              <td className="text-center mono-text">
-                {row.AcceptedToDateQty}
-                {row.GoodsReceiptCount > 0 && (
-                  <div className="secondary-text">
-                    {row.GoodsReceiptCount} GRN{row.GoodsReceiptCount === 1 ? "" : "s"}
+            return (
+              <tr key={row.PoTyresSupplierID}>
+                <td>
+                  <button
+                    type="button"
+                    className="text-link"
+                    onClick={() => onOpenPurchaseOrder(row.POID)}
+                  >
+                    #{row.POID}
+                  </button>
+                </td>
+                <td>
+                  <span className="mono-text">{row.SupplierCode}</span>
+                  <div className="secondary-text">{row.SupplierName}</div>
+                </td>
+                <td>{formatTyreLabel(row)}</td>
+                <td className="text-center mono-text">{row.AllocatedQty}</td>
+                <td className="text-center mono-text">
+                  {row.AcceptedToDateQty}
+                  {row.GoodsReceiptCount > 0 && (
+                    <div className="secondary-text">
+                      {row.GoodsReceiptCount} GRN{row.GoodsReceiptCount === 1 ? "" : "s"}
+                    </div>
+                  )}
+                </td>
+                <td className="text-center mono-text">
+                  <strong>{row.PendingQty}</strong>
+                </td>
+                <td>
+                  {isOverdue ? (
+                    <span className="status-badge status-pending">{formatDate(row.ExpectedDeliveryDate)}</span>
+                  ) : (
+                    formatDate(row.ExpectedDeliveryDate)
+                  )}
+                </td>
+                <td>
+                  {row.AllocatedLocationName ? (
+                    <>
+                      {row.AllocatedLocationName}
+                      {row.AllocatedLocationCode && (
+                        <div className="secondary-text">{row.AllocatedLocationCode}</div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="status-badge status-rejected">No location</span>
+                  )}
+                </td>
+                <td>
+                  <div className="table-actions">
+                    <ActionMenu
+                      label="Receive"
+                      items={[
+                        ...(row.AllocatedLocationId
+                          ? [{ label: "Post GRN", onClick: () => onReceive(row) }]
+                          : []),
+                        { label: "Open Purchase Order", onClick: () => onOpenPurchaseOrder(row.POID) },
+                      ]}
+                    />
                   </div>
-                )}
-              </td>
-              <td className="text-center mono-text">
-                <strong>{row.PendingQty}</strong>
-              </td>
-              <td>
-                {isOverdue ? (
-                  <span className="status-badge status-pending">{formatDate(row.ExpectedDeliveryDate)}</span>
-                ) : (
-                  formatDate(row.ExpectedDeliveryDate)
-                )}
-              </td>
-              <td>
-                {row.AllocatedLocationName ? (
-                  <>
-                    {row.AllocatedLocationName}
-                    {row.AllocatedLocationCode && (
-                      <div className="secondary-text">{row.AllocatedLocationCode}</div>
-                    )}
-                  </>
-                ) : (
-                  <span className="status-badge status-rejected">No location</span>
-                )}
-              </td>
-              <td>
-                <div className="table-actions">
-                  <ActionMenu
-                    label="Receive"
-                    items={[
-                      ...(row.AllocatedLocationId
-                        ? [{ label: "Post GRN", onClick: () => onReceive(row) }]
-                        : []),
-                      { label: "Open Purchase Order", onClick: () => onOpenPurchaseOrder(row.POID) },
-                    ]}
-                  />
-                </div>
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }

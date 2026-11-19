@@ -80,44 +80,46 @@ export default function PurchaseOrderAllocateLocationPage() {
         <div className="table-panel-header">
           <h2>Tyre Line Items</h2>
         </div>
-        <table className="product-table">
-          <thead>
-            <tr>
-              <th>Tyre Details</th>
-              <th className="text-right">Ordered Qty</th>
-              <th>Storage Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.Tyres?.map((tyre) => {
-              const reservedByLocation = getReservedByLocation(tyre.ID)
+        <div className="tm-table-scroll">
+          <table className="product-table">
+            <thead>
+              <tr>
+                <th>Tyre Details</th>
+                <th className="text-right">Ordered Qty</th>
+                <th>Storage Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.Tyres?.map((tyre) => {
+                const reservedByLocation = getReservedByLocation(tyre.ID)
 
-              return (
-                <tr key={tyre.ID}>
-                  <td>
-                    <div className="font-medium">
-                      {tyre.Brand} / {tyre.Size} / {tyre.Pattern}
-                    </div>
-                  </td>
-                  <td className="text-right font-bold">{tyre.Qty}</td>
-                  <td>
-                    <select
-                      className="text-input"
-                      value={localAllocations[tyre.ID] || ""}
-                      onChange={(e) => actions.updateAllocation(tyre.ID, Number(e.target.value))}
-                    >
-                      <LocationOptions
-                        locations={locations}
-                        tyreQty={tyre.Qty}
-                        reservedByLocation={reservedByLocation}
-                      />
-                    </select>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={tyre.ID}>
+                    <td>
+                      <div className="font-medium">
+                        {tyre.Brand} / {tyre.Size} / {tyre.Pattern}
+                      </div>
+                    </td>
+                    <td className="text-right font-bold">{tyre.Qty}</td>
+                    <td>
+                      <select
+                        className="text-input"
+                        value={localAllocations[tyre.ID] || ""}
+                        onChange={(e) => actions.updateAllocation(tyre.ID, Number(e.target.value))}
+                      >
+                        <LocationOptions
+                          locations={locations}
+                          tyreQty={tyre.Qty}
+                          reservedByLocation={reservedByLocation}
+                        />
+                      </select>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   )

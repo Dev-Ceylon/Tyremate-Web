@@ -167,78 +167,80 @@ export default function CreateDirectInvoicePage() {
             </button>
           </div>
         </div>
-        <table className="product-table invoice-line-table">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th className="text-right">Qty</th>
-              <th className="text-right">Unit Price</th>
-              <th className="text-right">Disc %</th>
-              <th className="text-right">Line Total</th>
-              <th className="text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {form.lines.map((line) => {
-              const gross = (Number(line.qty) || 0) * (Number(line.unitPrice) || 0)
-              const lineTotal = gross - (gross * (Number(line.discount) || 0)) / 100
-              return (
-                <tr key={line.key}>
-                  <td>
-                    <input
-                      className="text-input"
-                      value={line.description}
-                      onChange={(e) => form.updateLine(line.key, { description: e.target.value })}
-                      disabled={form.submitting}
-                      placeholder="Description"
-                    />
-                  </td>
-                  <td className="text-right">
-                    <input
-                      type="number"
-                      className="text-input"
-                      value={line.qty}
-                      onChange={(e) => form.updateLine(line.key, { qty: e.target.value })}
-                      disabled={form.submitting}
-                      min="0"
-                    />
-                  </td>
-                  <td className="text-right">
-                    <input
-                      type="number"
-                      className="text-input"
-                      value={line.unitPrice}
-                      onChange={(e) => form.updateLine(line.key, { unitPrice: e.target.value })}
-                      disabled={form.submitting}
-                      min="0"
-                    />
-                  </td>
-                  <td className="text-right">
-                    <input
-                      type="number"
-                      className="text-input"
-                      value={line.discount}
-                      onChange={(e) => form.updateLine(line.key, { discount: e.target.value })}
-                      disabled={form.submitting}
-                      min="0"
-                    />
-                  </td>
-                  <td className="text-right font-bold">${fmt(lineTotal)}</td>
-                  <td className="text-center">
-                    <button
-                      type="button"
-                      className="secondary-action table-action"
-                      onClick={() => form.removeLine(line.key)}
-                      disabled={form.submitting || form.lines.length <= 1}
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <div className="tm-table-scroll">
+          <table className="product-table invoice-line-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th className="text-right">Qty</th>
+                <th className="text-right">Unit Price</th>
+                <th className="text-right">Disc %</th>
+                <th className="text-right">Line Total</th>
+                <th className="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {form.lines.map((line) => {
+                const gross = (Number(line.qty) || 0) * (Number(line.unitPrice) || 0)
+                const lineTotal = gross - (gross * (Number(line.discount) || 0)) / 100
+                return (
+                  <tr key={line.key}>
+                    <td>
+                      <input
+                        className="text-input"
+                        value={line.description}
+                        onChange={(e) => form.updateLine(line.key, { description: e.target.value })}
+                        disabled={form.submitting}
+                        placeholder="Description"
+                      />
+                    </td>
+                    <td className="text-right">
+                      <input
+                        type="number"
+                        className="text-input"
+                        value={line.qty}
+                        onChange={(e) => form.updateLine(line.key, { qty: e.target.value })}
+                        disabled={form.submitting}
+                        min="0"
+                      />
+                    </td>
+                    <td className="text-right">
+                      <input
+                        type="number"
+                        className="text-input"
+                        value={line.unitPrice}
+                        onChange={(e) => form.updateLine(line.key, { unitPrice: e.target.value })}
+                        disabled={form.submitting}
+                        min="0"
+                      />
+                    </td>
+                    <td className="text-right">
+                      <input
+                        type="number"
+                        className="text-input"
+                        value={line.discount}
+                        onChange={(e) => form.updateLine(line.key, { discount: e.target.value })}
+                        disabled={form.submitting}
+                        min="0"
+                      />
+                    </td>
+                    <td className="text-right font-bold">${fmt(lineTotal)}</td>
+                    <td className="text-center">
+                      <button
+                        type="button"
+                        className="secondary-action table-action"
+                        onClick={() => form.removeLine(line.key)}
+                        disabled={form.submitting || form.lines.length <= 1}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
 
         <div className="detail-card-grid">
           <div className="detail-card-row">
@@ -255,7 +257,7 @@ export default function CreateDirectInvoicePage() {
           </div>
         </div>
 
-        <div className="header-actions">
+        <div className="header-actions form-submit-row">
           <button className="secondary-action" onClick={() => navigate("/invoices")} disabled={form.submitting}>
             Cancel
           </button>

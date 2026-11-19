@@ -29,42 +29,44 @@ export const DAGGatePassTable = ({
   }
 
   return (
-    <table className="product-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Date</th>
-          <th>Delivery Date</th>
-          <th>Customer</th>
-          <th>Contractor</th>
-          <th>Tyres (Name - Code)</th>
-          <th>Qty</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {dagGatePasses.map((record) => {
-          // Owned here so the React key and the accordion key cannot drift.
-          const rowKey = `gatepass-${record.ID}`
+    <div className="tm-table-scroll">
+      <table className="product-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Delivery Date</th>
+            <th>Customer</th>
+            <th>Contractor</th>
+            <th>Tyres (Name - Code)</th>
+            <th>Qty</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dagGatePasses.map((record) => {
+            // Owned here so the React key and the accordion key cannot drift.
+            const rowKey = `gatepass-${record.ID}`
 
-          return (
-            <DAGGatePassRow
-              key={rowKey}
-              rowKey={rowKey}
-              record={record}
-              isExpanded={expandedRowKey === rowKey}
-              onToggleExpand={onToggleExpand}
-              deletingId={deletingId}
-              onDelete={onDelete}
-              sendingId={sendingId}
-              onSend={onSend}
-              arrivedId={arrivedId}
-              onArrived={onArrived}
-            />
-          )
-        })}
-      </tbody>
-    </table>
+            return (
+              <DAGGatePassRow
+                key={rowKey}
+                rowKey={rowKey}
+                record={record}
+                isExpanded={expandedRowKey === rowKey}
+                onToggleExpand={onToggleExpand}
+                deletingId={deletingId}
+                onDelete={onDelete}
+                sendingId={sendingId}
+                onSend={onSend}
+                arrivedId={arrivedId}
+                onArrived={onArrived}
+              />
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }

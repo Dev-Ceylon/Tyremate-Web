@@ -33,5 +33,8 @@ export type CustomerPayload = {
 }
 
 export type CustomerRecord = CustomerPayload & {
+  /** Primary phone / address summaries returned by the list query. */
+  Contact?: string | null
+  Address?: string | null
   CustomerID: number
 }

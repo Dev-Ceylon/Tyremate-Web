@@ -164,33 +164,35 @@ export default function InvoiceDetailsPage() {
         <div className="table-panel-header">
           <h2>Line Items</h2>
         </div>
-        <table className="product-table">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th className="text-right">Qty</th>
-              <th className="text-right">Unit Price</th>
-              <th className="text-right">Disc %</th>
-              <th className="text-right">Line Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {record.Lines?.map((line) => (
-              <tr key={line.InvoiceLineID}>
-                <td>
-                  <span className="font-medium">
-                    {line.Description || [line.Brand, line.Size, line.Pattern].filter(Boolean).join(" / ") || "-"}
-                  </span>
-                  {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
-                </td>
-                <td className="text-right">{line.Qty}</td>
-                <td className="text-right">${fmt(line.UnitPrice)}</td>
-                <td className="text-right">{line.Discount}</td>
-                <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
+        <div className="tm-table-scroll">
+          <table className="product-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th className="text-right">Qty</th>
+                <th className="text-right">Unit Price</th>
+                <th className="text-right">Disc %</th>
+                <th className="text-right">Line Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {record.Lines?.map((line) => (
+                <tr key={line.InvoiceLineID}>
+                  <td>
+                    <span className="font-medium">
+                      {line.Description || [line.Brand, line.Size, line.Pattern].filter(Boolean).join(" / ") || "-"}
+                    </span>
+                    {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
+                  </td>
+                  <td className="text-right">{line.Qty}</td>
+                  <td className="text-right">${fmt(line.UnitPrice)}</td>
+                  <td className="text-right">{line.Discount}</td>
+                  <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {record.CreditNotes && record.CreditNotes.length > 0 && (
@@ -198,34 +200,36 @@ export default function InvoiceDetailsPage() {
           <div className="table-panel-header">
             <h2>Credit Notes</h2>
           </div>
-          <table className="product-table">
-            <thead>
-              <tr>
-                <th>Credit Note #</th>
-                <th>Date</th>
-                <th className="text-right">Total</th>
-                <th className="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {record.CreditNotes.map((cn) => (
-                <tr key={cn.InvoiceID}>
-                  <td className="mono-text">{cn.InvoiceNumber}</td>
-                  <td className="secondary-text">{cn.InvoiceDate}</td>
-                  <td className="text-right font-bold">${fmt(cn.Total)}</td>
-                  <td className="text-center">
-                    <button
-                      type="button"
-                      className="secondary-action table-action"
-                      onClick={() => navigate(`/invoices/${cn.InvoiceID}`)}
-                    >
-                      View
-                    </button>
-                  </td>
+          <div className="tm-table-scroll">
+            <table className="product-table">
+              <thead>
+                <tr>
+                  <th>Credit Note #</th>
+                  <th>Date</th>
+                  <th className="text-right">Total</th>
+                  <th className="text-center">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {record.CreditNotes.map((cn) => (
+                  <tr key={cn.InvoiceID}>
+                    <td className="mono-text">{cn.InvoiceNumber}</td>
+                    <td className="secondary-text">{cn.InvoiceDate}</td>
+                    <td className="text-right font-bold">${fmt(cn.Total)}</td>
+                    <td className="text-center">
+                      <button
+                        type="button"
+                        className="secondary-action table-action"
+                        onClick={() => navigate(`/invoices/${cn.InvoiceID}`)}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
