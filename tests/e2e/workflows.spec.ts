@@ -67,6 +67,33 @@ test.describe("business workflows in the browser", () => {
     expectNoAppErrors(errors)
   })
 
+  test("logs a customer inquiry through the form and updates it", async ({ page, errors }) => {
+    await login(page)
+    await api(page, "await window.api.admin.seedSampleData({ includeStock: true })")
+    await page.goto("inquiries/new/")
+    const customer = page.locator("form select").first()
+    await customer.selectOption({ index: 1 })
+    const customerName = (await customer.locator("option:checked").textContent())!.split(" - ").pop()!.trim()
+    await page.locator("table select").first().selectOption({ index: 1 })
+    await page.getByLabel("Notes").fill("Fleet replacement quote")
+    await page.getByRole("button", { name: "Create Inquiry" }).click()
+    await expect(page).toHaveURL(/\/inquiries\/$/)
+    const row = page.getByRole("row", { name: new RegExp(customerName) })
+    await expect(row).toContainText("Fleet replacement quote")
+
+    // Updating and approving go through the same service code path.
+    const updated = await api<{ Notes: string; IsAdminApproved: number }>(
+      page,
+      `const [inq] = await window.api.inquiries.getInquiries()
+       const id = inq.ID ?? inq.InquiryID
+       await window.api.inquiries.updateInquiry(id, { Notes: "Quote sent" })
+       return await window.api.inquiries.updateInquiryStatus(id, true)`,
+    )
+    expect(updated.Notes).toBe("Quote sent")
+    expect(updated.IsAdminApproved).toBe(1)
+    expectNoAppErrors(errors)
+  })
+
   test("unknown URLs fall back to the dashboard", async ({ page }) => {
     await login(page)
     await page.goto("this/does/not/exist/")
@@ -170,8 +197,33 @@ test.describe("business workflows in the browser", () => {
     await expect(page.getByRole("heading", { name: "User manual", exact: true })).toBeVisible()
     const img = page.getByRole("img", { name: "TyreMate Login Screen" })
     await img.scrollIntoViewIfNeeded()
-    await expect(img).toHaveAttribute("src", /res\.cloudinary\.com\/dkj22lm1g\/image\/upload\/f_auto,q_auto,w_1600,c_limit\/tyremate\/static\/manual\/01_login/)
+    await expect(img).toHaveAttribute("src", /res\.cloudinary\.com\/dkj22lm1g\/image\/upload\/f_auto,q_auto,w_1600,c_limit\/tyremate\/static\/manual\/v2\/01_login/)
     await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(100)
+
+    // Diagrams from the manual are drawn, not left as source.
+    await expect(page.locator('.tm-manual-diagram[data-rendered="true"] svg')).toHaveCount(3, { timeout: 20_000 })
+
+    // Contents navigation jumps to a chapter and records it in the URL.
+    const contents = page.getByRole("navigation", { name: "Manual contents" })
+    await contents.getByRole("link", { name: /Sales Orders & Customer Dispatch/ }).click()
+    await expect(page).toHaveURL(/#chapter-4$/)
+    await expect(page.getByRole("heading", { name: "Sales Orders & Customer Dispatch" })).toBeInViewport()
+
+    // Search narrows the manual to matching sections and highlights matches.
+    await page.getByPlaceholder("Search the manual…").fill("gate pass")
+    await expect(page.locator("#tm-help-search-status")).toContainText(/\d+ match/)
+    await expect(page.locator("mark.tm-manual-hit").first()).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Customer Inquiry Management" })).toBeHidden()
+    await page.getByPlaceholder("Search the manual…").fill("no-such-words")
+    await expect(page.getByRole("heading", { name: /No results/ })).toBeVisible()
+    await page.getByRole("button", { name: "Clear search" }).first().click()
+    await expect(page.getByRole("heading", { name: "Customer Inquiry Management" })).toBeVisible()
+
+    // Screenshots open enlarged and close with Escape.
+    await img.click()
+    await expect(page.locator("dialog.tm-help-zoom")).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.locator("dialog.tm-help-zoom")).toBeHidden()
     expectNoAppErrors(errors)
   })
 })

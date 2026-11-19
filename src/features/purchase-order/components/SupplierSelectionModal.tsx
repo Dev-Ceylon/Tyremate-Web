@@ -181,62 +181,64 @@ export function SupplierSelectionModal({
           ) : suppliers.length === 0 ? (
             <p className="supplier-list-empty">No suppliers found for this tyre.</p>
           ) : (
-            <table className="supplier-list-table">
-              <thead>
-                <tr>
-                  <th>Supplier</th>
-                  <th>Price</th>
-                  <th>Discount (%)</th>
-                  <th>Stock</th>
-                  <th style={{ width: '120px' }}>PO Allocation</th>
-                </tr>
-              </thead>
-              <tbody>
-                {suppliers.map((s) => {
-                  const sId = Number(s.SupplierID)
-                  return (
-                    <tr key={sId}>
-                      <td>
-                        <strong>{s.Name}</strong>
-                        <br />
-                        <small className="secondary-text">{s.Contact || '-'}</small>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="text-input"
-                          inputMode="decimal"
-                          value={prices[sId] || ""}
-                          placeholder="0.00"
-                          onChange={(e) => handlePriceChange(sId, e.target.value === "" ? 0 : Number(e.target.value))}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="text-input"
-                          inputMode="decimal"
-                          value={discounts[sId] || ""}
-                          placeholder="0.00"
-                          style={{ width: "80px" }}
-                          onChange={(e) => handleDiscountChange(sId, e.target.value === "" ? 0 : Number(e.target.value))}
-                        />
-                      </td>
-                      <td>{s.AvailableQuantity ?? s.Quantity ?? 0}</td>
-                      <td>
-                        <input
-                          type="text"
-                          className="text-input"
-                          inputMode="numeric"
-                          value={allocations[sId] || 0}
-                          onChange={(e) => handleQtyChange(sId, e.target.value === "" ? 0 : Number(e.target.value))}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <div className="tm-table-scroll">
+              <table className="supplier-list-table">
+                <thead>
+                  <tr>
+                    <th>Supplier</th>
+                    <th>Price</th>
+                    <th>Discount (%)</th>
+                    <th>Stock</th>
+                    <th style={{ width: '120px' }}>PO Allocation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {suppliers.map((s) => {
+                    const sId = Number(s.SupplierID)
+                    return (
+                      <tr key={sId}>
+                        <td>
+                          <strong>{s.Name}</strong>
+                          <br />
+                          <small className="secondary-text">{s.Contact || '-'}</small>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="text-input"
+                            inputMode="decimal"
+                            value={prices[sId] || ""}
+                            placeholder="0.00"
+                            onChange={(e) => handlePriceChange(sId, e.target.value === "" ? 0 : Number(e.target.value))}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="text-input"
+                            inputMode="decimal"
+                            value={discounts[sId] || ""}
+                            placeholder="0.00"
+                            style={{ width: "80px" }}
+                            onChange={(e) => handleDiscountChange(sId, e.target.value === "" ? 0 : Number(e.target.value))}
+                          />
+                        </td>
+                        <td>{s.AvailableQuantity ?? s.Quantity ?? 0}</td>
+                        <td>
+                          <input
+                            type="text"
+                            className="text-input"
+                            inputMode="numeric"
+                            value={allocations[sId] || 0}
+                            onChange={(e) => handleQtyChange(sId, e.target.value === "" ? 0 : Number(e.target.value))}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

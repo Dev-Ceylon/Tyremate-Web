@@ -151,30 +151,32 @@ export default function OtherServiceDetailsPage() {
         <div className="table-panel-header">
           <h2>Consumable Lines</h2>
         </div>
-        <table className="product-table">
-          <thead>
-            <tr>
-              <th>Consumable</th>
-              <th className="text-right">Price</th>
-              <th className="text-right">Qty</th>
-              <th className="text-right">Line Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {record.Consumables?.map((c) => (
-              <tr key={c.ID}>
-                <td>
-                  <span className="font-medium">
-                    {c.ConsumableName}{c.ConsumableCategory ? ` (${c.ConsumableCategory})` : ""}
-                  </span>
-                </td>
-                <td className="text-right">${fmt(c.Price)}</td>
-                <td className="text-right font-bold">{c.Qty}</td>
-                <td className="text-right">${fmt(c.Price * c.Qty)}</td>
+        <div className="tm-table-scroll">
+          <table className="product-table">
+            <thead>
+              <tr>
+                <th>Consumable</th>
+                <th className="text-right">Price</th>
+                <th className="text-right">Qty</th>
+                <th className="text-right">Line Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {record.Consumables?.map((c) => (
+                <tr key={c.ID}>
+                  <td>
+                    <span className="font-medium">
+                      {c.ConsumableName}{c.ConsumableCategory ? ` (${c.ConsumableCategory})` : ""}
+                    </span>
+                  </td>
+                  <td className="text-right">${fmt(c.Price)}</td>
+                  <td className="text-right font-bold">{c.Qty}</td>
+                  <td className="text-right">${fmt(c.Price * c.Qty)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {record.Payments && record.Payments.length > 0 && (

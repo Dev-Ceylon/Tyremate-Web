@@ -34,9 +34,16 @@ export function brandAssetFallback(name: BrandAsset): string {
   return localAsset(BRAND[name].file)
 }
 
+/**
+ * Screenshot set version. Bump it when docs/images is re-captured
+ * (scripts/capture-manual-screenshots.mjs) so the CDN serves the new images:
+ * the upload step only adds missing assets, it never overwrites.
+ */
+export const MANUAL_IMAGES_VERSION = "v2"
+
 /** User-manual screenshot (docs/images/<file>), served from Cloudinary as optimised images. */
 export function manualImage(file: string): { src: string; fallback: string } {
-  const publicId = `manual/${file.replace(/\.[a-z]+$/i, "")}`
+  const publicId = `manual/${MANUAL_IMAGES_VERSION}/${file.replace(/\.[a-z]+$/i, "")}`
   return {
     src: cloudinaryImageUrl(publicId, "f_auto,q_auto,w_1600,c_limit") ?? localAsset(`manual/${file}`),
     fallback: localAsset(`manual/${file}`),

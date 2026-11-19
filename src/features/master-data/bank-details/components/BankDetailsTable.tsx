@@ -18,45 +18,47 @@ export function BankDetailsTable({
   }
 
   return (
-    <table className="product-table">
-      <thead>
-        <tr>
-          <th>Bank Name</th>
-          <th>Account Number</th>
-          <th>Account Name</th>
-          <th>Branch</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {bankDetails.map((item) => (
-          <tr key={item.ID}>
-            <td>{item.BankName}</td>
-            <td>{item.AccountNumber}</td>
-            <td>{item.AccountName}</td>
-            <td>{item.Branch}</td>
-            <td>
-              <div className="table-actions">
-                <button
-                  type="button"
-                  className="secondary-action table-action"
-                  onClick={() => onEdit?.(item)}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="secondary-action table-action"
-                  onClick={() => onDelete?.(item)}
-                  disabled={deletingId === item.ID}
-                >
-                  {deletingId === item.ID ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </td>
+    <div className="tm-table-scroll">
+      <table className="product-table">
+        <thead>
+          <tr>
+            <th>Bank Name</th>
+            <th>Account Number</th>
+            <th>Account Name</th>
+            <th>Branch</th>
+            <th>Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {bankDetails.map((item) => (
+            <tr key={item.ID}>
+              <td>{item.BankName}</td>
+              <td>{item.AccountNumber}</td>
+              <td>{item.AccountName}</td>
+              <td>{item.Branch}</td>
+              <td>
+                <div className="table-actions">
+                  <button
+                    type="button"
+                    className="secondary-action table-action"
+                    onClick={() => onEdit?.(item)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-action table-action"
+                    onClick={() => onDelete?.(item)}
+                    disabled={deletingId === item.ID}
+                  >
+                    {deletingId === item.ID ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

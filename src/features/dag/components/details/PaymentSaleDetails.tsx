@@ -41,27 +41,29 @@ export function PaymentSaleDetails({ payment, title, onClose }: PaymentSaleDetai
         {lines.length === 0 ? (
           <p className="secondary-text">No tyres are linked to this payment.</p>
         ) : (
-          <table className="product-table">
-            <thead>
-              <tr>
-                <th>Tyre (Name - Code)</th>
-                <th>Serial Number</th>
-                <th className="text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((line) => (
-                <tr key={line.ID}>
-                  <td>
-                    <div className="font-medium">{line.TyreName || "Unknown Tyre"}</div>
-                    <div className="cell-sub">{line.TyreCode || "-"}</div>
-                  </td>
-                  <td className="mono-text">{line.SerialNumber || "-"}</td>
-                  <td className="text-right font-bold">${formatCurrency(line.Amount)}</td>
+          <div className="tm-table-scroll">
+            <table className="product-table">
+              <thead>
+                <tr>
+                  <th>Tyre (Name - Code)</th>
+                  <th>Serial Number</th>
+                  <th className="text-right">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {lines.map((line) => (
+                  <tr key={line.ID}>
+                    <td>
+                      <div className="font-medium">{line.TyreName || "Unknown Tyre"}</div>
+                      <div className="cell-sub">{line.TyreCode || "-"}</div>
+                    </td>
+                    <td className="mono-text">{line.SerialNumber || "-"}</td>
+                    <td className="text-right font-bold">${formatCurrency(line.Amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {lines.length > 0 && (

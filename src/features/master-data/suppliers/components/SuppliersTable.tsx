@@ -18,49 +18,51 @@ export function SuppliersTable({
   }
 
   return (
-    <table className="product-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Contact</th>
-          <th>Address</th>
-          <th>TIN</th>
-          <th>VAT</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {suppliers.map((supplier) => (
-          <tr key={supplier.SupplierID}>
-            <td>{supplier.SupplierCode}</td>
-            <td>{supplier.Name}</td>
-            <td>{supplier.Contact || "-"}</td>
-            <td>{supplier.Address || "-"}</td>
-            <td>{supplier.TinNo || "-"}</td>
-            <td>{supplier.VatNo || "-"}</td>
-            <td>
-              <div className="table-actions">
-                <button
-                  type="button"
-                  className="secondary-action table-action"
-                  onClick={() => onEdit?.(supplier)}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="secondary-action table-action"
-                  onClick={() => onDelete?.(supplier)}
-                  disabled={deletingSupplierId === supplier.SupplierID}
-                >
-                  {deletingSupplierId === supplier.SupplierID ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </td>
+    <div className="tm-table-scroll">
+      <table className="product-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Address</th>
+            <th>TIN</th>
+            <th>VAT</th>
+            <th>Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {suppliers.map((supplier) => (
+            <tr key={supplier.SupplierID}>
+              <td>{supplier.SupplierCode}</td>
+              <td>{supplier.Name}</td>
+              <td>{supplier.Contact || "-"}</td>
+              <td>{supplier.Address || "-"}</td>
+              <td>{supplier.TinNo || "-"}</td>
+              <td>{supplier.VatNo || "-"}</td>
+              <td>
+                <div className="table-actions">
+                  <button
+                    type="button"
+                    className="secondary-action table-action"
+                    onClick={() => onEdit?.(supplier)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-action table-action"
+                    onClick={() => onDelete?.(supplier)}
+                    disabled={deletingSupplierId === supplier.SupplierID}
+                  >
+                    {deletingSupplierId === supplier.SupplierID ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

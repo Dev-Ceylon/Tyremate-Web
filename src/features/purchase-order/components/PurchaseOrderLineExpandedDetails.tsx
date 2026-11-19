@@ -83,71 +83,73 @@ export const PurchaseOrderLineExpandedDetails: React.FC<PurchaseOrderLineExpande
 
       {allocationRows.length > 0 ? (
         <div className="expanded-table-wrap">
-          <table className="product-table expanded-allocation-table">
-            <thead>
-              <tr>
-                <th>Supplier</th>
-                <th>Code</th>
-                <th>Qty</th>
-                <th>Supplier Status</th>
-                <th>Expected date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allocationRows.map((allocation) => {
-                const expectedValue = dateDrafts[allocation.id] ?? allocation.expectedDate
+          <div className="tm-table-scroll">
+            <table className="product-table expanded-allocation-table">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Code</th>
+                  <th>Qty</th>
+                  <th>Supplier Status</th>
+                  <th>Expected date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allocationRows.map((allocation) => {
+                  const expectedValue = dateDrafts[allocation.id] ?? allocation.expectedDate
 
-                return (
-                  <tr key={`${row.rowKey}-${allocation.id}`}>
-                    <td>{allocation.supplierName}</td>
-                    <td>{allocation.supplierCode}</td>
-                    <td>{allocation.qty}</td>
-                    <td>
-                      {allocation.isApproved ? (
-                        <span className="status-badge status-completed">Approved</span>
-                      ) : allocation.isRejected ? (
-                        <span className="status-badge status-rejected">Rejected</span>
-                      ) : (
-                        <span className="status-badge status-pending">Pending</span>
-                      )}
-                    </td>
-                    <td>
-                      {allocation.isApproved ? (
-                        <div className="delivery-date-field">
-                          <input
-                            className="delivery-date-input"
-                            type="date"
-                            value={expectedValue}
-                            aria-label={`Expected delivery date for ${allocation.supplierName}`}
-                            onChange={(event) => handleExpectedDateChange(allocation.id, event.target.value)}
+                  return (
+                    <tr key={`${row.rowKey}-${allocation.id}`}>
+                      <td>{allocation.supplierName}</td>
+                      <td>{allocation.supplierCode}</td>
+                      <td>{allocation.qty}</td>
+                      <td>
+                        {allocation.isApproved ? (
+                          <span className="status-badge status-completed">Approved</span>
+                        ) : allocation.isRejected ? (
+                          <span className="status-badge status-rejected">Rejected</span>
+                        ) : (
+                          <span className="status-badge status-pending">Pending</span>
+                        )}
+                      </td>
+                      <td>
+                        {allocation.isApproved ? (
+                          <div className="delivery-date-field">
+                            <input
+                              className="delivery-date-input"
+                              type="date"
+                              value={expectedValue}
+                              aria-label={`Expected delivery date for ${allocation.supplierName}`}
+                              onChange={(event) => handleExpectedDateChange(allocation.id, event.target.value)}
+                              disabled={isUpdatingDeliveryDates}
+                            />
+                          </div>
+                        ) : (
+                          <span className="secondary-text">—</span>
+                        )}
+                      </td>
+                      <td className="delivery-date-action-cell">
+                        {allocation.isApproved ? (
+                          <button
+                            className="table-action primary-action"
+                            onClick={() => onUpdateSupplierDates(allocation.id, {
+                              ExpectedDeliveryDate: expectedValue || null,
+                            })}
                             disabled={isUpdatingDeliveryDates}
-                          />
-                        </div>
-                      ) : (
-                        <span className="secondary-text">—</span>
-                      )}
-                    </td>
-                    <td className="delivery-date-action-cell">
-                      {allocation.isApproved ? (
-                        <button
-                          className="table-action primary-action"
-                          onClick={() => onUpdateSupplierDates(allocation.id, {
-                            ExpectedDeliveryDate: expectedValue || null,
-                          })}
-                          disabled={isUpdatingDeliveryDates}
-                        >
-                          {isUpdatingDeliveryDates ? "Saving..." : "Save expected date"}
-                        </button>
-                      ) : (
-                        <span className="secondary-text">Awaiting approval</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                          >
+                            {isUpdatingDeliveryDates ? "Saving..." : "Save expected date"}
+                          </button>
+                        ) : (
+                          <span className="secondary-text">Awaiting approval</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <p className="secondary-text expanded-empty-state">No supplier allocations for this tyre line.</p>

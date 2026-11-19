@@ -12,7 +12,11 @@ exports.getAllCustomers = () => {
         NoOfInquiries,
         NoOfActualOrders,
         TotalPurchasedValue,
-        Birthday
+        Birthday,
+        -- Primary (else first) phone and address for the list view, like suppliers.
+        (SELECT cc.PhoneNumber FROM CustomerContact cc WHERE cc.CustomerID = CustomerM.CustomerID ORDER BY cc.IsPrimary DESC, cc.ID ASC LIMIT 1) AS Contact,
+        (SELECT TRIM(COALESCE(ca.AddressLine1, '') || CASE WHEN ca.City IS NOT NULL AND ca.City <> '' THEN ', ' || ca.City ELSE '' END, ', ')
+           FROM CustomerAddress ca WHERE ca.CustomerID = CustomerM.CustomerID ORDER BY ca.IsPrimary DESC, ca.ID ASC LIMIT 1) AS Address
       FROM CustomerM
       ORDER BY CustomerID DESC
     `)

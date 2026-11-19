@@ -144,26 +144,28 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({ state, act
                       </button>
                     </div>
                     {line.Suppliers.length > 0 && (
-                      <table className="product-table nested-product-table">
-                        <thead>
-                          <tr>
-                            <th>Supplier Name</th>
-                            <th className="text-center">Price</th>
-                            <th className="text-center">Discount</th>
-                            <th className="text-center">Qty</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {line.Suppliers.map((s) => (
-                            <tr key={s.id}>
-                              <td>{s.SupplierName || `ID: ${s.SupplierID}`}</td>
-                              <td className="text-center">{s.Price > 0 ? `$${s.Price.toFixed(2)}` : '-'}</td>
-                              <td className="text-center">{s.Discount > 0 ? `${s.Discount}%` : '-'}</td>
-                              <td className="text-center">{s.Qty}</td>
+                      <div className="tm-table-scroll">
+                        <table className="product-table nested-product-table">
+                          <thead>
+                            <tr>
+                              <th>Supplier Name</th>
+                              <th className="text-center">Price</th>
+                              <th className="text-center">Discount</th>
+                              <th className="text-center">Qty</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {line.Suppliers.map((s) => (
+                              <tr key={s.id}>
+                                <td>{s.SupplierName || `ID: ${s.SupplierID}`}</td>
+                                <td className="text-center">{s.Price > 0 ? `$${s.Price.toFixed(2)}` : '-'}</td>
+                                <td className="text-center">{s.Discount > 0 ? `${s.Discount}%` : '-'}</td>
+                                <td className="text-center">{s.Qty}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </td>
                 </tr>

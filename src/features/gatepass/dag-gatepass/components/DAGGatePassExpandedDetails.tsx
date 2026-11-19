@@ -85,39 +85,41 @@ export function DAGGatePassExpandedDetails({ record }: DAGGatePassExpandedDetail
         <p className="expanded-empty-state">No tyre lines recorded for this gate pass.</p>
       ) : (
         <div className="expanded-table-wrap">
-          <table className="product-table expanded-allocation-table">
-            <thead>
-              <tr>
-                <th>Tyre (Name - Code)</th>
-                <th>Storage Location</th>
-                <th className="text-right">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tyres.map((tyre) => (
-                <tr key={tyre.ID}>
-                  <td>
-                    <div className="flex-column">
-                      <span className="font-medium">{tyre.TyreName || "-"}</span>
-                      <span className="secondary-text text-xs">{tyre.TyreCode || "-"}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex-column">
-                      <span className="font-medium">
-                        {tyre.StorageLocationName || tyre.StorageLocationCode || "-"}
-                      </span>
-                      {tyre.StorageLocationCode &&
-                      tyre.StorageLocationCode !== tyre.StorageLocationName ? (
-                        <span className="secondary-text text-xs">{tyre.StorageLocationCode}</span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="text-right font-bold">{tyre.Qty}</td>
+          <div className="tm-table-scroll">
+            <table className="product-table expanded-allocation-table">
+              <thead>
+                <tr>
+                  <th>Tyre (Name - Code)</th>
+                  <th>Storage Location</th>
+                  <th className="text-right">Qty</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tyres.map((tyre) => (
+                  <tr key={tyre.ID}>
+                    <td>
+                      <div className="flex-column">
+                        <span className="font-medium">{tyre.TyreName || "-"}</span>
+                        <span className="secondary-text text-xs">{tyre.TyreCode || "-"}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="flex-column">
+                        <span className="font-medium">
+                          {tyre.StorageLocationName || tyre.StorageLocationCode || "-"}
+                        </span>
+                        {tyre.StorageLocationCode &&
+                        tyre.StorageLocationCode !== tyre.StorageLocationName ? (
+                          <span className="secondary-text text-xs">{tyre.StorageLocationCode}</span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="text-right font-bold">{tyre.Qty}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

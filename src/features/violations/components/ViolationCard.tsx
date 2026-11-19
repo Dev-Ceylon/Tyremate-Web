@@ -67,33 +67,35 @@ export function ViolationCard({ violation, onApprove, onViewDetails }: Violation
               <span className="detail-value">{violation.DOTs.length} batch(es)</span>
             </div>
             <div className="dots-table">
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    <th>DOT</th>
-                    <th>Oldest Available</th>
-                    <th>Location</th>
-                    <th className="text-right">Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {violation.DOTs.map((dot: PolicyViolationDOTRecord) => (
-                    <tr key={dot.Id}>
-                      <td>
-                        <span className="dot-badge">{dot.DOT || "N/A"}</span>
-                      </td>
-                      <td>
-                        <span className="dot-badge">{dot.OldestAvailableDOT || "N/A"}</span>
-                      </td>
-                      <td>
-                        {dot.StorageManagerID ? `Loc #${dot.StorageManagerID}` : "N/A"}
-                        {dot.StorageManagerBatchID ? ` / Batch #${dot.StorageManagerBatchID}` : ""}
-                      </td>
-                      <td className="text-right">{dot.Qty}</td>
+              <div className="tm-table-scroll">
+                <table className="product-table">
+                  <thead>
+                    <tr>
+                      <th>DOT</th>
+                      <th>Oldest Available</th>
+                      <th>Location</th>
+                      <th className="text-right">Qty</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {violation.DOTs.map((dot: PolicyViolationDOTRecord) => (
+                      <tr key={dot.Id}>
+                        <td>
+                          <span className="dot-badge">{dot.DOT || "N/A"}</span>
+                        </td>
+                        <td>
+                          <span className="dot-badge">{dot.OldestAvailableDOT || "N/A"}</span>
+                        </td>
+                        <td>
+                          {dot.StorageManagerID ? `Loc #${dot.StorageManagerID}` : "N/A"}
+                          {dot.StorageManagerBatchID ? ` / Batch #${dot.StorageManagerBatchID}` : ""}
+                        </td>
+                        <td className="text-right">{dot.Qty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

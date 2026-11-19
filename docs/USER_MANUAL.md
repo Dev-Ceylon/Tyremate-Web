@@ -10,14 +10,16 @@
 ### Core System Architecture
 
 ```mermaid
-graph TD
-    subgraph FrontDesk ["1. Front Desk & Sales"]
+flowchart TB
+    subgraph FrontDesk ["1 · Front Desk & Sales"]
+        direction TB
         INQ["Customer Inquiries"] --> SO["Sales Orders (Registered & Walk-in)"]
         SO --> INV["Tax Invoicing & Receipts"]
         SO --> GP_SO["Outward Gate Pass (SO)"]
     end
 
-    subgraph Retreading ["2. DAG Retreading Workshop"]
+    subgraph Retreading ["2 · DAG Retreading"]
+        direction TB
         DAG_IN["DAG Intake (Registered & Walk-in)"] --> DAG_REV["Technical Casing Inspection"]
         DAG_REV --> DAG_GP["Contractor Gate Pass"]
         DAG_GP --> FACT["Off-site Retreading Factory"]
@@ -25,17 +27,22 @@ graph TD
         DAG_GRN --> DAG_OUT["Customer Collection & Billing"]
     end
 
-    subgraph Procurement ["3. Supply Chain & Inventory"]
+    subgraph Procurement ["3 · Supply & Inventory"]
+        direction TB
         PO["Purchase Orders"] --> GRN["Inward Goods Receipt (GRN)"]
         GRN --> BIN["Storage Allocation (Racks & Bins)"]
         BIN --> SNAP["Real-time Stock Snapshot"]
     end
 
-    subgraph Intelligence ["4. Executive Intelligence"]
-        INV --> REP_SALES["Sales & Margin Analytics"]
-        INV --> REP_CASH["Cash Flow & Receivables"]
-        GRN --> REP_CASH
+    subgraph Intelligence ["4 · Executive Intelligence"]
+        direction TB
+        REP_SALES["Sales & Margin Analytics"]
+        REP_CASH["Cash Flow & Receivables"]
     end
+
+    FrontDesk -- "invoices & receipts" --> Intelligence
+    Retreading -- "DAG billing" --> Intelligence
+    Procurement -- "GRN costs" --> Intelligence
 ```
 
 ---

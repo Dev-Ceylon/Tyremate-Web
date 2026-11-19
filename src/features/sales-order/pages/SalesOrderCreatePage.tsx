@@ -122,91 +122,93 @@ export default function SalesOrderCreatePage() {
   )
 
   return (
-    <section className="table-panel panel panel-strong">
-      <div className="table-panel-header">
-        <div>
-          <p className="section-label">Sales Order</p>
-          <h2>Create Sales Order{inquiryId ? ` from Inquiry #${inquiryId}` : ""}</h2>
+    <main className="app-shell">
+      <section className="table-panel panel panel-strong">
+        <div className="table-panel-header">
+          <div>
+            <p className="section-label">Sales Order</p>
+            <h2>Create Sales Order{inquiryId ? ` from Inquiry #${inquiryId}` : ""}</h2>
+          </div>
         </div>
-      </div>
 
-      {initializing ? <p className="hero-text">Loading options...</p> : null}
-      {error ? <p className="hero-text">{error}</p> : null}
+        {initializing ? <p className="hero-text">Loading options...</p> : null}
+        {error ? <p className="hero-text">{error}</p> : null}
 
-      <SalesOrderForm
-        state={{
-          formData,
-          lines,
-          customers,
-          tyres,
-          totalAmount,
-          takingAmount,
-          submitting: submitting || initializing,
-          walkinCustomerErrors,
-        }}
-        actions={{
-          onChangeDate: (value) => updateField("Date", value),
-          onChangeCustomerMode: setCustomerMode,
-          onChangeCustomer: (value) => updateField("CustomerID", value),
-          onChangeWalkinCustomer: updateWalkinCustomer,
-          onOpenCreateCustomer: () => setIsCreateCustomerOpen(true),
-          onOpenCreateTyre: () => setIsCreateTyreOpen(true),
-          onAddLine: addLine,
-          onRemoveLine: removeLine,
-          onChangeLineTyre: (rowId, value) => setLineTyre(rowId, value),
-          onChangeLinePrice: (rowId, value) => updateLine(rowId, "Price", value),
-          onChangeLineDiscount: (rowId, value) => updateLine(rowId, "Discount", value),
-          onChangeLineQty,
-          onChangeLineTakeNow,
-          onManageStock: (rowId) => setManageRowId(rowId),
-          onChangeLineTotal: (rowId, value) => updateLine(rowId, "LineTotal", value),
-          onSubmit: handleFormSubmit,
-          onOpenAdvancePayment: handleOpenAdvancePaymentModal,
-          onCancel: () => (inquiryId ? navigate(`/inquiries/${inquiryId}`) : navigate("/sales-orders")),
-        }}
-      />
+        <SalesOrderForm
+          state={{
+            formData,
+            lines,
+            customers,
+            tyres,
+            totalAmount,
+            takingAmount,
+            submitting: submitting || initializing,
+            walkinCustomerErrors,
+          }}
+          actions={{
+            onChangeDate: (value) => updateField("Date", value),
+            onChangeCustomerMode: setCustomerMode,
+            onChangeCustomer: (value) => updateField("CustomerID", value),
+            onChangeWalkinCustomer: updateWalkinCustomer,
+            onOpenCreateCustomer: () => setIsCreateCustomerOpen(true),
+            onOpenCreateTyre: () => setIsCreateTyreOpen(true),
+            onAddLine: addLine,
+            onRemoveLine: removeLine,
+            onChangeLineTyre: (rowId, value) => setLineTyre(rowId, value),
+            onChangeLinePrice: (rowId, value) => updateLine(rowId, "Price", value),
+            onChangeLineDiscount: (rowId, value) => updateLine(rowId, "Discount", value),
+            onChangeLineQty,
+            onChangeLineTakeNow,
+            onManageStock: (rowId) => setManageRowId(rowId),
+            onChangeLineTotal: (rowId, value) => updateLine(rowId, "LineTotal", value),
+            onSubmit: handleFormSubmit,
+            onOpenAdvancePayment: handleOpenAdvancePaymentModal,
+            onCancel: () => (inquiryId ? navigate(`/inquiries/${inquiryId}`) : navigate("/sales-orders")),
+          }}
+        />
 
-      <CreateCustomerDialog
-        isOpen={isCreateCustomerOpen}
-        onClose={() => setIsCreateCustomerOpen(false)}
-        onCreated={handleCustomerCreated}
-      />
+        <CreateCustomerDialog
+          isOpen={isCreateCustomerOpen}
+          onClose={() => setIsCreateCustomerOpen(false)}
+          onCreated={handleCustomerCreated}
+        />
 
-      <CreateTyreDialog
-        isOpen={isCreateTyreOpen}
-        onClose={() => setIsCreateTyreOpen(false)}
-        onCreated={handleTyreCreated}
-      />
+        <CreateTyreDialog
+          isOpen={isCreateTyreOpen}
+          onClose={() => setIsCreateTyreOpen(false)}
+          onCreated={handleTyreCreated}
+        />
 
-      <PaymentModalController
-        isOpen={isPaymentTypeModalOpen}
-        onClose={() => setIsPaymentTypeModalOpen(false)}
-        onConfirm={handleModalConfirm}
-        confirmLabel={hasTakingNow ? "Pay & Create Invoice" : "Confirm Advance Payment & Create SO"}
-        onSkip={handleSkipPayment}
-        skipLabel={hasTakingNow ? "Skip payment & Create SO" : "Create SO (No Advance)"}
-        submitting={submitting}
-        form={paymentForm}
-      />
+        <PaymentModalController
+          isOpen={isPaymentTypeModalOpen}
+          onClose={() => setIsPaymentTypeModalOpen(false)}
+          onConfirm={handleModalConfirm}
+          confirmLabel={hasTakingNow ? "Pay & Create Invoice" : "Confirm Advance Payment & Create SO"}
+          onSkip={handleSkipPayment}
+          skipLabel={hasTakingNow ? "Skip payment & Create SO" : "Create SO (No Advance)"}
+          submitting={submitting}
+          form={paymentForm}
+        />
 
-      <GatePassPaymentOverrideModal
-        isOpen={pendingGatePass !== null}
-        shortfall={pendingGatePass?.eligibility.Shortfall ?? 0}
-        settledAmount={pendingGatePass?.eligibility.SettledAmount ?? 0}
-        requiredCoverage={pendingGatePass?.eligibility.RequiredCoverage ?? 0}
-        submitting={isIssuingOverride}
-        onIssueAnyway={handleIssueGatePassOverride}
-        onKeepWithheld={finishWithGatePassWithheld}
-      />
+        <GatePassPaymentOverrideModal
+          isOpen={pendingGatePass !== null}
+          shortfall={pendingGatePass?.eligibility.Shortfall ?? 0}
+          settledAmount={pendingGatePass?.eligibility.SettledAmount ?? 0}
+          requiredCoverage={pendingGatePass?.eligibility.RequiredCoverage ?? 0}
+          submitting={isIssuingOverride}
+          onIssueAnyway={handleIssueGatePassOverride}
+          onKeepWithheld={finishWithGatePassWithheld}
+        />
 
-      <QuantitySelectModal
-        isOpen={manageRowId !== null && managedLine !== null}
-        tyreId={managedLine && managedLine.TyreID !== "" ? managedLine.TyreID : null}
-        tyreLabel={managedLine && managedLine.TyreID !== "" ? getTyreLabel(managedLine.TyreID) : ""}
-        initialAllocations={managedLine?.Allocations ?? []}
-        onClose={handleManageClose}
-        onConfirm={handleManageConfirm}
-      />
-    </section>
+        <QuantitySelectModal
+          isOpen={manageRowId !== null && managedLine !== null}
+          tyreId={managedLine && managedLine.TyreID !== "" ? managedLine.TyreID : null}
+          tyreLabel={managedLine && managedLine.TyreID !== "" ? getTyreLabel(managedLine.TyreID) : ""}
+          initialAllocations={managedLine?.Allocations ?? []}
+          onClose={handleManageClose}
+          onConfirm={handleManageConfirm}
+        />
+      </section>
+    </main>
   )
 }

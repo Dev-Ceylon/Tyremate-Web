@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { MANUAL_IMAGES_VERSION } from "../../src/shell/web/assets"
 // @ts-expect-error plain ESM script without types
 import { listAssets, parseCloudinaryUrl, signParams } from "../../scripts/upload-cloudinary-assets.mjs"
 
@@ -18,5 +19,7 @@ describe("Cloudinary asset upload script", () => {
     const assets = listAssets() as { publicId: string }[]
     expect(assets.map((a) => a.publicId)).toContain("tyremate/static/logo")
     expect(assets.filter((a) => a.publicId.includes("/manual/")).length).toBe(23)
+    // The upload script and the app must agree on the screenshot set version.
+    expect(assets.map((a) => a.publicId)).toContain(`tyremate/static/manual/${MANUAL_IMAGES_VERSION}/01_login`)
   })
 })

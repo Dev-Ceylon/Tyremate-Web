@@ -138,29 +138,31 @@ export default function InquiryReminderDetailsPage() {
                   <h2>Items Requested</h2>
                 </div>
               </div>
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    <th>Tyre Specification</th>
-                    <th className="text-right">Price</th>
-                    <th className="text-center">Qty</th>
-                    <th className="text-right">Discount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inquiry.tyres.map((tyre) => (
-                    <tr key={tyre.ID}>
-                      <td>
-                        <p className="main-text">{tyre.Size} {tyre.Pattern}</p>
-                        <p className="sub-text">{tyre.Brand}</p>
-                      </td>
-                      <td className="text-right mono-text">{tyre.Price.toLocaleString()}</td>
-                      <td className="text-center mono-text">{tyre.Qty}</td>
-                      <td className="text-right mono-text">{tyre.Discount}%</td>
+              <div className="tm-table-scroll">
+                <table className="product-table">
+                  <thead>
+                    <tr>
+                      <th>Tyre Specification</th>
+                      <th className="text-right">Price</th>
+                      <th className="text-center">Qty</th>
+                      <th className="text-right">Discount</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {inquiry.tyres.map((tyre) => (
+                      <tr key={tyre.ID}>
+                        <td>
+                          <p className="main-text">{tyre.Size} {tyre.Pattern}</p>
+                          <p className="sub-text">{tyre.Brand}</p>
+                        </td>
+                        <td className="text-right mono-text">{tyre.Price.toLocaleString()}</td>
+                        <td className="text-center mono-text">{tyre.Qty}</td>
+                        <td className="text-right mono-text">{tyre.Discount}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
         </>
