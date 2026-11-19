@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TyreMate">
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <circle cx="32" cy="32" r="21" fill="none" stroke="#2563eb" stroke-width="8"/>
+  <circle cx="32" cy="32" r="21" fill="none" stroke="#93c5fd" stroke-width="8" stroke-dasharray="4 5.9" opacity=".55"/>
+  <circle cx="32" cy="32" r="9" fill="#e2e8f0"/>
+  <g stroke="#e2e8f0" stroke-width="3" stroke-linecap="round">
+    <line x1="32" y1="23" x2="32" y2="15"/>
+    <line x1="40.6" y1="35" x2="47.4" y2="39"/>
+    <line x1="23.4" y1="35" x2="16.6" y2="39"/>
+  </g>
+  <circle cx="32" cy="32" r="3.2" fill="#0f172a"/>
+</svg>

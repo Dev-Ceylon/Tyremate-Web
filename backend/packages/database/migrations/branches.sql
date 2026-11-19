@@ -1,0 +1,38 @@
+CREATE TABLE IF NOT EXISTS BranchM (
+  Id INTEGER PRIMARY KEY AUTOINCREMENT,
+  BranchCode TEXT NOT NULL,
+  BranchName TEXT NOT NULL,
+  UNIQUE (BranchCode)
+);
+
+CREATE TABLE IF NOT EXISTS BranchContact (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  BranchId INTEGER NOT NULL,
+  PhoneNumber TEXT NOT NULL,
+  IsPrimary INTEGER NOT NULL DEFAULT 0 CHECK (IsPrimary IN (0, 1)),
+  FOREIGN KEY (BranchId) REFERENCES BranchM(Id)
+);
+
+CREATE TABLE IF NOT EXISTS BranchBillingAddress (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  BranchId INTEGER NOT NULL,
+  AddressLine1 TEXT,
+  AddressLine2 TEXT,
+  City TEXT,
+  State TEXT,
+  PostalCode TEXT,
+  UNIQUE (BranchId),
+  FOREIGN KEY (BranchId) REFERENCES BranchM(Id)
+);
+
+CREATE TABLE IF NOT EXISTS BranchDeliveryAddress (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  BranchId INTEGER NOT NULL,
+  AddressLine1 TEXT,
+  AddressLine2 TEXT,
+  City TEXT,
+  State TEXT,
+  PostalCode TEXT,
+  UNIQUE (BranchId),
+  FOREIGN KEY (BranchId) REFERENCES BranchM(Id)
+);

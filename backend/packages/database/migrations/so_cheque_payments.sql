@@ -1,0 +1,37 @@
+CREATE TABLE IF NOT EXISTS ChequePayments (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  PaymentID INTEGER NOT NULL,
+  ChequeNumber TEXT NOT NULL,
+  ChequeDate TEXT NOT NULL,
+  BankName TEXT NOT NULL,
+  Amount REAL NOT NULL,
+  Collected INTEGER NOT NULL DEFAULT 0 CHECK (Collected IN (0, 1)),
+  FOREIGN KEY (PaymentID) REFERENCES Payments(ID)
+);
+
+CREATE TABLE IF NOT EXISTS ChequeReminder (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  ChequeID INTEGER NOT NULL,
+  ReminderID INTEGER NOT NULL,
+  ReminderDate TEXT NOT NULL,
+  ReminderNote TEXT,
+  ReminderAction TEXT,
+  IsDone INTEGER NOT NULL DEFAULT 0,
+  CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (ChequeID) REFERENCES ChequePayments(ID),
+  FOREIGN KEY (ReminderID) REFERENCES Reminders(ID)
+);
+
+CREATE TABLE IF NOT EXISTS ChequePaymentReceipts (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  ChequePaymentID INTEGER NOT NULL,
+  SortOrder INTEGER NOT NULL DEFAULT 0,
+  ReceiptPath TEXT,
+  ReceiptEncIV TEXT,
+  ReceiptEncAuthTag TEXT,
+  ReceiptEncKey TEXT,
+  OriginalFileName TEXT,
+  FOREIGN KEY (ChequePaymentID) REFERENCES ChequePayments(ID)
+);
+

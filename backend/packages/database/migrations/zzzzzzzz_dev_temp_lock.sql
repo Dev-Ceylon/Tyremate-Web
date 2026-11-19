@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS DevTempLock (
+  Id INTEGER PRIMARY KEY CHECK (Id = 1),
+  FirstStartedAtUtc TEXT NOT NULL,
+  ExpiresAtUtc TEXT NOT NULL,
+  LockedAtUtc TEXT
+);

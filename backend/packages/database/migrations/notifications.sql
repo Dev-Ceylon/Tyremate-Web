@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS Notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  navigationPath TEXT
+);
