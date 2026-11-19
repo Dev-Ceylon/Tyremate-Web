@@ -696,7 +696,7 @@ exports.getSalesTransactions = ({
       SELECT *
       FROM raw_transactions
       ${whereClause}
-      ORDER BY ${safeSortCol} ${safeSortOrder}, fullDateTime ${safeSortOrder}
+      ORDER BY ${safeSortCol} ${safeSortOrder}, fullDateTime ${safeSortOrder}, rawId ${safeSortOrder}, id ${safeSortOrder}
       LIMIT ? OFFSET ?
     `)
     .all(...dateParams, ...filterParams, safeLimit, safeOffset)
