@@ -5,9 +5,10 @@ const batterySupplierRepo = require("./batterySupplierRepository")
 const AVAILABLE_STOCK_SQL = `
   SELECT bsm.BatteryId, SUM(bsm.Qty) AS AvailableQuantity
   FROM BatteryStorageManager bsm
-  INNER JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
-  INNER JOIN StorageLocationTypeM slt ON slt.Id = sl.LocationTypeId
-  WHERE LOWER(slt.LocationTypeCode) = 'df'
+  LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
+  LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
+  LEFT JOIN StorageLocationTypeM slt ON slt.Id = COALESCE(bl.LocationTypeId, sl.LocationTypeId)
+  WHERE LOWER(COALESCE(slt.LocationTypeCode, 'df')) = 'df'
   GROUP BY bsm.BatteryId
 `
 

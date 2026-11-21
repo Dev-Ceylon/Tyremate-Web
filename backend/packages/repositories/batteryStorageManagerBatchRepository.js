@@ -25,7 +25,7 @@ exports.getBatchesByBatteryIdOrderedByExpiry = (batteryId) => {
       SELECT
         bsmb.Id,
         bsmb.BatteryStorageManagerID,
-        sl.LocationName,
+        COALESCE(bl.LocationName, sl.LocationName) AS LocationName,
         bsmb.BatchCode,
         bsmb.MfgDate,
         bsmb.ExpiryDate,
@@ -34,10 +34,11 @@ exports.getBatchesByBatteryIdOrderedByExpiry = (batteryId) => {
         bsmb.createdDate
       FROM BatteryStorageManagerBatch bsmb
       INNER JOIN BatteryStorageManager bsm ON bsm.Id = bsmb.BatteryStorageManagerID
-      INNER JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
-      INNER JOIN StorageLocationTypeM slt ON slt.Id = sl.LocationTypeId
+      LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
+      LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
+      LEFT JOIN StorageLocationTypeM slt ON slt.Id = COALESCE(bl.LocationTypeId, sl.LocationTypeId)
       WHERE bsm.BatteryId = ? AND bsmb.Qty > 0
-        AND LOWER(slt.LocationTypeCode) = 'df'
+        AND LOWER(COALESCE(slt.LocationTypeCode, 'df')) = 'df'
       ORDER BY
         CASE WHEN bsmb.ExpiryDate IS NULL OR bsmb.ExpiryDate = '' THEN 1 ELSE 0 END ASC,
         bsmb.ExpiryDate ASC,
@@ -214,15 +215,16 @@ exports.getStockedBatteryBatches = () => {
         b.Technology,
         b.Application,
         b.WarrantyMonths,
-        sl.LocationName,
-        sl.LocationCode,
-        sl.BranchId,
+        COALESCE(bl.LocationName, sl.LocationName) AS LocationName,
+        COALESCE(bl.LocationCode, sl.LocationCode) AS LocationCode,
+        COALESCE(bl.BranchId, sl.BranchId) AS BranchId,
         br.BranchName
       FROM BatteryStorageManagerBatch bsmb
       INNER JOIN BatteryStorageManager bsm ON bsm.Id = bsmb.BatteryStorageManagerID
       INNER JOIN BatteryM b ON b.Id = bsm.BatteryId
+      LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
       LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
-      LEFT JOIN BranchM br ON br.Id = sl.BranchId
+      LEFT JOIN BranchM br ON br.Id = COALESCE(bl.BranchId, sl.BranchId)
       WHERE bsmb.Qty > 0
       ORDER BY bsmb.Id ASC
     `)

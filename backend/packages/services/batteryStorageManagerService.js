@@ -57,7 +57,7 @@ const ensureReferencesExist = (payload) => {
     throw new Error("Battery not found")
   }
 
-  const storageLocation = storageLocationRepo.getStorageLocationById(payload.LocationID)
+  const storageLocation = batteryStorageManagerRepo.getStorageLocationByIdForBatteries(payload.LocationID)
 
   if (!storageLocation) {
     throw new Error("Storage location not found")
@@ -164,7 +164,7 @@ exports.getBatteryStorageManagers = () => {
 
 exports.getBatteryStorageManagersByLocationId = (locationId) => {
   const normalizedLocationId = normalizeId(locationId, "LocationID")
-  const storageLocation = storageLocationRepo.getStorageLocationById(normalizedLocationId)
+  const storageLocation = batteryStorageManagerRepo.getStorageLocationByIdForBatteries(normalizedLocationId)
 
   if (!storageLocation) {
     throw new Error("Storage location not found")
@@ -219,7 +219,7 @@ exports.getBatchesByStorageManagerId = (id) => {
 exports.getBatchesByLocationId = (locationId) => {
   const normalizedLocationId = normalizeId(locationId, "LocationID")
 
-  if (!storageLocationRepo.getStorageLocationById(normalizedLocationId)) {
+  if (!batteryStorageManagerRepo.getStorageLocationByIdForBatteries(normalizedLocationId)) {
     throw new Error("Storage location not found")
   }
 

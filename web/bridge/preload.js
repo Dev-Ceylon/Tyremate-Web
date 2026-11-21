@@ -270,6 +270,16 @@ const api = {
     deleteConsumableLocation: (id) => ipcRenderer.invoke("consumableLocations:delete", id)
   },
 
+  batteryLocations: {
+    suggest: (field, query) => ipcRenderer.invoke("batteryLocations:suggest", field, query),
+    getBatteryLocations: () => ipcRenderer.invoke("batteryLocations:getAll"),
+    getBatteryLocationsByBranch: (branchId) => ipcRenderer.invoke("batteryLocations:getByBranch", branchId),
+    getBatteryLocationById: (id) => ipcRenderer.invoke("batteryLocations:getById", id),
+    createBatteryLocation: (data) => ipcRenderer.invoke("batteryLocations:create", data),
+    updateBatteryLocation: (id, data) => ipcRenderer.invoke("batteryLocations:update", id, data),
+    deleteBatteryLocation: (id) => ipcRenderer.invoke("batteryLocations:delete", id)
+  },
+
   consumableStorageManagers: {
     getConsumableStorageManagers: () => ipcRenderer.invoke("consumableStorageManagers:getAll"),
     getConsumableStorageManagersByLocation: (locationId) => ipcRenderer.invoke("consumableStorageManagers:getByLocation", locationId),

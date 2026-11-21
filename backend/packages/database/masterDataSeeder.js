@@ -14,6 +14,7 @@ const {
   MASTER_BATTERY_SEED,
   MASTER_STORAGE_LOCATION_SEED,
   MASTER_CONSUMABLE_LOCATION_SEED,
+  MASTER_BATTERY_LOCATION_SEED,
   MASTER_BANK_DETAIL_SEED,
 } = require("../constants/masterDataSeedConstants")
 const { STORAGE_SOURCE_CODES } = require("../constants/storageSourceConstants")
@@ -343,6 +344,7 @@ const createMasterDataStats = () => ({
   batteries: 0,
   storageLocations: 0,
   consumableLocations: 0,
+  batteryLocations: 0,
   bankDetails: 0,
 })
 
@@ -355,6 +357,7 @@ const seedMasterDataRows = (txDb, stats) => {
   seedBatteries(txDb, stats)
   seedLocations(txDb, "StorageLocationM", "Id", MASTER_STORAGE_LOCATION_SEED, stats, "storageLocations")
   seedLocations(txDb, "ConsumableLocationM", "Id", MASTER_CONSUMABLE_LOCATION_SEED, stats, "consumableLocations")
+  seedLocations(txDb, "BatteryLocationM", "Id", MASTER_BATTERY_LOCATION_SEED, stats, "batteryLocations")
   seedBankDetails(txDb, stats)
 }
 

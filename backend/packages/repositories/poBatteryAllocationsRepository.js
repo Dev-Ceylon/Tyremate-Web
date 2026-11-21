@@ -25,10 +25,11 @@ exports.getAllocationForPOAndBatteryID = (poId, poBatteriesId) => {
         pba.POID,
         pba.PoBatteriesID,
         pba.LocationId,
-        sl.LocationCode,
-        sl.LocationName
+        COALESCE(bl.LocationCode, sl.LocationCode) AS LocationCode,
+        COALESCE(bl.LocationName, sl.LocationName) AS LocationName
       FROM PoBatteryAllocations pba
-      INNER JOIN StorageLocationM sl ON sl.Id = pba.LocationId
+      LEFT JOIN BatteryLocationM bl ON bl.Id = pba.LocationId
+      LEFT JOIN StorageLocationM sl ON sl.Id = pba.LocationId
       WHERE pba.POID = ? AND pba.PoBatteriesID = ?
       `
     )

@@ -12,6 +12,7 @@ const TABLE_FIELDS = {
   StorageLocationM: new Set(["LocationName"]),
   StorageLocationTypeM: new Set(["LocationTypeCode", "LocationTypeName"]),
   ConsumableLocationM: new Set(["LocationName"]),
+  BatteryLocationM: new Set(["LocationName", "LocationCode"]),
   Bankdetails: new Set(["BankName", "AccountName", "Branch"]),
 }
 

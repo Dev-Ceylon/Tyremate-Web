@@ -50,7 +50,24 @@ CREATE INDEX IF NOT EXISTS idx_battery_supplier_battery ON BatterySupplier (Batt
 CREATE INDEX IF NOT EXISTS idx_battery_supplier_supplier ON BatterySupplier (SupplierID);
 
 -- ============================================================================
--- 3. INVENTORY & BATCH STORAGE: BatteryStorageManager (mirrors StorageManager)
+-- 3. MASTER TABLE: BatteryLocationM (mirrors StorageLocationM & ConsumableLocationM)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS BatteryLocationM (
+  Id INTEGER PRIMARY KEY AUTOINCREMENT,
+  LocationCode TEXT,
+  LocationName TEXT,
+  BranchId INTEGER,
+  LocationTypeId INTEGER,
+  Capacity INTEGER,
+  FOREIGN KEY (BranchId) REFERENCES BranchM(Id),
+  FOREIGN KEY (LocationTypeId) REFERENCES StorageLocationTypeM(Id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_battery_location_branch ON BatteryLocationM (BranchId);
+CREATE INDEX IF NOT EXISTS idx_battery_location_code ON BatteryLocationM (LocationCode);
+
+-- ============================================================================
+-- 4. INVENTORY & BATCH STORAGE: BatteryStorageManager (mirrors StorageManager)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS BatteryStorageManager (
   Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +80,7 @@ CREATE TABLE IF NOT EXISTS BatteryStorageManager (
   CreatedBy TEXT,
   createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (BatteryId) REFERENCES BatteryM(Id),
-  FOREIGN KEY (LocationID) REFERENCES StorageLocationM(Id),
+  FOREIGN KEY (LocationID) REFERENCES BatteryLocationM(Id),
   FOREIGN KEY (SourceTypeId) REFERENCES StorageSourceM(Id)
 );
 
@@ -100,7 +117,7 @@ CREATE TABLE IF NOT EXISTS BatteryExpiryReminder (
   createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (BatteryStorageManagerBatchID) REFERENCES BatteryStorageManagerBatch(Id) ON DELETE CASCADE,
   FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id),
-  FOREIGN KEY (LocationID) REFERENCES StorageLocationM(Id),
+  FOREIGN KEY (LocationID) REFERENCES BatteryLocationM(Id),
   FOREIGN KEY (ReminderID) REFERENCES Reminders(ID)
 );
 
@@ -160,7 +177,7 @@ CREATE TABLE IF NOT EXISTS PoBatteryAllocations (
   LocationId INTEGER NOT NULL,
   FOREIGN KEY (POID) REFERENCES PO(ID),
   FOREIGN KEY (PoBatteriesID) REFERENCES POBatteries(ID),
-  FOREIGN KEY (LocationId) REFERENCES StorageLocationM(Id),
+  FOREIGN KEY (LocationId) REFERENCES BatteryLocationM(Id),
   UNIQUE (POID, PoBatteriesID)
 );
 

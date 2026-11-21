@@ -565,6 +565,14 @@ const MASTER_CONSUMABLE_LOCATION_SEED = [
   { branchCode: "BR004", locationCode: "KUR-CNS", locationName: "Kurunegala Consumables Store", locationTypeCode: "df", capacity: 150 },
 ]
 
+const MASTER_BATTERY_LOCATION_SEED = [
+  { branchCode: "BR001", locationCode: "KAN-BAT", locationName: "Kandy Battery Store", locationTypeCode: "df", capacity: 300 },
+  { branchCode: "BR001", locationCode: "KAN-BAT-CHG", locationName: "Kandy Battery Charging Room", locationTypeCode: "df", capacity: 100 },
+  { branchCode: "BR002", locationCode: "CMB-BAT", locationName: "Colombo Battery Store", locationTypeCode: "df", capacity: 250 },
+  { branchCode: "BR003", locationCode: "GPH-BAT", locationName: "Gampaha Battery Store", locationTypeCode: "df", capacity: 200 },
+  { branchCode: "BR004", locationCode: "KUR-BAT", locationName: "Kurunegala Battery Store", locationTypeCode: "df", capacity: 200 },
+]
+
 const MASTER_BANK_DETAIL_SEED = [
   {
     bankName: "Commercial Bank of Ceylon PLC",
@@ -836,5 +844,6 @@ module.exports = {
   MASTER_BATTERY_SEED,
   MASTER_STORAGE_LOCATION_SEED,
   MASTER_CONSUMABLE_LOCATION_SEED,
+  MASTER_BATTERY_LOCATION_SEED,
   MASTER_BANK_DETAIL_SEED,
 }

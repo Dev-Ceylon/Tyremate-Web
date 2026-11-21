@@ -40,9 +40,19 @@ export function usePurchaseOrderStorageAllocation(options?: UsePurchaseOrderStor
     try {
       const numericPoId = Number(poId)
       const orderData = await purchaseOrderService.getPurchaseOrderById(numericPoId)
-      const locationData = orderData.Category === "battery"
-        ? (window.api.storageLocations?.getStorageLocations ? await window.api.storageLocations.getStorageLocations() : await purchaseOrderService.getStorageLocationsByLocationType(1))
-        : await purchaseOrderService.getStorageLocationsByLocationType(1)
+      let locationData: any[] = []
+      if (orderData.Category === "battery") {
+        if (window.api.batteryLocations?.getBatteryLocations) {
+          locationData = await window.api.batteryLocations.getBatteryLocations()
+        }
+        if (!locationData || locationData.length === 0) {
+          locationData = window.api.storageLocations?.getStorageLocations
+            ? await window.api.storageLocations.getStorageLocations()
+            : await purchaseOrderService.getStorageLocationsByLocationType(1)
+        }
+      } else {
+        locationData = await purchaseOrderService.getStorageLocationsByLocationType(1)
+      }
 
       setOrder(orderData)
       setLocations(locationData || [])

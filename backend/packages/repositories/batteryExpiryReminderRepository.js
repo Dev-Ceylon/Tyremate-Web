@@ -82,9 +82,9 @@ exports.getBatteryReminderDetailsByReminderId = (reminderId) => {
         b.Technology,
         b.Application,
         b.WarrantyMonths,
-        sl.LocationName,
-        sl.LocationCode,
-        sl.BranchId,
+        COALESCE(bl.LocationName, sl.LocationName) AS LocationName,
+        COALESCE(bl.LocationCode, sl.LocationCode) AS LocationCode,
+        COALESCE(bl.BranchId, sl.BranchId) AS BranchId,
         br.BranchCode,
         br.BranchName,
         r.ReminderDate AS Date,
@@ -97,8 +97,9 @@ exports.getBatteryReminderDetailsByReminderId = (reminderId) => {
       INNER JOIN BatteryM b ON b.Id = ber.BatteryID
       INNER JOIN Reminders r ON r.ID = ber.ReminderID
       INNER JOIN ReminderTypes rt ON rt.Id = r.ReminderTypeID
+      LEFT JOIN BatteryLocationM bl ON bl.Id = ber.LocationID
       LEFT JOIN StorageLocationM sl ON sl.Id = ber.LocationID
-      LEFT JOIN BranchM br ON br.Id = sl.BranchId
+      LEFT JOIN BranchM br ON br.Id = COALESCE(bl.BranchId, sl.BranchId)
       LEFT JOIN BatteryStorageManagerBatch bsmb ON bsmb.Id = ber.BatteryStorageManagerBatchID
       WHERE ber.ReminderID = ?
     `)
@@ -133,9 +134,9 @@ exports.getBatteryReminderDetailsByReminderIds = (reminderIds) => {
         b.Technology,
         b.Application,
         b.WarrantyMonths,
-        sl.LocationName,
-        sl.LocationCode,
-        sl.BranchId,
+        COALESCE(bl.LocationName, sl.LocationName) AS LocationName,
+        COALESCE(bl.LocationCode, sl.LocationCode) AS LocationCode,
+        COALESCE(bl.BranchId, sl.BranchId) AS BranchId,
         br.BranchCode,
         br.BranchName,
         r.ReminderDate AS Date,
@@ -148,8 +149,9 @@ exports.getBatteryReminderDetailsByReminderIds = (reminderIds) => {
       INNER JOIN BatteryM b ON b.Id = ber.BatteryID
       INNER JOIN Reminders r ON r.ID = ber.ReminderID
       INNER JOIN ReminderTypes rt ON rt.Id = r.ReminderTypeID
+      LEFT JOIN BatteryLocationM bl ON bl.Id = ber.LocationID
       LEFT JOIN StorageLocationM sl ON sl.Id = ber.LocationID
-      LEFT JOIN BranchM br ON br.Id = sl.BranchId
+      LEFT JOIN BranchM br ON br.Id = COALESCE(bl.BranchId, sl.BranchId)
       LEFT JOIN BatteryStorageManagerBatch bsmb ON bsmb.Id = ber.BatteryStorageManagerBatchID
       WHERE ber.ReminderID IN (${placeholders})
     `)

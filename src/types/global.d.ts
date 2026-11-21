@@ -80,6 +80,7 @@ import type {
 } from "../features/storage-manager/models/batteryStorageManager"
 import type { ConsumablePayload, ConsumableRecord } from "../shared/models/consumables/consumable"
 import type { ConsumableLocationPayload, ConsumableLocationRecord } from "../shared/models/consumables/consumableLocation"
+import type { BatteryLocationPayload, BatteryLocationRecord } from "../features/master-data/battery-locations/models/batteryLocation"
 import type { ConsumableStorageManagerPayload, ConsumableStorageManagerRecord } from "../shared/models/consumables/consumableStorageManager"
 import type { StockSnapshotRecord } from "../features/stock-snapshot/models/stockSnapshot"
 import type {
@@ -376,6 +377,16 @@ declare global {
         createConsumableLocation: (data: ConsumableLocationPayload) => Promise<ConsumableLocationRecord>
         updateConsumableLocation: (id: number, data: ConsumableLocationPayload) => Promise<ConsumableLocationRecord>
         deleteConsumableLocation: (id: number) => Promise<{ success: true }>
+      }
+
+      batteryLocations: {
+        suggest: (field: string, query: string) => Promise<string[]>
+        getBatteryLocations: () => Promise<BatteryLocationRecord[]>
+        getBatteryLocationsByBranch: (branchId: number) => Promise<BatteryLocationRecord[]>
+        getBatteryLocationById: (id: number) => Promise<BatteryLocationRecord>
+        createBatteryLocation: (data: BatteryLocationPayload) => Promise<BatteryLocationRecord>
+        updateBatteryLocation: (id: number, data: BatteryLocationPayload) => Promise<BatteryLocationRecord>
+        deleteBatteryLocation: (id: number) => Promise<{ success: true }>
       }
 
       consumableStorageManagers: {

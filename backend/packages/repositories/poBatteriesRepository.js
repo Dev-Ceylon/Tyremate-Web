@@ -62,12 +62,13 @@ exports.getPoBatteriesByPoId = (poId) => {
         b.Application,
         b.WarrantyMonths,
         pba.LocationId,
-        sl.LocationCode,
-        sl.LocationName
+        COALESCE(bl.LocationCode, sl.LocationCode) AS LocationCode,
+        COALESCE(bl.LocationName, sl.LocationName) AS LocationName
       FROM POBatteries pb
       INNER JOIN BatteryM b ON b.Id = pb.BatteryID
       LEFT JOIN StatusM sm ON sm.Id = pb.StatusID
       LEFT JOIN PoBatteryAllocations pba ON pba.PoBatteriesID = pb.ID
+      LEFT JOIN BatteryLocationM bl ON bl.Id = pba.LocationId
       LEFT JOIN StorageLocationM sl ON sl.Id = pba.LocationId
       WHERE pb.POID = ?
       ORDER BY pb.ID DESC

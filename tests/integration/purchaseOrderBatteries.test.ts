@@ -18,7 +18,7 @@ describe("Purchase Orders for Batteries & Category Separation", () => {
       (lt: any) => lt.LocationTypeCode?.toLowerCase() === "df",
     ) || locationTypes[0]
 
-    const storageLocation = await backend.invoke("storageLocations:create", {
+    const storageLocation = await backend.invoke("batteryLocations:create", {
       LocationCode: "LOC-BAT-01",
       LocationName: "Battery Bay 1",
       BranchId: branch.Id,

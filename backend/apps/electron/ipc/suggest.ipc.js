@@ -12,6 +12,7 @@ const ENTITY_TABLE_MAP = {
   storageLocations: "StorageLocationM",
   storageLocationTypes: "StorageLocationTypeM",
   consumableLocations: "ConsumableLocationM",
+  batteryLocations: "BatteryLocationM",
   bankDetails: "Bankdetails",
 }
 

@@ -28,6 +28,18 @@ export default function StorageLocationsSelectPage() {
 
         <article className="info-panel panel panel-strong module-card">
           <p className="section-label">Reference Data</p>
+          <h2>Battery Locations</h2>
+          <p>
+            Manage storage locations used for battery stock. Define
+            branches, charging bays, capacity, and shelf-life tracking.
+          </p>
+          <Link className="text-link" to="/master-data/battery-locations">
+            Go to battery locations
+          </Link>
+        </article>
+
+        <article className="info-panel panel panel-strong module-card">
+          <p className="section-label">Reference Data</p>
           <h2>Consumable Locations</h2>
           <p>
             Manage storage locations for consumables such as patches,

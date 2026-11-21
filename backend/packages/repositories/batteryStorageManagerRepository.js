@@ -71,10 +71,11 @@ exports.getBatteryStorageManagersByBatteryId = (batteryId) => {
         bsm.CreatedBy,
         bsm.createdDate
       FROM BatteryStorageManager bsm
-      INNER JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
-      INNER JOIN StorageLocationTypeM slt ON slt.Id = sl.LocationTypeId
+      LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
+      LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
+      LEFT JOIN StorageLocationTypeM slt ON slt.Id = COALESCE(bl.LocationTypeId, sl.LocationTypeId)
       WHERE bsm.BatteryId = ? AND bsm.Qty > 0
-        AND LOWER(slt.LocationTypeCode) = 'df'
+        AND LOWER(COALESCE(slt.LocationTypeCode, 'df')) = 'df'
       ORDER BY bsm.createdDate ASC, bsm.Id ASC
     `)
     .all(batteryId)
@@ -94,14 +95,15 @@ exports.getBatteryStorageManagersByBatteryIdWithoutBatches = (batteryId) => {
         bsm.CreatedBy,
         bsm.createdDate
       FROM BatteryStorageManager bsm
-      INNER JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
-      INNER JOIN StorageLocationTypeM slt ON slt.Id = sl.LocationTypeId
+      LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
+      LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
+      LEFT JOIN StorageLocationTypeM slt ON slt.Id = COALESCE(bl.LocationTypeId, sl.LocationTypeId)
       WHERE bsm.BatteryId = ? AND bsm.Qty > 0
         AND NOT EXISTS (
           SELECT 1 FROM BatteryStorageManagerBatch bsmb
           WHERE bsmb.BatteryStorageManagerID = bsm.Id AND bsmb.Qty > 0
         )
-        AND LOWER(slt.LocationTypeCode) = 'df'
+        AND LOWER(COALESCE(slt.LocationTypeCode, 'df')) = 'df'
       ORDER BY bsm.createdDate ASC, bsm.Id ASC
     `)
     .all(batteryId)
@@ -181,6 +183,43 @@ exports.getBatteryStorageManagersByOrderIdAndBatteryId = (orderId, batteryId) =>
 }
 
 exports.getStorageLocationsByBranchIdForBatteries = (branchId) => {
+  const batteryLocs = db
+    .prepare(`
+      SELECT
+        bl.Id,
+        bl.LocationCode,
+        bl.LocationName,
+        bl.BranchId,
+        bl.LocationTypeId,
+        slt.LocationTypeName AS LocationType,
+        slt.LocationTypeCode AS LocationTypeCode,
+        b.BranchName AS Branch,
+        bl.Capacity,
+        COALESCE(SUM(bsm.Qty), 0) AS UsedCapacity,
+        bl.Capacity - COALESCE(SUM(bsm.Qty), 0) AS RemainingCapacity
+      FROM BatteryLocationM bl
+      LEFT JOIN BranchM b ON b.Id = bl.BranchId
+      LEFT JOIN StorageLocationTypeM slt ON slt.Id = bl.LocationTypeId
+      LEFT JOIN BatteryStorageManager bsm ON bsm.LocationID = bl.Id
+      WHERE bl.BranchId = ?
+      GROUP BY
+        bl.Id,
+        bl.LocationCode,
+        bl.LocationName,
+        bl.BranchId,
+        bl.LocationTypeId,
+        slt.LocationTypeName,
+        slt.LocationTypeCode,
+        b.BranchName,
+        bl.Capacity
+      ORDER BY bl.Id DESC
+    `)
+    .all(branchId)
+
+  if (batteryLocs.length > 0) {
+    return batteryLocs
+  }
+
   return db
     .prepare(`
       SELECT
@@ -216,6 +255,42 @@ exports.getStorageLocationsByBranchIdForBatteries = (branchId) => {
 }
 
 exports.getStorageLocationByIdForBatteries = (id) => {
+  const fromBatteryLoc = db
+    .prepare(`
+      SELECT
+        bl.Id,
+        bl.LocationCode,
+        bl.LocationName,
+        bl.BranchId,
+        bl.LocationTypeId,
+        slt.LocationTypeName AS LocationType,
+        slt.LocationTypeCode AS LocationTypeCode,
+        b.BranchName AS Branch,
+        bl.Capacity,
+        COALESCE(SUM(bsm.Qty), 0) AS UsedCapacity,
+        bl.Capacity - COALESCE(SUM(bsm.Qty), 0) AS RemainingCapacity
+      FROM BatteryLocationM bl
+      LEFT JOIN BranchM b ON b.Id = bl.BranchId
+      LEFT JOIN StorageLocationTypeM slt ON slt.Id = bl.LocationTypeId
+      LEFT JOIN BatteryStorageManager bsm ON bsm.LocationID = bl.Id
+      WHERE bl.Id = ?
+      GROUP BY
+        bl.Id,
+        bl.LocationCode,
+        bl.LocationName,
+        bl.BranchId,
+        bl.LocationTypeId,
+        slt.LocationTypeName,
+        slt.LocationTypeCode,
+        b.BranchName,
+        bl.Capacity
+    `)
+    .get(id)
+
+  if (fromBatteryLoc) {
+    return fromBatteryLoc
+  }
+
   return db
     .prepare(`
       SELECT
