@@ -81,11 +81,8 @@ export default function PurchaseOrderListPage() {
           <p className="hero-text">View and manage all supplier purchase orders and procurement logs.</p>
         </div>
         <div className="header-actions">
-          <button className="secondary-action" onClick={() => navigate("/purchase-orders/new?category=battery")}>
-            New Battery PO
-          </button>
           <button className="primary-action" onClick={() => navigate("/purchase-orders/new")}>
-            New Tyre PO
+            New PO
           </button>
         </div>
       </section>

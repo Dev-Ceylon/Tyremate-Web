@@ -21,10 +21,7 @@ export default function PurchaseOrderHomePage() {
           </p>
           <div className="header-actions">
             <Link className="primary-action" to="/purchase-orders/new">
-              New Tyre PO
-            </Link>
-            <Link className="secondary-action" to="/purchase-orders/new?category=battery">
-              New Battery PO
+              Create New PO
             </Link>
           </div>
         </article>
