@@ -28,12 +28,15 @@ describe("migrations", () => {
 
     // Reference: run the same bundled migrations through native better-sqlite3.
     const native = new Database(":memory:")
-    const { MIGRATIONS } = require("../../backend/platform/migrations.generated")
-    const { applyPendingMigrations } = require("../../backend/packages/database/migrationRunner")
+    const { MIGRATIONS, REPEATABLE_MIGRATIONS } = require("../../backend/platform/migrations.generated")
+    const { applyPendingMigrations, runRepeatableMigrations } = require("../../backend/packages/database/migrationRunner")
     const nativeReport = applyPendingMigrations(native, MIGRATIONS)
     expect(nativeReport.failed).toEqual([])
+    runRepeatableMigrations(native, REPEATABLE_MIGRATIONS)
     const nativeSchema = schemaOf(native.prepare("SELECT type, name, sql FROM sqlite_master").all() as never)
     // sql.js side additionally has schema_repeatable_migrations.
-    expect(sqljsSchema.filter((s) => !s.includes("schema_repeatable_migrations"))).toEqual(nativeSchema)
+    expect(sqljsSchema.filter((s) => !s.includes("schema_repeatable_migrations"))).toEqual(
+      nativeSchema.filter((s) => !s.includes("schema_repeatable_migrations"))
+    )
   })
 })
