@@ -58,6 +58,14 @@ export const reminderClient = {
     return window.api.reminders.getSoIdBySOReminderId(reminderId)
   },
 
+  getBatteryReminderDetails(reminderId: number): Promise<any> {
+    return window.api.reminders.getReminderDetails(reminderId)
+  },
+
+  syncBatteryReminders(): Promise<any> {
+    return window.api.reminders.syncBatteryReminders()
+  },
+
 
 
 }

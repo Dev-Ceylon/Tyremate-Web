@@ -182,7 +182,9 @@ const api = {
     markReminderCompleted: (reminderId, isCompleted) =>
       ipcRenderer.invoke("reminders:markCompleted", reminderId, isCompleted),
     deleteReminder: (reminderId) => ipcRenderer.invoke("reminders:delete", reminderId),
-    getSoIdBySOReminderId: (reminderId) => ipcRenderer.invoke("reminders:getSoIdBySOReminderId", reminderId)
+    getSoIdBySOReminderId: (reminderId) => ipcRenderer.invoke("reminders:getSoIdBySOReminderId", reminderId),
+    syncBatteryReminders: () => ipcRenderer.invoke("reminders:syncBatteryReminders"),
+    syncTyreExpiryReminders: () => ipcRenderer.invoke("reminders:syncTyreExpiryReminders")
   },
 
   notifications: {

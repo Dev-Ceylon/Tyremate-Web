@@ -3,6 +3,7 @@ const batteryStorageManagerRepo = require("../repositories/batteryStorageManager
 const batteryStorageManagerBatchRepo = require("../repositories/batteryStorageManagerBatchRepository")
 const batteryRepo = require("../repositories/batteryRepository")
 const storageLocationRepo = require("../repositories/storageLocationRepository")
+const reminderRepo = require("../repositories/reminderRepository")
 const { getStorageSourceId } = require("../constants/storageSourceConstants")
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
@@ -329,6 +330,25 @@ exports.deleteBatteryStorageManager = (id) => {
   const normalizedId = normalizeId(id, "Id")
 
   const deleteTransaction = db.transaction(() => {
+    // 1. Collect linked reminder IDs
+    const reminderIds = db.prepare(`
+      SELECT ber.ReminderID
+      FROM BatteryExpiryReminder ber
+      WHERE ber.BatteryStorageManagerBatchID IN (
+        SELECT Id FROM BatteryStorageManagerBatch WHERE BatteryStorageManagerID = ?
+      )
+    `).all(normalizedId).map((r) => r.ReminderID)
+
+    // 2. Delete linked BatteryExpiryReminder first, then parent Reminders
+    if (reminderIds.length > 0) {
+      const placeholders = reminderIds.map(() => "?").join(",")
+      db.prepare(`DELETE FROM BatteryExpiryReminder WHERE ReminderID IN (${placeholders})`).run(...reminderIds)
+
+      for (const reminderId of reminderIds) {
+        reminderRepo.deleteReminder(reminderId)
+      }
+    }
+
     batteryStorageManagerBatchRepo.deleteBatchesByBatteryStorageManagerId(normalizedId)
     return batteryStorageManagerRepo.deleteBatteryStorageManager(normalizedId)
   })
@@ -402,7 +422,25 @@ exports.updateBatch = (id, payload) => {
 
 exports.deleteBatch = (id) => {
   const normalizedId = normalizeId(id, "Id")
-  const result = batteryStorageManagerBatchRepo.deleteBatch(normalizedId)
+
+  const deleteTransaction = db.transaction(() => {
+    const reminderIds = db.prepare(`
+      SELECT ReminderID FROM BatteryExpiryReminder WHERE BatteryStorageManagerBatchID = ?
+    `).all(normalizedId).map((r) => r.ReminderID)
+
+    if (reminderIds.length > 0) {
+      const placeholders = reminderIds.map(() => "?").join(",")
+      db.prepare(`DELETE FROM BatteryExpiryReminder WHERE ReminderID IN (${placeholders})`).run(...reminderIds)
+
+      for (const reminderId of reminderIds) {
+        reminderRepo.deleteReminder(reminderId)
+      }
+    }
+
+    return batteryStorageManagerBatchRepo.deleteBatch(normalizedId)
+  })
+
+  const result = deleteTransaction()
 
   if (result.changes === 0) {
     throw new Error("Batch record not found")

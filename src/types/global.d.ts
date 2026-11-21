@@ -276,6 +276,8 @@ declare global {
         markReminderCompleted: (reminderId: number, isCompleted: boolean) => Promise<ReminderRecord>
         deleteReminder: (reminderId: number) => Promise<{ success: true }>
         getSoIdBySOReminderId: (reminderId: number) => Promise<number | null>
+        syncBatteryReminders: () => Promise<any>
+        syncTyreExpiryReminders: () => Promise<any>
       }
 
       notifications: {

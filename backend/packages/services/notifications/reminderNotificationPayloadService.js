@@ -19,6 +19,11 @@ exports.buildNotificationPayload = (reminder) => {
   const soId = isSoFollowUp ? reminder.soDetails?.SoID : chequeSoId;
   const isTyreExpiry = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.TYRE_EXPIRY;
   const tyreExpiryDetails = isTyreExpiry ? reminder.tyreExpiryDetails : null;
+  const isBatteryExpiry = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_EXPIRY;
+  const isBatteryRecharge = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_RECHARGE;
+  const isBatteryWarranty = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_WARRANTY;
+  const isBatteryReminder = isBatteryExpiry || isBatteryRecharge || isBatteryWarranty;
+  const batteryDetails = isBatteryReminder ? reminder.batteryDetails : null;
 
   let description = `Pending ${reminderLabel.toLowerCase()} scheduled for ${reminderDate}`;
 
@@ -42,6 +47,26 @@ exports.buildNotificationPayload = (reminder) => {
     const branchLabel = tyreExpiryDetails.BranchName ? ` (${tyreExpiryDetails.BranchName})` : "";
     const dotLabel = tyreExpiryDetails.DOT ? ` DOT ${tyreExpiryDetails.DOT}` : "";
     description = `Tyre ${tyreLabel}${dotLabel} at ${locationLabel}${branchLabel} expires on ${tyreExpiryDetails.ExpiryDate || reminderDate}`;
+  } else if (isBatteryReminder && batteryDetails) {
+    const batteryLabel = [
+      batteryDetails.Brand,
+      batteryDetails.Model,
+      batteryDetails.Capacity,
+      batteryDetails.Voltage,
+    ]
+      .filter(Boolean)
+      .join(" ") || `Battery #${batteryDetails.BatteryID}`;
+    const locationLabel = batteryDetails.LocationName || "unknown location";
+    const branchLabel = batteryDetails.BranchName ? ` (${batteryDetails.BranchName})` : "";
+    const batchLabel = batteryDetails.BatchCode ? ` (Batch ${batteryDetails.BatchCode})` : "";
+
+    if (isBatteryRecharge) {
+      description = `Battery ${batteryLabel}${batchLabel} at ${locationLabel}${branchLabel} requires maintenance recharge`;
+    } else if (isBatteryWarranty) {
+      description = `Battery ${batteryLabel}${batchLabel} at ${locationLabel}${branchLabel} warranty ends on ${batteryDetails.ExpiryDate || reminderDate}`;
+    } else {
+      description = `Battery ${batteryLabel}${batchLabel} at ${locationLabel}${branchLabel} expires on ${batteryDetails.ExpiryDate || reminderDate}`;
+    }
   }
 
   const tyreExpiryLocationPath =
@@ -49,15 +74,24 @@ exports.buildNotificationPayload = (reminder) => {
       ? `/storage-manager/tyres/locations/${tyreExpiryDetails.LocationID}/branches/${tyreExpiryDetails.BranchId}`
       : null;
 
+  const batteryLocationPath =
+    batteryDetails?.LocationID && batteryDetails?.BranchId
+      ? `/storage-manager/batteries/locations/${batteryDetails.LocationID}/branches/${batteryDetails.BranchId}`
+      : null;
+
   const navigationPath = tyreExpiryLocationPath
     ? tyreExpiryLocationPath
-    : tyreExpiryDetails
-      ? `/storage-manager/tyres`
-      : inquiryId
-        ? `/inquiries/${inquiryId}`
-        : soId
-          ? `/sales-orders/${soId}`
-          : `/reminders/${reminder.ID}`;
+    : batteryLocationPath
+      ? batteryLocationPath
+      : tyreExpiryDetails
+        ? `/storage-manager/tyres`
+        : batteryDetails
+          ? `/storage-manager/batteries`
+          : inquiryId
+            ? `/inquiries/${inquiryId}`
+            : soId
+              ? `/sales-orders/${soId}`
+              : `/reminders/${reminder.ID}`;
 
   return {
     code,

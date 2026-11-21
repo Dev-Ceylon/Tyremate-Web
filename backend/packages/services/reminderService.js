@@ -2,6 +2,7 @@ const reminderRepo = require("../repositories/reminderRepository");
 const inquiryReminderRepo = require("../repositories/inquiryReminderRepository");
 const inquiryService = require("./inquiryService");
 const tyreExpiryReminderRepo = require("../repositories/tyreExpiryReminderRepository");
+const batteryExpiryReminderRepo = require("../repositories/batteryExpiryReminderRepository");
 const reminderEvents = require("../events/reminderEvents"); // Import the event bus
 const { REMINDER_TYPE_CODES } = require("../constants/reminderTypeConstants");
 
@@ -128,8 +129,21 @@ exports.markReminderCompleted = (id, isCompleted = true) => {
 
   const updated = reminderRepo.updateReminder(normalizedId, {
     ReminderTypeID: existing.ReminderTypeID,
+    Date: existing.Date,
     IsCompleted: isCompleted ? 1 : 0,
   });
+
+  try {
+    if (isCompleted) {
+      tyreExpiryReminderRepo.markReminderDone(normalizedId);
+      batteryExpiryReminderRepo.markReminderDone(normalizedId);
+    } else {
+      tyreExpiryReminderRepo.unmarkReminderDone(normalizedId);
+      batteryExpiryReminderRepo.unmarkReminderDone(normalizedId);
+    }
+  } catch (syncError) {
+    console.error("Failed to sync reminder done state", syncError);
+  }
 
   try {
     reminderEvents.emit("reminderCompleted", {
@@ -187,6 +201,7 @@ exports.getReminderDetails = (reminderId) => {
 
   let inquiryReminderDetails = null;
   let tyreExpiryDetails = null;
+  let batteryDetails = null;
 
   if (reminderDetails.ReminderTypeCode === REMINDER_TYPE_CODES.INQUIRY_FOLLOW_UP) {
     inquiryReminderDetails = inquiryReminderRepo.getInquiryReminderByReminderId(normalizedId);
@@ -196,9 +211,18 @@ exports.getReminderDetails = (reminderId) => {
     tyreExpiryDetails = tyreExpiryReminderRepo.getTyreExpiryDetailsByReminderId(normalizedId);
   }
 
+  if (
+    reminderDetails.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_EXPIRY ||
+    reminderDetails.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_RECHARGE ||
+    reminderDetails.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_WARRANTY
+  ) {
+    batteryDetails = batteryExpiryReminderRepo.getBatteryReminderDetailsByReminderId(normalizedId);
+  }
+
   return {
     ...reminderDetails,
     inquiryDetails: inquiryReminderDetails,
-    tyreExpiryDetails
+    tyreExpiryDetails,
+    batteryDetails,
   };
 };

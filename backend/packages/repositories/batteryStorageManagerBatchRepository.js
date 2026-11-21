@@ -191,3 +191,40 @@ exports.getBatchesTotalQty = (storageManagerId) => {
 
   return Number(row?.TotalQty ?? 0)
 }
+
+exports.getStockedBatteryBatches = () => {
+  return db
+    .prepare(`
+      SELECT
+        bsmb.Id,
+        bsmb.BatteryStorageManagerID,
+        bsmb.BatchCode,
+        bsmb.MfgDate,
+        bsmb.ExpiryDate,
+        bsmb.Qty,
+        bsmb.CreatedBy,
+        bsmb.createdDate,
+        bsm.LocationID,
+        bsm.BatteryId,
+        b.Brand,
+        b.Model,
+        b.Series,
+        b.Voltage,
+        b.Capacity,
+        b.Technology,
+        b.Application,
+        b.WarrantyMonths,
+        sl.LocationName,
+        sl.LocationCode,
+        sl.BranchId,
+        br.BranchName
+      FROM BatteryStorageManagerBatch bsmb
+      INNER JOIN BatteryStorageManager bsm ON bsm.Id = bsmb.BatteryStorageManagerID
+      INNER JOIN BatteryM b ON b.Id = bsm.BatteryId
+      LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
+      LEFT JOIN BranchM br ON br.Id = sl.BranchId
+      WHERE bsmb.Qty > 0
+      ORDER BY bsmb.Id ASC
+    `)
+    .all()
+}

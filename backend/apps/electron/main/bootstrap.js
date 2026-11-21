@@ -63,6 +63,7 @@ require("../listeners/reminderIpcListener")
 require("../listeners/notificationIpcListener")
 const notificationMonitor = require("../../../packages/services/notifications/notificationMonitorService")
 const tyreExpiryMonitor = require("../../../packages/services/notifications/tyreExpiryMonitorService")
+const batteryReminderMonitor = require("../../../packages/services/notifications/batteryReminderMonitorService")
 const { logError } = require("../../../packages/errors/errorLogger")
 
 const SEED_MARKER_KEY = "seed.coreVersion"
@@ -145,6 +146,7 @@ async function start({ startMonitors = true } = {}) {
     monitorsStarted = true
     notificationMonitor.start()
     tyreExpiryMonitor.start()
+    batteryReminderMonitor.start()
   }
   return { locked: isLocked, seed: seedResult }
 }
@@ -153,6 +155,7 @@ function stop() {
   if (monitorsStarted) {
     notificationMonitor.stop()
     tyreExpiryMonitor.stop()
+    batteryReminderMonitor.stop()
     monitorsStarted = false
   }
 }
