@@ -74,6 +74,17 @@ export default function MasterDataPage() {
 
         <article className="info-panel panel panel-strong module-card">
           <p className="section-label">Module</p>
+          <h2>Batteries</h2>
+          <p>
+            Manage battery reference records for purchasing, pricing, and sales readiness.
+          </p>
+          <Link className="text-link" to="/master-data/batteries">
+            Go to batteries
+          </Link>
+        </article>
+
+        <article className="info-panel panel panel-strong module-card">
+          <p className="section-label">Module</p>
           <h2>Consumables</h2>
           <p>
             Manage consumable reference records used during services such as

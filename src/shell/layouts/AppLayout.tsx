@@ -109,6 +109,7 @@ export default function AppLayout() {
               { label: "Customers", to: "/master-data/customers" },
               { label: "Branches", to: "/master-data/branches" },
               { label: "Tyres", to: "/master-data/tyres" },
+              { label: "Batteries", to: "/master-data/batteries" },
               { label: "Consumables", to: "/master-data/consumables" },
               { label: "Storage Locations", to: "/master-data/storage-locations" },
               { label: "Bank Details", to: "/master-data/bank-details" },
