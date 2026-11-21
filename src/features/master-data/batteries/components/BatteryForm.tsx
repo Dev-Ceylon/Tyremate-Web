@@ -1,6 +1,7 @@
 import type { ChangeEvent, FormEvent } from "react"
 import type { SupplierRecord } from "../../suppliers/models/supplier"
 import type { BatteryPayload } from "../models/battery"
+import { BATTERY_APPLICATION_OPTIONS } from "../constants/batteryConstants"
 import { SuggestionInput } from "../../../../shared/ui/suggestion/SuggestionInput"
 
 type BatteryFormProps = {
@@ -137,24 +138,20 @@ export function BatteryForm({
 
       <label className="field-label">
         Application
-        {fetchSuggestions ? (
-          <SuggestionInput
-            label="Application"
-            hideLabel
-            value={formData.Application ?? ""}
-            onChange={(v) => onChange("Application", v)}
-            fetchSuggestions={(q) => fetchSuggestions("Application", q)}
-            placeholder="e.g. Motorcycle, Automotive"
-          />
-        ) : (
-          <input
-            className="text-input"
-            type="text"
-            value={formData.Application ?? ""}
-            onChange={(event) => onChange("Application", event.target.value)}
-            placeholder="e.g. Motorcycle, Automotive"
-          />
-        )}
+        <select
+          className="text-input"
+          value={formData.Application ?? ""}
+          onChange={(event) =>
+            onChange("Application", event.target.value === "" ? null : event.target.value)
+          }
+        >
+          <option value="">Select an application</option>
+          {BATTERY_APPLICATION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="field-label">
