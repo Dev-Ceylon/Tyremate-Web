@@ -2,6 +2,8 @@ const db = require("../database/connection")
 const supplierRepo = require("../repositories/supplierRepository")
 const tyreRepo = require("../repositories/tyreRepository")
 const tyreSupplierRepo = require("../repositories/tyreSupplierRepository")
+const batteryRepo = require("../repositories/batteryRepository")
+const batterySupplierRepo = require("../repositories/batterySupplierRepository")
 const masterDataAuditLogService = require("./masterDataAuditLogService")
 const { AUDIT_ACTIONS } = require("../constants/auditActionConstants")
 const { getSupplierTypeIdByCode } = require("../constants/supplierTypeConstants")
@@ -102,6 +104,33 @@ const normalizeTyreAssociations = (value) => {
   })
 }
 
+const normalizeBatteryAssociations = (value) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.map((item, index) => {
+    const row = index + 1
+    const batteryIdRaw = item?.BatteryID ?? item?.batteryId ?? item?.BatteryId
+    const priceRaw = item?.Price ?? item?.price
+    const batteryId = Number(batteryIdRaw)
+    const price =
+      priceRaw === "" || priceRaw === null || priceRaw === undefined
+        ? Number.NaN
+        : Number(priceRaw)
+
+    if (!Number.isInteger(batteryId) || batteryId <= 0) {
+      throw new Error(`Valid BatteryID is required on line ${row}`)
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new Error(`Valid positive Price is required on line ${row}`)
+    }
+
+    return { BatteryID: batteryId, Price: price }
+  })
+}
+
 const normalizeSupplierId = (supplierId) => {
   const parsedId = Number(supplierId)
 
@@ -112,11 +141,11 @@ const normalizeSupplierId = (supplierId) => {
   return parsedId
 }
 
-const toSupplierWithTyresPayload = (payload = {}) => {
+const toSupplierWithAssociationsPayload = (payload = {}) => {
   const supplier = toSupplierPayload(payload)
   const tyres = normalizeTyreAssociations(payload.Tyres)
+  const batteries = normalizeBatteryAssociations(payload.Batteries)
 
-  // Validate that all referenced tyres exist
   tyres.forEach((t) => {
     const tyre = tyreRepo.getTyreById(t.TyreID)
     if (!tyre) {
@@ -124,8 +153,17 @@ const toSupplierWithTyresPayload = (payload = {}) => {
     }
   })
 
-  return { ...supplier, Tyres: tyres }
+  batteries.forEach((b) => {
+    const battery = batteryRepo.getBatteryById(b.BatteryID)
+    if (!battery) {
+      throw new Error(`Battery not found with ID: ${b.BatteryID}`)
+    }
+  })
+
+  return { ...supplier, Tyres: tyres, Batteries: batteries }
 }
+
+const toSupplierWithTyresPayload = toSupplierWithAssociationsPayload
 
 exports.getSuppliers = () => {
   return supplierRepo.getAllSuppliers()
@@ -170,6 +208,7 @@ exports.createSupplier = (payload, ctx) => {
     data.Addresses.forEach(a => supplierRepo.createSupplierAddress({ ...a, SupplierID: supplier.SupplierID }))
 
     tyreSupplierRepo.syncSupplierTyres(supplier.SupplierID, data.Tyres)
+    batterySupplierRepo.syncSupplierBatteries(supplier.SupplierID, data.Batteries)
 
     return supplier
   })
@@ -220,6 +259,7 @@ exports.updateSupplier = (supplierId, payload, ctx) => {
     data.Addresses.forEach(a => supplierRepo.createSupplierAddress({ ...a, SupplierID: normalizedId }))
 
     tyreSupplierRepo.syncSupplierTyres(normalizedId, data.Tyres)
+    batterySupplierRepo.syncSupplierBatteries(normalizedId, data.Batteries)
 
     return updatedSupplier
   })
@@ -271,5 +311,6 @@ const withSupplierDetails = (supplier, extras = {}) => ({
   Contacts: extras.Contacts ?? supplierRepo.getSupplierContactsBySupplierId(supplier.SupplierID),
   Emails: extras.Emails ?? supplierRepo.getSupplierEmailsBySupplierId(supplier.SupplierID),
   Addresses: extras.Addresses ?? supplierRepo.getSupplierAddressesBySupplierId(supplier.SupplierID),
-  Tyres: tyreSupplierRepo.getTyresBySupplierId(supplier.SupplierID)
+  Tyres: tyreSupplierRepo.getTyresBySupplierId(supplier.SupplierID),
+  Batteries: batterySupplierRepo.getBatteriesBySupplierId(supplier.SupplierID),
 })

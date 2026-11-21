@@ -7,6 +7,7 @@ import {
   getSupplierTypeName,
   getSupplierTypeBadgeClass,
 } from "../../src/shared/constants/supplierTypeConstants"
+import { formatBatteryLabel } from "../../src/shared/battery/models/batteryDisplay"
 
 describe("SupplierTypeM and Supplier Types", () => {
   it("seeds SupplierTypeM and handles suppliers with types end-to-end", async () => {
@@ -25,7 +26,19 @@ describe("SupplierTypeM and Supplier Types", () => {
     expect(tyreType.TypeName).toBe("Tyres")
     expect(batteryType.TypeName).toBe("Batteries")
 
-    // 2. Verify creating a supplier with Battery type
+    // Create a sample battery to assign
+    const sampleBattery = await backend.invoke("batteries:create", {
+      Brand: "Lucas",
+      Model: "LU-12XL2.5L-C",
+      Capacity: "2.5Ah",
+      Voltage: "12V",
+      Application: "Motorcycle",
+      PurchasedPrice: 3500,
+      ActualSellingPrice: 4800,
+    })
+    expect(sampleBattery.Id).toBeDefined()
+
+    // 2. Verify creating a supplier with Battery type and assigning batteries
     const batterySupplierPayload = {
       SupplierCode: "SUP-BAT01",
       Name: "Apex Battery Distributors Ltd",
@@ -43,6 +56,7 @@ describe("SupplierTypeM and Supplier Types", () => {
         },
       ],
       Tyres: [],
+      Batteries: [{ BatteryID: sampleBattery.Id, Price: 4200 }],
     }
 
     const createdSupplier = await backend.invoke("suppliers:create", batterySupplierPayload)
@@ -51,18 +65,24 @@ describe("SupplierTypeM and Supplier Types", () => {
     expect(createdSupplier.SupplierTypeID).toBe(batteryType.Id)
     expect(createdSupplier.SupplierTypeCode).toBe("bat")
     expect(createdSupplier.SupplierTypeName).toBe("Batteries")
+    expect(createdSupplier.Batteries).toHaveLength(1)
+    expect(createdSupplier.Batteries[0].BatteryID).toBe(sampleBattery.Id)
+    expect(createdSupplier.Batteries[0].Price).toBe(4200)
 
-    // 3. Verify getSupplierById retrieves type fields
+    // 3. Verify getSupplierById retrieves type fields and assigned batteries
     const fetchedSupplier = await backend.invoke("suppliers:getById", createdSupplier.SupplierID)
     expect(fetchedSupplier.SupplierID).toBe(createdSupplier.SupplierID)
     expect(fetchedSupplier.SupplierTypeID).toBe(batteryType.Id)
     expect(fetchedSupplier.SupplierTypeCode).toBe("bat")
     expect(fetchedSupplier.SupplierTypeName).toBe("Batteries")
+    expect(fetchedSupplier.Batteries).toHaveLength(1)
+    expect(fetchedSupplier.Batteries[0].BatteryID).toBe(sampleBattery.Id)
 
     // 4. Verify updateSupplier updates the type (switch from Batteries to Tyres)
     const updatePayload = {
       ...fetchedSupplier,
       SupplierTypeCode: SUPPLIER_TYPE_CODES.TYRES,
+      Batteries: [],
     }
     const updatedSupplier = await backend.invoke(
       "suppliers:update",
@@ -72,6 +92,7 @@ describe("SupplierTypeM and Supplier Types", () => {
     expect(updatedSupplier.SupplierTypeID).toBe(tyreType.Id)
     expect(updatedSupplier.SupplierTypeCode).toBe("tyr")
     expect(updatedSupplier.SupplierTypeName).toBe("Tyres")
+    expect(updatedSupplier.Batteries).toHaveLength(0)
 
     // 5. Verify suppliers:getAll includes type fields
     const allSuppliers = await backend.invoke("suppliers:getAll")
@@ -85,5 +106,11 @@ describe("SupplierTypeM and Supplier Types", () => {
     expect(getSupplierTypeName(SUPPLIER_TYPE_CODES.TYRES)).toBe("Tyres")
     expect(getSupplierTypeBadgeClass(SUPPLIER_TYPE_CODES.BATTERIES)).toBe("status-badge type-badge-batteries")
     expect(SUPPLIER_TYPE_OPTIONS).toHaveLength(4)
+
+    // 7. Verify formatBatteryLabel helper
+    const formatted = formatBatteryLabel(sampleBattery, { preset: "full", showId: true })
+    expect(formatted).toContain(sampleBattery.Brand)
+    expect(formatted).toContain(sampleBattery.Model)
+    expect(formatted).toContain(`[#${sampleBattery.Id}]`)
   })
 })

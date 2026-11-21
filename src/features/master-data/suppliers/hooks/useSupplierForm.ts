@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import type { TyreRecord } from "../../tyres/models/tyre"
 import { tyreService } from "../../tyres/services/tyreService"
+import type { BatteryRecord } from "../../batteries/models/battery"
+import { batteryService } from "../../batteries/services/batteryService"
 import { SUPPLIER_TYPE_CODES } from "../constants/supplierTypeConstants"
 import type { SupplierPayload, SupplierRecord, SupplierTypeRecord } from "../models/supplier"
 import { supplierService } from "../services/supplierService"
@@ -17,6 +19,7 @@ const initialFormState: SupplierPayload = {
   Emails: [],
   Addresses: [],
   Tyres: [],
+  Batteries: [],
 }
 
 type UseSupplierFormOptions = {
@@ -35,6 +38,10 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
   const [tyresLoading, setTyresLoading] = useState(false)
   const [tyresError, setTyresError] = useState<string | null>(null)
   const [hasLoadedTyres, setHasLoadedTyres] = useState(false)
+  const [availableBatteries, setAvailableBatteries] = useState<BatteryRecord[]>([])
+  const [batteriesLoading, setBatteriesLoading] = useState(false)
+  const [batteriesError, setBatteriesError] = useState<string | null>(null)
+  const [hasLoadedBatteries, setHasLoadedBatteries] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [initializing, setInitializing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -74,6 +81,36 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
   const reloadTyres = useCallback(async () => {
     await fetchTyres()
   }, [fetchTyres])
+
+  const fetchBatteries = useCallback(async () => {
+    setBatteriesLoading(true)
+    setBatteriesError(null)
+
+    try {
+      const batteries = await batteryService.getBatteries()
+      setAvailableBatteries(batteries)
+      setHasLoadedBatteries(true)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load batteries"
+      setBatteriesError(message)
+      onError?.(message)
+    } finally {
+      setBatteriesLoading(false)
+    }
+  }, [onError])
+
+  const loadBatteriesOnDemand = useCallback(async () => {
+    if (hasLoadedBatteries) {
+      return
+    }
+
+    await fetchBatteries()
+  }, [hasLoadedBatteries, fetchBatteries])
+
+  const reloadBatteries = useCallback(async () => {
+    await fetchBatteries()
+  }, [fetchBatteries])
 
   const loadSupplier = useCallback(
     async (currentSupplierId: number, isActive: () => boolean) => {
@@ -191,6 +228,23 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
       return
     }
 
+    const normalizedBatteries = formData.Batteries?.map((battery) => ({
+      BatteryID: battery.BatteryID,
+      Price: normalizeNumber(battery.Price),
+    })) ?? []
+
+    const invalidBattery = normalizedBatteries.find(
+      (battery) => battery.Price === null || battery.Price <= 0,
+    )
+
+    if (invalidBattery) {
+      const message = `Enter a valid price for battery ${invalidBattery.BatteryID}.`
+      setError(message)
+      onError?.(message)
+      setSubmitting(false)
+      return
+    }
+
     const payload: SupplierPayload = {
       SupplierCode: formData.SupplierCode.trim(),
       Name: formData.Name.trim(),
@@ -202,6 +256,7 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
       Emails: formData.Emails,
       Addresses: formData.Addresses,
       Tyres: normalizedTyres,
+      Batteries: normalizedBatteries,
     }
 
     try {
@@ -231,6 +286,9 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
     availableTyres,
     tyresLoading,
     tyresError,
+    availableBatteries,
+    batteriesLoading,
+    batteriesError,
     submitting,
     initializing,
     error,
@@ -238,6 +296,8 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
     handleSubmit,
     loadTyresOnDemand,
     reloadTyres,
+    loadBatteriesOnDemand,
+    reloadBatteries,
   }
 }
 
@@ -275,6 +335,18 @@ function toFormState(supplier: SupplierRecord): SupplierPayload {
       LL_SR: tyre.LL_SR ?? null,
       PR: tyre.PR ?? null,
       SideWall: tyre.SideWall ?? null,
+    })),
+    Batteries: (supplier.Batteries ?? []).map((battery) => ({
+      BatteryID: battery.BatteryID,
+      Price: battery.Price ?? null,
+      Brand: battery.Brand ?? null,
+      Model: battery.Model ?? null,
+      Series: battery.Series ?? null,
+      Voltage: battery.Voltage ?? null,
+      Capacity: battery.Capacity ?? null,
+      Technology: battery.Technology ?? null,
+      Application: battery.Application ?? null,
+      WarrantyMonths: battery.WarrantyMonths ?? null,
     })),
   }
 }
