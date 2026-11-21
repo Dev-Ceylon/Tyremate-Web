@@ -445,8 +445,8 @@ const api = {
   },
 
   po: {
-    getPOs: () => ipcRenderer.invoke("po:getAll"),
-    getPendingPOCount: () => ipcRenderer.invoke("po:getPendingPOCount"),
+    getPOs: (category) => ipcRenderer.invoke("po:getAll", category),
+    getPendingPOCount: (category) => ipcRenderer.invoke("po:getPendingPOCount", category),
     getPOById: (id) => ipcRenderer.invoke("po:getById", id),
     createPO: (data) => ipcRenderer.invoke("po:create", data),
     createStandalonePO: (data) => ipcRenderer.invoke("po:createStandalone", data),

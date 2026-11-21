@@ -20,11 +20,12 @@ export function usePurchaseOrderStorageAllocation(options?: UsePurchaseOrderStor
 
   // Initialize local allocation state when order data is loaded
   useEffect(() => {
-    if (order?.Tyres) {
+    const lines = (order?.Category === "battery" ? order?.Batteries : order?.Tyres) || order?.Lines || []
+    if (lines.length > 0) {
       const initialMap: Record<number, number> = {}
-      order.Tyres.forEach((tyre) => {
-        if (tyre.LocationId) {
-          initialMap[tyre.ID] = tyre.LocationId
+      lines.forEach((item: any) => {
+        if (item.LocationId) {
+          initialMap[item.ID] = item.LocationId
         }
       })
       setLocalAllocations(initialMap)
@@ -38,12 +39,13 @@ export function usePurchaseOrderStorageAllocation(options?: UsePurchaseOrderStor
     setError(null)
     try {
       const numericPoId = Number(poId)
-      const [orderData, locationData] = await Promise.all([
-        purchaseOrderService.getPurchaseOrderById(numericPoId),
-        purchaseOrderService.getStorageLocationsByLocationType(1), // Hardcoded to 1 as requested
-      ])
+      const orderData = await purchaseOrderService.getPurchaseOrderById(numericPoId)
+      const locationData = orderData.Category === "battery"
+        ? (window.api.storageLocations?.getStorageLocations ? await window.api.storageLocations.getStorageLocations() : await purchaseOrderService.getStorageLocationsByLocationType(1))
+        : await purchaseOrderService.getStorageLocationsByLocationType(1)
+
       setOrder(orderData)
-      setLocations(locationData)
+      setLocations(locationData || [])
     } catch (err: any) {
       setError(err.message || "Failed to load allocation data")
     } finally {
@@ -78,9 +80,10 @@ export function usePurchaseOrderStorageAllocation(options?: UsePurchaseOrderStor
     async () => {
       if (!order) return false
 
+      const rawLines = (order.Category === "battery" ? order.Batteries : order.Tyres) || order.Lines || []
       const tyreQtyByTyreId: Record<number, number> = {}
-      ;(order.Tyres || []).forEach((tyre) => {
-        tyreQtyByTyreId[tyre.ID] = tyre.Qty
+      rawLines.forEach((item: any) => {
+        tyreQtyByTyreId[item.ID] = item.Qty
       })
 
       const reserved = getReservedByLocation(tyreQtyByTyreId)
@@ -104,9 +107,9 @@ export function usePurchaseOrderStorageAllocation(options?: UsePurchaseOrderStor
       try {
         const payloads: PoTyreAllocationPayload[] = Object.entries(localAllocations)
           .filter(([, locationId]) => locationId)
-          .map(([poTyreId, locationId]) => ({
+          .map(([lineId, locationId]) => ({
             POID: order.ID,
-            PoTyresID: Number(poTyreId),
+            ...(order.Category === "battery" ? { PoBatteriesID: Number(lineId) } : { PoTyresID: Number(lineId) }),
             LocationId: locationId,
           }))
 

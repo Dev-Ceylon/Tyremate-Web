@@ -7,6 +7,7 @@ type ManageBatchModalProps = {
   poTyresId: number | null
   tyreLabel: string
   lineQty: number
+  isBattery?: boolean
   onClose: () => void
   onSaved: () => void
 }
@@ -16,6 +17,7 @@ export function ManageBatchModal({
   poTyresId,
   tyreLabel,
   lineQty,
+  isBattery = false,
   onClose,
   onSaved,
 }: ManageBatchModalProps) {
@@ -32,6 +34,7 @@ export function ManageBatchModal({
     isOpen,
     poTyresId,
     lineQty,
+    isBattery,
     onSaved,
   })
 
@@ -47,16 +50,22 @@ export function ManageBatchModal({
         ) : (
           <>
             <div className="table-scroll">
-              <p className="secondary-text batch-dot-hint">
-                DOT format: <strong>WWYY</strong> — 2-digit week (01–53) + 2-digit year (e.g.{" "}
-                <strong>2526</strong> = week 25 of 2026).
-              </p>
+              {isBattery ? (
+                <p className="secondary-text batch-dot-hint">
+                  Batch Code: Enter the manufacturing batch or lot code.
+                </p>
+              ) : (
+                <p className="secondary-text batch-dot-hint">
+                  DOT format: <strong>WWYY</strong> — 2-digit week (01–53) + 2-digit year (e.g.{" "}
+                  <strong>2526</strong> = week 25 of 2026).
+                </p>
+              )}
               <div className="tm-table-scroll">
                 <table className="product-table">
                   <thead>
                     <tr>
                       <th className="text-right">#</th>
-                      <th>DOT</th>
+                      <th>{isBattery ? "Batch Code" : "DOT"}</th>
                       <th className="text-right">Qty</th>
                       <th></th>
                     </tr>
@@ -65,7 +74,9 @@ export function ManageBatchModal({
                     {drafts.length === 0 && (
                       <tr>
                         <td colSpan={4} className="secondary-text">
-                          No batches entered yet. Add a batch for each DOT the supplier will send.
+                          {isBattery
+                            ? "No batches entered yet. Add a batch code for incoming battery items."
+                            : "No batches entered yet. Add a batch for each DOT the supplier will send."}
                         </td>
                       </tr>
                     )}
@@ -78,9 +89,9 @@ export function ManageBatchModal({
                             <input
                               className="text-input"
                               type="text"
-                              inputMode="numeric"
-                              placeholder="WWYY e.g. 2526"
-                              maxLength={4}
+                              inputMode={isBattery ? "text" : "numeric"}
+                              placeholder={isBattery ? "e.g. BATCH-2026-01" : "WWYY e.g. 2526"}
+                              maxLength={isBattery ? 50 : 4}
                               value={draft.DOT}
                               onChange={(event) => actions.update(draft.localId, { DOT: event.target.value })}
                             />

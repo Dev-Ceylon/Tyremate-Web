@@ -100,7 +100,9 @@ exports.syncBatterySuppliers = (batteryId, supplierIds = []) => {
 }
 
 exports.create = (data, options = {}) => {
-  const { supplierId, batteryId, price } = data
+  const supplierId = data.supplierId || data.SupplierID
+  const batteryId = data.batteryId || data.BatteryId || data.BatteryID
+  const price = data.price !== undefined ? data.price : data.Price
 
   if (!supplierId || !batteryId || price === undefined) {
     throw new Error("supplierId, batteryId, and price are required")

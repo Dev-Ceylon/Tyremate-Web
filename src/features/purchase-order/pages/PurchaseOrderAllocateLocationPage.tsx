@@ -40,11 +40,14 @@ export default function PurchaseOrderAllocateLocationPage() {
   if (loading) return <main className="app-shell"><p className="hero-text">Loading allocation details...</p></main>
   if (error || !order) return <main className="app-shell"><p className="hero-text error-text">{error || "Order not found"}</p></main>
 
-  const getReservedByLocation = (tyreId: number): Record<number, number> => {
+  const isBattery = order.Category === "battery"
+  const lines = (isBattery ? order.Batteries : order.Tyres) || order.Lines || []
+
+  const getReservedByLocation = (itemId: number): Record<number, number> => {
     const reservedByLocation: Record<number, number> = {}
 
-    ;(order.Tyres || []).forEach((other) => {
-      if (other.ID === tyreId) return
+    lines.forEach((other: any) => {
+      if (other.ID === itemId) return
       const otherLocationId = localAllocations[other.ID]
       if (!otherLocationId) return
       reservedByLocation[otherLocationId] =
@@ -60,7 +63,7 @@ export default function PurchaseOrderAllocateLocationPage() {
         <div>
           <p className="eyebrow">Inventory Management</p>
           <h1>Allocate Locations: PO #{poId}</h1>
-          <p className="hero-text">Assign specific storage locations for incoming tyres in this purchase order.</p>
+          <p className="hero-text">Assign specific storage locations for incoming {isBattery ? "batteries" : "tyres"} in this purchase order.</p>
         </div>
         <div className="header-actions">
           <button 
@@ -78,38 +81,41 @@ export default function PurchaseOrderAllocateLocationPage() {
 
       <section className="table-panel panel panel-strong">
         <div className="table-panel-header">
-          <h2>Tyre Line Items</h2>
+          <h2>{isBattery ? "Battery Line Items" : "Tyre Line Items"}</h2>
         </div>
         <div className="tm-table-scroll">
           <table className="product-table">
             <thead>
               <tr>
-                <th>Tyre Details</th>
+                <th>{isBattery ? "Battery Details" : "Tyre Details"}</th>
                 <th className="text-right">Ordered Qty</th>
                 <th>Storage Location</th>
               </tr>
             </thead>
             <tbody>
-              {order.Tyres?.map((tyre) => {
-                const reservedByLocation = getReservedByLocation(tyre.ID)
+              {lines.map((item: any) => {
+                const reservedByLocation = getReservedByLocation(item.ID)
+                const label = isBattery
+                  ? `${item.Brand} ${item.Model ? `- ${item.Model}` : ""} ${item.Capacity ? `(${item.Capacity}` : ""}${item.Voltage ? ` ${item.Voltage})` : item.Capacity ? ")" : ""}`
+                  : `${item.Brand} / ${item.Size} / ${item.Pattern}`
 
                 return (
-                  <tr key={tyre.ID}>
+                  <tr key={item.ID}>
                     <td>
                       <div className="font-medium">
-                        {tyre.Brand} / {tyre.Size} / {tyre.Pattern}
+                        {label}
                       </div>
                     </td>
-                    <td className="text-right font-bold">{tyre.Qty}</td>
+                    <td className="text-right font-bold">{item.Qty}</td>
                     <td>
                       <select
                         className="text-input"
-                        value={localAllocations[tyre.ID] || ""}
-                        onChange={(e) => actions.updateAllocation(tyre.ID, Number(e.target.value))}
+                        value={localAllocations[item.ID] || ""}
+                        onChange={(e) => actions.updateAllocation(item.ID, Number(e.target.value))}
                       >
                         <LocationOptions
                           locations={locations}
-                          tyreQty={tyre.Qty}
+                          tyreQty={item.Qty}
                           reservedByLocation={reservedByLocation}
                         />
                       </select>

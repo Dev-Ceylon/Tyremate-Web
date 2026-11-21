@@ -102,7 +102,7 @@ export default function PurchaseOrderDetailsPage() {
 
       <section className="table-panel panel panel-strong mt-6">
         <div className="table-panel-header">
-          <h2>Tyre Line Items</h2>
+          <h2>{order.Category === "battery" ? "Battery Line Items" : "Tyre Line Items"}</h2>
           <div className="header-actions">
             <span className="stat-badge">{displayRows.length} allocation{displayRows.length !== 1 ? "s" : ""}</span>
             <span className="stat-badge">${totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -112,7 +112,7 @@ export default function PurchaseOrderDetailsPage() {
           <table className="product-table">
             <thead>
               <tr>
-                <th>Tyre (Brand / Size / Pattern)</th>
+                <th>{order.Category === "battery" ? "Battery (Brand / Model / Spec)" : "Tyre (Brand / Size / Pattern)"}</th>
                 <th className="text-right">Price</th>
                 <th className="text-right">Disc %</th>
                 <th className="text-right">Qty</th>

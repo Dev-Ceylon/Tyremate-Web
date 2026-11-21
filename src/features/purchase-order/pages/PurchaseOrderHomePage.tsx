@@ -17,11 +17,14 @@ export default function PurchaseOrderHomePage() {
           <p className="section-label">Create</p>
           <h2>New Purchase Order</h2>
           <p>
-            Generate a new purchase order for a supplier. Specify tyres, quantities, and agreed pricing to restock inventory.
+            Generate a new purchase order for tyres or batteries. Specify line items, quantities, and agreed pricing to restock inventory.
           </p>
           <div className="header-actions">
             <Link className="primary-action" to="/purchase-orders/new">
-              Create New PO
+              New Tyre PO
+            </Link>
+            <Link className="secondary-action" to="/purchase-orders/new?category=battery">
+              New Battery PO
             </Link>
           </div>
         </article>

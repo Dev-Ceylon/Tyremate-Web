@@ -1,0 +1,20 @@
+const PO_CATEGORIES = {
+  TYRE: "tyre",
+  BATTERY: "battery",
+}
+
+const PO_CATEGORY_LABELS = {
+  [PO_CATEGORIES.TYRE]: "Tyres",
+  [PO_CATEGORIES.BATTERY]: "Batteries",
+}
+
+const PO_CATEGORY_LIST = [
+  { key: PO_CATEGORIES.TYRE, label: PO_CATEGORY_LABELS[PO_CATEGORIES.TYRE] },
+  { key: PO_CATEGORIES.BATTERY, label: PO_CATEGORY_LABELS[PO_CATEGORIES.BATTERY] },
+]
+
+module.exports = {
+  PO_CATEGORIES,
+  PO_CATEGORY_LABELS,
+  PO_CATEGORY_LIST,
+}

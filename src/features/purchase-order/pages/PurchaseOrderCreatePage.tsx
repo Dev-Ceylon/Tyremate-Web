@@ -3,18 +3,24 @@ import { useSearchParams, useNavigate } from "@/lib/router"
 import { PurchaseOrderForm } from "../components/PurchaseOrderForm"
 import { SupplierSelectionModal } from "../components/SupplierSelectionModal"
 import { CreateTyreDialog } from "../../master-data/tyres/components/CreateTyreDialog"
+import { CreateBatteryDialog } from "../../master-data/batteries/components/CreateBatteryDialog"
 import { usePurchaseOrderCreate } from "../hooks/usePurchaseOrderCreate"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
 import type { TyreRecord } from "../../master-data/tyres/models/tyre"
+import type { BatteryRecord } from "../../master-data/batteries/models/battery"
+import type { POCategory } from "@/shared/constants/poCategoryConstants"
 
 export default function PurchaseOrderCreatePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const inquiryIdParam = searchParams.get("inquiryId")
+  const categoryParam = searchParams.get("category") as POCategory | null
+  const initialCategory: POCategory = categoryParam === "battery" ? "battery" : "tyre"
   const inquiryId = inquiryIdParam ? Number(inquiryIdParam) : null
-  const { formState, formActions, modalState, modalActions } = usePurchaseOrderCreate(inquiryId)
+  const { formState, formActions, modalState, modalActions } = usePurchaseOrderCreate(inquiryId, initialCategory)
   const { showToast } = useToast()
   const [isCreateTyreOpen, setIsCreateTyreOpen] = useState(false)
+  const [isCreateBatteryOpen, setIsCreateBatteryOpen] = useState(false)
 
   const handleTyreCreated = useCallback(
     async (tyre: TyreRecord) => {
@@ -24,6 +30,19 @@ export default function PurchaseOrderCreatePage() {
         variant: "success",
         title: "Tyre created",
         message: "New tyre is ready and added to this purchase order.",
+      })
+    },
+    [formActions, showToast],
+  )
+
+  const handleBatteryCreated = useCallback(
+    async (battery: BatteryRecord) => {
+      await formActions.reloadBatteries()
+      formActions.selectBatteryForOrder(battery.Id)
+      showToast({
+        variant: "success",
+        title: "Battery created",
+        message: "New battery is ready and added to this purchase order.",
       })
     },
     [formActions, showToast],
@@ -52,8 +71,12 @@ export default function PurchaseOrderCreatePage() {
 
         <PurchaseOrderForm
           state={formState}
-          actions={formActions}
+          actions={{
+            ...formActions,
+            onCategoryChange: formState.setCategory,
+          }}
           onOpenCreateTyre={() => setIsCreateTyreOpen(true)}
+          onOpenCreateBattery={() => setIsCreateBatteryOpen(true)}
           onCancel={handleCancel}
         />
 
@@ -61,7 +84,11 @@ export default function PurchaseOrderCreatePage() {
           <SupplierSelectionModal
             isOpen={modalState.isOpen}
             onClose={modalActions.onClose}
+            category={modalState.category}
+            itemId={modalState.itemId}
+            itemLabel={modalState.itemLabel}
             tyreId={modalState.activeLine.TyreID}
+            batteryId={modalState.activeLine.BatteryID}
             tyreLabel={modalState.tyreLabel}
             lineQty={modalState.activeLine.Qty}
             existingSuppliers={modalState.activeLine.Suppliers}
@@ -73,6 +100,12 @@ export default function PurchaseOrderCreatePage() {
           isOpen={isCreateTyreOpen}
           onClose={() => setIsCreateTyreOpen(false)}
           onCreated={handleTyreCreated}
+        />
+
+        <CreateBatteryDialog
+          isOpen={isCreateBatteryOpen}
+          onClose={() => setIsCreateBatteryOpen(false)}
+          onCreated={handleBatteryCreated}
         />
       </section>
     </main>

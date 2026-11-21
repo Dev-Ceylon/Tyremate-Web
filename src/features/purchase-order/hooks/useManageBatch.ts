@@ -6,6 +6,7 @@ export interface UseManageBatchOptions {
   poTyresId: number | null
   lineQty: number
   isOpen: boolean
+  isBattery?: boolean
   onSaved?: () => void
 }
 
@@ -23,7 +24,10 @@ const toNonNegativeInt = (raw: string): number => {
   return Number.isInteger(value) ? Math.max(value, 0) : Number.NaN
 }
 
-const sanitizeDot = (raw: string): string => raw.replace(/\D/g, "").slice(0, 4)
+const sanitizeDot = (raw: string, isBattery?: boolean): string => {
+  if (isBattery) return raw.trim().slice(0, 50)
+  return raw.replace(/\D/g, "").slice(0, 4)
+}
 
 const isValidDot = (dot: string): boolean => {
   if (!/^\d{4}$/.test(dot)) return false
@@ -32,9 +36,9 @@ const isValidDot = (dot: string): boolean => {
 }
 
 const DOT_FORMAT_ERROR = "DOT must be a 4-digit WWYY code (e.g. 2526 = week 25 of 2026)"
-const DOT_DUPLICATE_ERROR = "Duplicate DOT"
+const DOT_DUPLICATE_ERROR = "Duplicate code"
 
-export function useManageBatch({ poTyresId, lineQty, isOpen, onSaved }: UseManageBatchOptions) {
+export function useManageBatch({ poTyresId, lineQty, isOpen, isBattery = false, onSaved }: UseManageBatchOptions) {
   const [drafts, setDrafts] = useState<BatchDraft[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -60,9 +64,9 @@ export function useManageBatch({ poTyresId, lineQty, isOpen, onSaved }: UseManag
         }
 
         setDrafts(
-          records.map((record: PoTyreBatchRecord, index) => ({
+          records.map((record: any, index) => ({
             localId: index + 1,
-            DOT: record.DOT ?? "",
+            DOT: record.DOT ?? record.BatchCode ?? "",
             Qty: String(record.Qty),
           })),
         )
@@ -93,12 +97,12 @@ export function useManageBatch({ poTyresId, lineQty, isOpen, onSaved }: UseManag
         if (draft.localId !== localId) return draft
         const next = { ...draft, ...patch }
         if (patch.DOT !== undefined) {
-          next.DOT = sanitizeDot(patch.DOT ?? "")
+          next.DOT = sanitizeDot(patch.DOT ?? "", isBattery)
         }
         return next
       })
     )
-  }, [])
+  }, [isBattery])
 
   const addRow = useCallback(() => {
     setDrafts((prev) => [...prev, EMPTY_DRAFT(nextLocalId)])
@@ -120,7 +124,7 @@ export function useManageBatch({ poTyresId, lineQty, isOpen, onSaved }: UseManag
         return
       }
 
-      if (!isValidDot(dot)) {
+      if (!isBattery && !isValidDot(dot)) {
         errors[draft.localId] = DOT_FORMAT_ERROR
         return
       }
@@ -137,7 +141,7 @@ export function useManageBatch({ poTyresId, lineQty, isOpen, onSaved }: UseManag
     })
 
     return errors
-  }, [drafts])
+  }, [drafts, isBattery])
 
   const validate = (): string | null => {
     for (const draft of drafts) {

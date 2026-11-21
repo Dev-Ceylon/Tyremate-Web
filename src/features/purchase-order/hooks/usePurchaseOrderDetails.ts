@@ -166,17 +166,25 @@ export function usePurchaseOrderDetails() {
   }, [poId, showToast, fetchOrderDetails])
 
   const displayRows = useMemo<PurchaseOrderDisplayRow[]>(() => {
-    if (!order?.Tyres) return []
+    const rawItems = (order?.Category === "battery" ? order?.Batteries : order?.Tyres) || order?.Lines || []
+    if (!rawItems || rawItems.length === 0) return []
 
-    return (order.Tyres as PoTyreRecord[]).flatMap((tyre): PurchaseOrderDisplayRow[] => {
-      const base = tyre as PurchaseOrderDisplayRow;
-      const lineTotal = (tyre.Price * tyre.Qty) * (1 - tyre.Discount / 100)
+    return rawItems.flatMap((item: any): PurchaseOrderDisplayRow[] => {
+      const base = item as PurchaseOrderDisplayRow
+      const lineTotal = (item.Price * item.Qty) * (1 - (item.Discount || 0) / 100)
 
-      if (!tyre.Suppliers || tyre.Suppliers.length === 0) {
+      const brand = item.Brand || ""
+      const sizeOrModel = order?.Category === "battery" ? (item.Model || item.Voltage || "") : (item.Size || "")
+      const patternOrCapacity = order?.Category === "battery" ? (item.Capacity || item.Technology || "") : (item.Pattern || "")
+
+      if (!item.Suppliers || item.Suppliers.length === 0) {
         return [{ 
           ...base, 
+          Brand: brand,
+          Size: sizeOrModel,
+          Pattern: patternOrCapacity,
           displaySupplier: null, 
-          rowKey: `tyre-${tyre.ID}`,
+          rowKey: `line-${item.ID}`,
           lineTotal,
           isApproved: false,
           isRejected: false,
@@ -184,28 +192,32 @@ export function usePurchaseOrderDetails() {
         }]
       }
 
-      return tyre.Suppliers.map((s) => {
-        const isApproved = s.IsApproved === 1 || s.IsApproved === true;
-        const isRejected = s.IsApproved !== null && !isApproved;
-        const rowClass = isApproved ? "row-approved" : isRejected ? "row-rejected" : "";
+      return item.Suppliers.map((s: any) => {
+        const isApproved = s.IsApproved === 1 || s.IsApproved === true
+        const isRejected = s.IsApproved !== null && !isApproved
+        const rowClass = isApproved ? "row-approved" : isRejected ? "row-rejected" : ""
 
         return {
           ...base,
+          Brand: brand,
+          Size: sizeOrModel,
+          Pattern: patternOrCapacity,
           Qty: s.Qty,
           displaySupplier: s,
-          rowKey: `tyre-${tyre.ID}-sup-${s.ID}`,
-          lineTotal: (tyre.Price * s.Qty) * (1 - tyre.Discount / 100),
+          rowKey: `line-${item.ID}-sup-${s.ID}`,
+          lineTotal: (item.Price * s.Qty) * (1 - (item.Discount || 0) / 100),
           isApproved,
           isRejected,
           rowClass
         }
       })
     })
-  }, [order?.Tyres])
+  }, [order?.Category, order?.Tyres, order?.Batteries, order?.Lines])
 
   const totals = useMemo(() => {
-    const subtotal = order?.Tyres?.reduce((acc, t) => acc + (t.Price * t.Qty), 0) || 0
-    const totalDiscount = order?.Tyres?.reduce((acc, t) => acc + (t.Price * t.Qty * (t.Discount / 100)), 0) || 0
+    const rawItems = (order?.Category === "battery" ? order?.Batteries : order?.Tyres) || order?.Lines || []
+    const subtotal = rawItems.reduce((acc: number, t: any) => acc + ((t.Price || 0) * (t.Qty || 0)), 0) || 0
+    const totalDiscount = rawItems.reduce((acc: number, t: any) => acc + ((t.Price || 0) * (t.Qty || 0) * ((t.Discount || 0) / 100)), 0) || 0
     const netTotal = subtotal - totalDiscount
 
     return {
@@ -213,7 +225,7 @@ export function usePurchaseOrderDetails() {
       totalDiscount,
       netTotal
     }
-  }, [order?.Tyres])
+  }, [order?.Category, order?.Tyres, order?.Batteries, order?.Lines])
 
   useEffect(() => {
     fetchOrderDetails()

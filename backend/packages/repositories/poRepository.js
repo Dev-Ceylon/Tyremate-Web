@@ -1,6 +1,40 @@
 const db = require("../database/connection")
 
-exports.getAllPOs = () => {
+const ensurePoCategoryColumn = () => {
+  try {
+    const columns = db.prepare("PRAGMA table_info(PO)").all()
+    const hasCategory = columns.some((c) => c.name.toLowerCase() === "category")
+    if (!hasCategory) {
+      db.exec("ALTER TABLE PO ADD COLUMN Category TEXT DEFAULT 'tyre'")
+    }
+  } catch (err) {
+    // ignore
+  }
+}
+
+ensurePoCategoryColumn()
+
+exports.getAllPOs = (category) => {
+  if (category && (category === "tyre" || category === "battery")) {
+    return db
+      .prepare(`
+        SELECT
+          p.ID,
+          p.SoID,
+          p.StatusID,
+          s.StatusCode,
+          p.IsAdminApproved,
+          p.IsSupplierApproved,
+          p.Date,
+          COALESCE(p.Category, 'tyre') AS Category
+        FROM PO p
+        LEFT JOIN StatusM s ON s.Id = p.StatusID
+        WHERE COALESCE(p.Category, 'tyre') = ?
+        ORDER BY p.ID DESC
+      `)
+      .all(category)
+  }
+
   return db
     .prepare(`
       SELECT
@@ -10,7 +44,8 @@ exports.getAllPOs = () => {
         s.StatusCode,
         p.IsAdminApproved,
         p.IsSupplierApproved,
-        p.Date
+        p.Date,
+        COALESCE(p.Category, 'tyre') AS Category
       FROM PO p
       LEFT JOIN StatusM s ON s.Id = p.StatusID
       ORDER BY p.ID DESC
@@ -28,7 +63,8 @@ exports.getPOById = (id) => {
         s.StatusCode,
         p.IsAdminApproved,
         p.IsSupplierApproved,
-        p.Date
+        p.Date,
+        COALESCE(p.Category, 'tyre') AS Category
       FROM PO p
       LEFT JOIN StatusM s ON s.Id = p.StatusID
       WHERE p.ID = ?
@@ -46,7 +82,8 @@ exports.getPOBySoId = (soId) => {
         s.StatusCode,
         p.IsAdminApproved,
         p.IsSupplierApproved,
-        p.Date
+        p.Date,
+        COALESCE(p.Category, 'tyre') AS Category
       FROM PO p
       LEFT JOIN StatusM s ON s.Id = p.StatusID
       WHERE p.SoID = ?
@@ -60,15 +97,17 @@ exports.createPO = (po) => {
       INSERT INTO PO (
         SoID,
         StatusID,
+        Category,
         IsAdminApproved,
         IsSupplierApproved,
         Date
       )
-      VALUES (?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?)
     `)
     .run(
       po.SoID,
       po.StatusID,
+      po.Category || "tyre",
       po.IsAdminApproved,
       po.IsSupplierApproved,
       po.Date
@@ -82,14 +121,16 @@ exports.createStandalonePO = (po) => {
     .prepare(`
       INSERT INTO PO (
         StatusID,
+        Category,
         IsAdminApproved,
         IsSupplierApproved,
         Date
       )
-      VALUES (?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?)
     `)
     .run(
       po.StatusID,
+      po.Category || "tyre",
       po.IsAdminApproved,
       po.IsSupplierApproved,
       po.Date
@@ -104,6 +145,7 @@ exports.updatePO = (id, po) => {
       UPDATE PO
       SET
         SoID = ?,
+        Category = COALESCE(?, Category, 'tyre'),
         IsAdminApproved = ?,
         IsSupplierApproved = ?,
         Date = ?
@@ -111,6 +153,7 @@ exports.updatePO = (id, po) => {
     `)
     .run(
       po.SoID,
+      po.Category || null,
       po.IsAdminApproved,
       po.IsSupplierApproved,
       po.Date,
@@ -129,6 +172,7 @@ exports.updateStandalonePO = (id, po) => {
     .prepare(`
       UPDATE PO
       SET
+        Category = COALESCE(?, Category, 'tyre'),
         IsAdminApproved = ?,
         IsSupplierApproved = ?,
         Date = ?,
@@ -136,6 +180,7 @@ exports.updateStandalonePO = (id, po) => {
       WHERE ID = ?
     `)
     .run(
+      po.Category || null,
       po.IsAdminApproved,
       po.IsSupplierApproved,
       po.Date,
@@ -166,7 +211,18 @@ exports.updateStatus = (id, statusId) => {
   return exports.getPOById(id)
 }
 
-exports.getPendingPOCount = () => {
+exports.getPendingPOCount = (category) => {
+  if (category && (category === "tyre" || category === "battery")) {
+    return db
+      .prepare(`
+        SELECT COUNT(*) AS Count
+        FROM PO p
+        LEFT JOIN StatusM s ON s.Id = p.StatusID
+        WHERE s.StatusCode NOT IN ('arv', 'cmp') AND COALESCE(p.Category, 'tyre') = ?
+      `)
+      .get(category)
+  }
+
   return db
     .prepare(`
       SELECT COUNT(*) AS Count

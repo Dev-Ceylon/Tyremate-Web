@@ -1,6 +1,9 @@
 const db = require("../database/connection")
+const poRepo = require("../repositories/poRepository")
 const poTyresRepo = require("../repositories/poTyresRepository")
 const poTyreBatchesRepo = require("../repositories/poTyreBatchesRepository")
+const poBatteriesRepo = require("../repositories/poBatteriesRepository")
+const poBatteryBatchesRepo = require("../repositories/poBatteryBatchesRepository")
 
 const normalizeId = (value, fieldName) => {
   const parsed = Number(value)
@@ -31,7 +34,12 @@ const normalizeBatches = (batches) => {
         ? null
         : String(batch.DOT).trim() || null
 
-    return { DOT: dot, Qty: qty }
+    const batchCode =
+      batch.BatchCode === undefined || batch.BatchCode === null
+        ? dot
+        : String(batch.BatchCode).trim() || dot || null
+
+    return { DOT: dot, BatchCode: batchCode, Qty: qty }
   })
 }
 
@@ -41,14 +49,41 @@ const resolveCreatedBy = (ctx) => {
   return user?.displayName || user?.username || changedBy || null
 }
 
-exports.getPoTyreBatches = (poTyresId) => {
-  const normalizedPoTyresId = normalizeId(poTyresId, "PoTyresID")
+exports.getPoTyreBatches = (poLineId) => {
+  const normalizedId = normalizeId(poLineId, "PoLineID")
 
-  return poTyreBatchesRepo.getBatchesByPoTyresId(normalizedPoTyresId)
+  const tyreBatches = poTyreBatchesRepo.getBatchesByPoTyresId(normalizedId)
+  if (tyreBatches.length > 0) return tyreBatches
+
+  const batteryBatches = poBatteryBatchesRepo.getBatchesByPoBatteriesId(normalizedId)
+  if (batteryBatches.length > 0) {
+    return batteryBatches.map((b) => ({
+      ...b,
+      DOT: b.BatchCode,
+    }))
+  }
+
+  return []
 }
 
 exports.getBatchStatusByPoId = (poId) => {
   const normalizedPoId = normalizeId(poId, "POID")
+  const po = poRepo.getPOById(normalizedPoId)
+
+  if (po && po.Category === "battery") {
+    return poBatteryBatchesRepo.getBatchStatusByPoId(normalizedPoId).map((row) => ({
+      PoTyresID: Number(row.PoBatteriesID),
+      BatteryID: Number(row.BatteryID),
+      Brand: row.Brand,
+      Model: row.Model,
+      Capacity: row.Capacity,
+      Voltage: row.Voltage,
+      Qty: Number(row.Qty),
+      IsBatchManaged: Number(row.IsBatchManaged) === 1,
+      BatchQty: Number(row.BatchQty ?? 0),
+      BatchCount: Number(row.BatchCount ?? 0),
+    }))
+  }
 
   return poTyreBatchesRepo.getBatchStatusByPoId(normalizedPoId).map((row) => ({
     PoTyresID: Number(row.PoTyresID),
@@ -63,23 +98,48 @@ exports.getBatchStatusByPoId = (poId) => {
   }))
 }
 
-exports.savePoTyreBatches = (poTyresId, batches, ctx) => {
-  const normalizedPoTyresId = normalizeId(poTyresId, "PoTyresID")
+exports.savePoTyreBatches = (poLineId, batches, ctx) => {
+  const normalizedId = normalizeId(poLineId, "PoLineID")
   const normalizedBatches = normalizeBatches(batches)
-  const poTyre = poTyresRepo.getPoTyreById(normalizedPoTyresId)
-  if (!poTyre) throw new Error("PO-Tyre line not found")
 
+  const poTyre = poTyresRepo.getPoTyreById(normalizedId)
+  const poBattery = !poTyre ? poBatteriesRepo.getPoBatteryById(normalizedId) : null
+
+  if (!poTyre && !poBattery) {
+    throw new Error("PO line item not found")
+  }
+
+  const lineQty = Number((poTyre || poBattery).Qty ?? 0)
   const batchesTotal = normalizedBatches.reduce((sum, batch) => sum + batch.Qty, 0)
-  if (normalizedBatches.length > 0 && batchesTotal !== Number(poTyre.Qty ?? 0)) {
-    throw new Error("Sum of batch quantities must equal the PO tyre line quantity")
+  if (normalizedBatches.length > 0 && batchesTotal !== lineQty) {
+    throw new Error("Sum of batch quantities must equal the PO line quantity")
   }
 
   const createdBy = resolveCreatedBy(ctx)
+
+  if (poBattery) {
+    db.transaction(() => {
+      poBatteryBatchesRepo.deleteBatchesByPoBatteriesId(normalizedId)
+      for (const batch of normalizedBatches) {
+        poBatteryBatchesRepo.createBatch({
+          PoBatteriesID: normalizedId,
+          BatchCode: batch.BatchCode || batch.DOT,
+          Qty: batch.Qty,
+        })
+      }
+    })()
+
+    return poBatteryBatchesRepo.getBatchesByPoBatteriesId(normalizedId).map((b) => ({
+      ...b,
+      DOT: b.BatchCode,
+    }))
+  }
+
   db.transaction(() => {
-    poTyreBatchesRepo.deleteBatchesByPoTyresId(normalizedPoTyresId)
+    poTyreBatchesRepo.deleteBatchesByPoTyresId(normalizedId)
     for (const batch of normalizedBatches) {
       poTyreBatchesRepo.createBatch({
-        PoTyresID: normalizedPoTyresId,
+        PoTyresID: normalizedId,
         DOT: batch.DOT,
         Qty: batch.Qty,
         CreatedBy: createdBy,
@@ -87,5 +147,5 @@ exports.savePoTyreBatches = (poTyresId, batches, ctx) => {
     }
   })()
 
-  return poTyreBatchesRepo.getBatchesByPoTyresId(normalizedPoTyresId)
+  return poTyreBatchesRepo.getBatchesByPoTyresId(normalizedId)
 }

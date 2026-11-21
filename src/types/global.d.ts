@@ -547,8 +547,8 @@ declare global {
       }
 
       po: {
-        getPOs: () => Promise<PoRecord[]>
-        getPendingPOCount: () => Promise<PoPendingCount>
+        getPOs: (category?: string) => Promise<PoRecord[]>
+        getPendingPOCount: (category?: string) => Promise<PoPendingCount>
         getPOById: (id: number) => Promise<PoRecord>
         createPO: (data: PoPayload) => Promise<PoRecord>
         createStandalonePO: (data: CreatePoPayload | any) => Promise<PoRecord>
