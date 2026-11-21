@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import type { TyreRecord } from "../../tyres/models/tyre"
 import { tyreService } from "../../tyres/services/tyreService"
-import type { SupplierPayload, SupplierRecord } from "../models/supplier"
+import { SUPPLIER_TYPE_CODES } from "../constants/supplierTypeConstants"
+import type { SupplierPayload, SupplierRecord, SupplierTypeRecord } from "../models/supplier"
 import { supplierService } from "../services/supplierService"
 
 const initialFormState: SupplierPayload = {
@@ -9,6 +10,9 @@ const initialFormState: SupplierPayload = {
   Name: "",
   TinNo: "",
   VatNo: "",
+  SupplierTypeID: null,
+  SupplierTypeCode: SUPPLIER_TYPE_CODES.TYRES,
+  SupplierTypeName: "Tyres",
   Contacts: [],
   Emails: [],
   Addresses: [],
@@ -26,6 +30,7 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
   const onSuccess = options?.onSuccess
   const onError = options?.onError
   const [formData, setFormData] = useState<SupplierPayload>(initialFormState)
+  const [supplierTypes, setSupplierTypes] = useState<SupplierTypeRecord[]>([])
   const [availableTyres, setAvailableTyres] = useState<TyreRecord[]>([])
   const [tyresLoading, setTyresLoading] = useState(false)
   const [tyresError, setTyresError] = useState<string | null>(null)
@@ -115,10 +120,52 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
     }
   }, [supplierId, loadSupplier, resetForm])
 
+  useEffect(() => {
+    let active = true
+    supplierService
+      .getSupplierTypes()
+      .then((types) => {
+        if (active && Array.isArray(types)) {
+          setSupplierTypes(types)
+          setFormData((prev) => {
+            if (!prev.SupplierTypeID && prev.SupplierTypeCode) {
+              const matched = types.find((t) => t.TypeCode === prev.SupplierTypeCode)
+              if (matched) {
+                return {
+                  ...prev,
+                  SupplierTypeID: matched.Id,
+                  SupplierTypeName: matched.TypeName,
+                }
+              }
+            }
+            return prev
+          })
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to constants if offline/loading
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   function updateField<K extends keyof SupplierPayload>(
     field: K,
     value: SupplierPayload[K],
   ) {
+    if (field === "SupplierTypeCode") {
+      const code = value as string
+      const matched = supplierTypes.find((t) => t.TypeCode === code)
+      setFormData((prev) => ({
+        ...prev,
+        SupplierTypeCode: code,
+        SupplierTypeID: matched ? matched.Id : prev.SupplierTypeID,
+        SupplierTypeName: matched ? matched.TypeName : prev.SupplierTypeName,
+      }))
+      return
+    }
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -149,6 +196,8 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
       Name: formData.Name.trim(),
       TinNo: formData.TinNo?.trim() || null,
       VatNo: formData.VatNo?.trim() || null,
+      SupplierTypeID: formData.SupplierTypeID ?? null,
+      SupplierTypeCode: formData.SupplierTypeCode ?? null,
       Contacts: formData.Contacts,
       Emails: formData.Emails,
       Addresses: formData.Addresses,
@@ -178,6 +227,7 @@ export function useSupplierForm(options?: UseSupplierFormOptions) {
 
   return {
     formData,
+    supplierTypes,
     availableTyres,
     tyresLoading,
     tyresError,
@@ -211,6 +261,9 @@ function toFormState(supplier: SupplierRecord): SupplierPayload {
     Name: supplier.Name,
     TinNo: supplier.TinNo ?? "",
     VatNo: supplier.VatNo ?? "",
+    SupplierTypeID: supplier.SupplierTypeID ?? null,
+    SupplierTypeCode: supplier.SupplierTypeCode ?? SUPPLIER_TYPE_CODES.TYRES,
+    SupplierTypeName: supplier.SupplierTypeName ?? "Tyres",
     Contacts: supplier.Contacts ?? [],
     Emails: supplier.Emails ?? [],
     Addresses: supplier.Addresses ?? [],

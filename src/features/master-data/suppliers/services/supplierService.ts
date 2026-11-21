@@ -14,6 +14,10 @@ export const supplierService = {
     return supplierClient.getById(supplierId)
   },
 
+  getSupplierTypes() {
+    return supplierClient.getTypes()
+  },
+
   createSupplier(data: SupplierPayload) {
     return supplierClient.create(data)
   },

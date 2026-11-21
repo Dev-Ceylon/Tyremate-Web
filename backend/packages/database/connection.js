@@ -37,6 +37,13 @@ try {
   if (soDeliveryColumns.size > 0) {
     db.exec("CREATE INDEX IF NOT EXISTS idx_so_delivery_gate_pass ON SODelivery (GatePassNo)")
   }
+
+  const supplierColumns = new Set(
+    db.prepare("PRAGMA table_info(SupplierM)").all().map((column) => column.name),
+  )
+  if (supplierColumns.size > 0 && !supplierColumns.has("SupplierTypeID")) {
+    db.exec("ALTER TABLE SupplierM ADD COLUMN SupplierTypeID INTEGER")
+  }
 } catch (error) {
   console.error("Failed to initialize database", error)
   throw new Error(`Database initialization failed: ${error.message}`)

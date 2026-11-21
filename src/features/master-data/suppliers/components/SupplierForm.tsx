@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react"
 import type { TyreRecord } from "../../tyres/models/tyre"
 import type { SupplierPayload, SupplierContact, SupplierEmail, SupplierAddress } from "../models/supplier"
 import { formatTyreLabel } from "../../../../shared/tyre/models/tyreDisplay"
+import { SUPPLIER_TYPE_CODES, SUPPLIER_TYPE_OPTIONS } from "../constants/supplierTypeConstants"
 import { SupplierTyrePickerModal } from "./SupplierTyrePickerModal"
 import { AddMobileDialog } from "./AddDataPopupModals/AddMobileDialog"
 import { AddEmailDialog } from "./AddDataPopupModals/AddEmailDialog"
@@ -131,6 +132,21 @@ export function SupplierForm({
           ) : (
             <input className="text-input" value={formData.Name} onChange={(event) => onChange("Name", event.target.value)} required />
           )}
+        </label>
+
+        <label className="field-label">
+          Supplier Type
+          <select
+            className="text-input"
+            value={formData.SupplierTypeCode ?? SUPPLIER_TYPE_CODES.TYRES}
+            onChange={(event) => onChange("SupplierTypeCode", event.target.value)}
+          >
+            {SUPPLIER_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="field-label">

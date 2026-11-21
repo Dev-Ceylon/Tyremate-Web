@@ -4,6 +4,7 @@ const tyreRepo = require("../repositories/tyreRepository")
 const tyreSupplierRepo = require("../repositories/tyreSupplierRepository")
 const masterDataAuditLogService = require("./masterDataAuditLogService")
 const { AUDIT_ACTIONS } = require("../constants/auditActionConstants")
+const { getSupplierTypeIdByCode } = require("../constants/supplierTypeConstants")
 const {
   normalizeText,
   normalizeRequiredText,
@@ -44,11 +45,30 @@ const normalizeAddresses = (addresses) => {
 }
 
 const toSupplierPayload = (payload = {}) => {
+  let supplierTypeId = null
+  if (payload.SupplierTypeCode) {
+    supplierTypeId = getSupplierTypeIdByCode(payload.SupplierTypeCode)
+  }
+
+  if (
+    !supplierTypeId &&
+    payload.SupplierTypeID !== undefined &&
+    payload.SupplierTypeID !== null &&
+    payload.SupplierTypeID !== ""
+  ) {
+    const parsed = Number(payload.SupplierTypeID)
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error("Valid SupplierTypeID is required")
+    }
+    supplierTypeId = parsed
+  }
+
   return {
     SupplierCode: normalizeText(payload.SupplierCode),
     Name: normalizeRequiredText(payload.Name, "Supplier name"),
     TinNo: normalizeText(payload.TinNo),
     VatNo: normalizeText(payload.VatNo),
+    SupplierTypeID: supplierTypeId,
     Contacts: normalizeContacts(payload.Contacts),
     Emails: normalizeEmails(payload.Emails),
     Addresses: normalizeAddresses(payload.Addresses)
@@ -142,6 +162,7 @@ exports.createSupplier = (payload, ctx) => {
       Name: data.Name,
       TinNo: data.TinNo,
       VatNo: data.VatNo,
+      SupplierTypeID: data.SupplierTypeID,
     })
 
     data.Contacts.forEach(c => supplierRepo.createSupplierContact({ ...c, SupplierID: supplier.SupplierID }))
@@ -239,6 +260,10 @@ exports.deleteSupplier = (supplierId, ctx) => {
   })
 
   return { success: true }
+}
+
+exports.getSupplierTypes = () => {
+  return supplierRepo.getAllSupplierTypes()
 }
 
 const withSupplierDetails = (supplier, extras = {}) => ({

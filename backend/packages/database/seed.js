@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs")
 const db = require("./connection")
 const { initializeStatusIds, STATUS_SEED_DATA } = require("../constants/statusConstants")
+const { initializeSupplierTypeIds, SUPPLIER_TYPE_SEED_DATA } = require("../constants/supplierTypeConstants")
 const { initializePaymentTypeIds, PAYMENT_TYPE_SEED_DATA } = require("../constants/paymentTypeConstants")
 const { initializeReminderTypeIds, REMINDER_TYPE_SEED_DATA } = require("../constants/reminderTypeConstants")
 const { initializePolicyViolationIds, POLICY_VIOLATION_SEED_DATA } = require("../constants/policyViolationConstants")
@@ -148,6 +149,17 @@ const runSeed = async () => {
       })
 
       initializeStatusIds(db)
+
+      const insertSupplierType = db.prepare(`
+        INSERT OR IGNORE INTO SupplierTypeM (TypeCode, TypeName, Description)
+        VALUES (?, ?, ?)
+      `)
+
+      SUPPLIER_TYPE_SEED_DATA.forEach(([code, name, description]) => {
+        insertSupplierType.run(code, name, description)
+      })
+
+      initializeSupplierTypeIds(db)
 
       const insertPaymentType = db.prepare(`
         INSERT OR IGNORE INTO PaymentTypeM (PaymentTypeCode, PaymentTypeName)

@@ -117,6 +117,7 @@ const api = {
     suggest: (field, query) => ipcRenderer.invoke("suppliers:suggest", field, query),
     getSuppliers: () => ipcRenderer.invoke("suppliers:getAll"),
     getSupplierById: (supplierId) => ipcRenderer.invoke("suppliers:getById", supplierId),
+    getSupplierTypes: () => ipcRenderer.invoke("suppliers:getTypes"),
     createSupplier: (data) => ipcRenderer.invoke("suppliers:create", data),
     updateSupplier: (supplierId, data) => ipcRenderer.invoke("suppliers:update", supplierId, data),
     deleteSupplier: (supplierId) => ipcRenderer.invoke("suppliers:delete", supplierId)

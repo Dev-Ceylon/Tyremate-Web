@@ -29,11 +29,23 @@ export type SupplierAddress = {
   IsPrimary: boolean | number
 }
 
+export type SupplierTypeRecord = {
+  Id: number
+  TypeCode: string
+  TypeName: string
+  Description?: string | null
+  SupplierTypeCode?: string
+  SupplierTypeName?: string
+}
+
 export type SupplierPayload = {
   SupplierCode: string
   Name: string
   TinNo?: string | null
   VatNo?: string | null
+  SupplierTypeID?: number | null
+  SupplierTypeCode?: string | null
+  SupplierTypeName?: string | null
   Contacts?: SupplierContact[]
   Emails?: SupplierEmail[]
   Addresses?: SupplierAddress[]

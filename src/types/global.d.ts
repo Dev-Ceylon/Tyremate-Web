@@ -1,4 +1,4 @@
-import type { SupplierPayload, SupplierRecord } from "../features/master-data/suppliers/models/supplier"
+import type { SupplierPayload, SupplierRecord, SupplierTypeRecord } from "../features/master-data/suppliers/models/supplier"
 import type { ContractorPayload, ContractorRecord } from "../features/master-data/contractors/models/contractor"
 import type { CustomerPayload, CustomerRecord } from "../features/master-data/customers/models/customer"
 import type { BranchPayload, BranchRecord } from "../features/master-data/branches/models/branch"
@@ -203,6 +203,7 @@ declare global {
         suggest: (field: string, query: string) => Promise<string[]>
         getSuppliers: () => Promise<SupplierRecord[]>
         getSupplierById: (supplierId: number) => Promise<SupplierRecord>
+        getSupplierTypes: () => Promise<SupplierTypeRecord[]>
         createSupplier: (data: SupplierPayload) => Promise<SupplierRecord>
         updateSupplier: (supplierId: number, data: SupplierPayload) => Promise<SupplierRecord>
         deleteSupplier: (supplierId: number) => Promise<{ success: true }>

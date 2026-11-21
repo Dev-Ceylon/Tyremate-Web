@@ -9,9 +9,13 @@ exports.getAllSuppliers = () => {
         s.Name,
         s.TinNo,
         s.VatNo,
+        s.SupplierTypeID,
+        st.TypeCode AS SupplierTypeCode,
+        st.TypeName AS SupplierTypeName,
         (SELECT sc.PhoneNumber FROM SupplierContact sc WHERE sc.SupplierID = s.SupplierID ORDER BY sc.ID ASC LIMIT 1) AS Contact,
         (SELECT sa.AddressLine1 FROM SupplierAddress sa WHERE sa.SupplierID = s.SupplierID ORDER BY sa.ID ASC LIMIT 1) AS Address
       FROM SupplierM s
+      LEFT JOIN SupplierTypeM st ON st.Id = s.SupplierTypeID
       ORDER BY s.SupplierID DESC
     `)
     .all()
@@ -21,13 +25,17 @@ exports.getSupplierById = (supplierId) => {
   return db
     .prepare(`
       SELECT
-        SupplierID,
-        SupplierCode,
-        Name,
-        TinNo,
-        VatNo
-      FROM SupplierM
-      WHERE SupplierID = ?
+        s.SupplierID,
+        s.SupplierCode,
+        s.Name,
+        s.TinNo,
+        s.VatNo,
+        s.SupplierTypeID,
+        st.TypeCode AS SupplierTypeCode,
+        st.TypeName AS SupplierTypeName
+      FROM SupplierM s
+      LEFT JOIN SupplierTypeM st ON st.Id = s.SupplierTypeID
+      WHERE s.SupplierID = ?
     `)
     .get(supplierId)
 }
@@ -36,13 +44,17 @@ exports.getSupplierByCode = (supplierCode) => {
   return db
     .prepare(`
       SELECT
-        SupplierID,
-        SupplierCode,
-        Name,
-        TinNo,
-        VatNo
-      FROM SupplierM
-      WHERE SupplierCode = ?
+        s.SupplierID,
+        s.SupplierCode,
+        s.Name,
+        s.TinNo,
+        s.VatNo,
+        s.SupplierTypeID,
+        st.TypeCode AS SupplierTypeCode,
+        st.TypeName AS SupplierTypeName
+      FROM SupplierM s
+      LEFT JOIN SupplierTypeM st ON st.Id = s.SupplierTypeID
+      WHERE s.SupplierCode = ?
     `)
     .get(supplierCode)
 }
@@ -54,15 +66,17 @@ exports.createSupplier = (supplier) => {
         SupplierCode,
         Name,
         TinNo,
-        VatNo
+        VatNo,
+        SupplierTypeID
       )
-      VALUES (?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?)
     `)
     .run(
       supplier.SupplierCode,
       supplier.Name,
       supplier.TinNo,
-      supplier.VatNo
+      supplier.VatNo,
+      supplier.SupplierTypeID ?? null
     )
 
   return exports.getSupplierById(result.lastInsertRowid)
@@ -76,7 +90,8 @@ exports.updateSupplier = (supplierId, supplier) => {
         SupplierCode = ?,
         Name = ?,
         TinNo = ?,
-        VatNo = ?
+        VatNo = ?,
+        SupplierTypeID = ?
       WHERE SupplierID = ?
     `)
     .run(
@@ -84,6 +99,7 @@ exports.updateSupplier = (supplierId, supplier) => {
       supplier.Name,
       supplier.TinNo,
       supplier.VatNo,
+      supplier.SupplierTypeID ?? null,
       supplierId
     )
 
@@ -201,3 +217,34 @@ exports.getNextSupplierCode = () => {
   const nextNumber = (row?.MaxId ?? 0) + 1
   return `SUP${String(nextNumber).padStart(5, "0")}`
 }
+
+exports.getAllSupplierTypes = () => {
+  return db
+    .prepare("SELECT Id, TypeCode, TypeName, Description FROM SupplierTypeM ORDER BY Id ASC")
+    .all()
+    .map((row) => ({
+      Id: row.Id,
+      TypeCode: row.TypeCode,
+      TypeName: row.TypeName,
+      Description: row.Description,
+      SupplierTypeCode: row.TypeCode,
+      SupplierTypeName: row.TypeName,
+    }))
+}
+
+exports.getSupplierTypeByCode = (code) => {
+  const row = db
+    .prepare("SELECT Id, TypeCode, TypeName, Description FROM SupplierTypeM WHERE LOWER(TypeCode) = LOWER(?)")
+    .get(code)
+
+  if (!row) return null
+  return {
+    Id: row.Id,
+    TypeCode: row.TypeCode,
+    TypeName: row.TypeName,
+    Description: row.Description,
+    SupplierTypeCode: row.TypeCode,
+    SupplierTypeName: row.TypeName,
+  }
+}
+
