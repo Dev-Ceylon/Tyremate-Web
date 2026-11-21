@@ -7,6 +7,7 @@ import type {
 } from "../hooks/usePurchaseOrderForm"
 import type { POCategory } from "@/shared/constants/poCategoryConstants"
 import { saveButtonLabel } from "../../../shared/ui/saveButtonLabel"
+import { TyreIcon, BatteryIcon, CalendarIcon } from "../../../shared/ui/icons"
 
 interface PurchaseOrderFormProps {
   state: {
@@ -65,43 +66,47 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
 
   return (
     <form className="po-form" onSubmit={actions.onSubmit}>
-      <div className="po-form-top-meta po-form-full-span" style={{ display: "flex", gap: "2rem", alignItems: "center", marginBottom: "1rem" }}>
-        <label className="field-label" style={{ margin: 0 }}>
-          PO Date: <span className="so-date-text">{state.formData.Date}</span>
-        </label>
+      <div className="po-top-bar po-form-full-span">
+        <div className="po-date-badge">
+          <CalendarIcon />
+          <span className="po-date-label">PO Date:</span>
+          <strong>{state.formData.Date}</strong>
+        </div>
 
-        {isEditMode ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span className="field-label" style={{ margin: 0 }}>Category:</span>
-            <span className={`status-badge ${category === "battery" ? "status-pending" : "status-approved"}`}>
-              {category === "battery" ? "Batteries" : "Tyres"}
-            </span>
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span className="field-label" style={{ margin: 0 }}>Category:</span>
-            <div style={{ display: "inline-flex", borderRadius: "6px", overflow: "hidden", border: "1px solid var(--border-color, #ccc)" }}>
+        <div className="po-category-group">
+          <span className="po-category-label">Category:</span>
+          {isEditMode ? (
+            <div className="po-category-read-only">
+              {category === "battery" ? <BatteryIcon /> : <TyreIcon />}
+              <span>{category === "battery" ? "Batteries Order" : "Tyres Order"}</span>
+            </div>
+          ) : (
+            <div className="po-category-segment" role="radiogroup" aria-label="Purchase Order Category">
               <button
                 type="button"
-                className={`secondary-action ${category === "tyre" ? "primary-action" : ""}`}
-                style={{ borderRadius: 0, border: "none", padding: "0.35rem 0.85rem" }}
+                role="radio"
+                aria-checked={category === "tyre"}
+                className={`po-category-pill ${category === "tyre" ? "po-category-pill-active" : ""}`}
                 onClick={() => actions.onCategoryChange?.("tyre")}
                 disabled={state.submitting}
               >
-                Tyres
+                <TyreIcon />
+                <span>Tyres</span>
               </button>
               <button
                 type="button"
-                className={`secondary-action ${category === "battery" ? "primary-action" : ""}`}
-                style={{ borderRadius: 0, border: "none", padding: "0.35rem 0.85rem" }}
+                role="radio"
+                aria-checked={category === "battery"}
+                className={`po-category-pill ${category === "battery" ? "po-category-pill-active" : ""}`}
                 onClick={() => actions.onCategoryChange?.("battery")}
                 disabled={state.submitting}
               >
-                Batteries
+                <BatteryIcon />
+                <span>Batteries</span>
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="header-actions po-form-full-span">

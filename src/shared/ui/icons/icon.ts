@@ -17,6 +17,9 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { TyreIcon } from "./TyreIcon";
+import { BatteryIcon } from "./BatteryIcon";
+import { CalendarIcon } from "./CalendarIcon";
 
 export const Icons = {
   Bell,
@@ -34,4 +37,7 @@ export const Icons = {
   HelpCircle: CircleHelp,
   Menu,
   X,
+  Tyre: TyreIcon,
+  Battery: BatteryIcon,
+  Calendar: CalendarIcon,
 };
