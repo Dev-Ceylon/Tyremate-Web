@@ -87,58 +87,114 @@ export function BatteryForm({
 
       <label className="field-label">
         Series
-        <input
-          className="text-input"
-          type="text"
-          value={formData.Series ?? ""}
-          onChange={(event) => onChange("Series", event.target.value)}
-          placeholder="e.g. Standard VRLA or Lite VRLA"
-        />
+        {fetchSuggestions ? (
+          <SuggestionInput
+            label="Series"
+            hideLabel
+            value={formData.Series ?? ""}
+            onChange={(v) => onChange("Series", v)}
+            fetchSuggestions={(q) => fetchSuggestions("Series", q)}
+            placeholder="e.g. Standard VRLA or Lite VRLA"
+          />
+        ) : (
+          <input
+            className="text-input"
+            type="text"
+            value={formData.Series ?? ""}
+            onChange={(event) => onChange("Series", event.target.value)}
+            placeholder="e.g. Standard VRLA or Lite VRLA"
+          />
+        )}
       </label>
 
       <label className="field-label">
         Capacity
-        <input
-          className="text-input"
-          type="text"
-          value={formData.Capacity ?? ""}
-          onChange={(event) => onChange("Capacity", event.target.value)}
-          placeholder="e.g. 5Ah, 2.5Ah, 7Ah, 9Ah"
-          required
-        />
+        {fetchSuggestions ? (
+          <SuggestionInput
+            label="Capacity"
+            hideLabel
+            value={formData.Capacity ?? ""}
+            onChange={(v) => onChange("Capacity", v)}
+            fetchSuggestions={(q) => fetchSuggestions("Capacity", q)}
+            placeholder="e.g. 5Ah, 2.5Ah, 7Ah, 9Ah"
+            required
+          />
+        ) : (
+          <input
+            className="text-input"
+            type="text"
+            value={formData.Capacity ?? ""}
+            onChange={(event) => onChange("Capacity", event.target.value)}
+            placeholder="e.g. 5Ah, 2.5Ah, 7Ah, 9Ah"
+            required
+          />
+        )}
       </label>
 
       <label className="field-label">
         Voltage
-        <input
-          className="text-input"
-          type="text"
-          value={formData.Voltage ?? ""}
-          onChange={(event) => onChange("Voltage", event.target.value)}
-          placeholder="e.g. 12V"
-        />
+        {fetchSuggestions ? (
+          <SuggestionInput
+            label="Voltage"
+            hideLabel
+            value={formData.Voltage ?? ""}
+            onChange={(v) => onChange("Voltage", v)}
+            fetchSuggestions={(q) => fetchSuggestions("Voltage", q)}
+            placeholder="e.g. 12V"
+          />
+        ) : (
+          <input
+            className="text-input"
+            type="text"
+            value={formData.Voltage ?? ""}
+            onChange={(event) => onChange("Voltage", event.target.value)}
+            placeholder="e.g. 12V"
+          />
+        )}
       </label>
 
       <label className="field-label">
         Technology
-        <input
-          className="text-input"
-          type="text"
-          value={formData.Technology ?? ""}
-          onChange={(event) => onChange("Technology", event.target.value)}
-          placeholder="e.g. VRLA Maintenance Free"
-        />
+        {fetchSuggestions ? (
+          <SuggestionInput
+            label="Technology"
+            hideLabel
+            value={formData.Technology ?? ""}
+            onChange={(v) => onChange("Technology", v)}
+            fetchSuggestions={(q) => fetchSuggestions("Technology", q)}
+            placeholder="e.g. VRLA Maintenance Free"
+          />
+        ) : (
+          <input
+            className="text-input"
+            type="text"
+            value={formData.Technology ?? ""}
+            onChange={(event) => onChange("Technology", event.target.value)}
+            placeholder="e.g. VRLA Maintenance Free"
+          />
+        )}
       </label>
 
       <label className="field-label">
         Application
-        <input
-          className="text-input"
-          type="text"
-          value={formData.Application ?? ""}
-          onChange={(event) => onChange("Application", event.target.value)}
-          placeholder="e.g. Motorcycle, Automotive"
-        />
+        {fetchSuggestions ? (
+          <SuggestionInput
+            label="Application"
+            hideLabel
+            value={formData.Application ?? ""}
+            onChange={(v) => onChange("Application", v)}
+            fetchSuggestions={(q) => fetchSuggestions("Application", q)}
+            placeholder="e.g. Motorcycle, Automotive"
+          />
+        ) : (
+          <input
+            className="text-input"
+            type="text"
+            value={formData.Application ?? ""}
+            onChange={(event) => onChange("Application", event.target.value)}
+            placeholder="e.g. Motorcycle, Automotive"
+          />
+        )}
       </label>
 
       <label className="field-label">

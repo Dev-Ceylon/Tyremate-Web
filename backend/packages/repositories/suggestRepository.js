@@ -2,6 +2,7 @@ const db = require("../database/connection")
 
 const TABLE_FIELDS = {
   TyreM: new Set(["Brand", "Size", "Pattern", "LL_SR", "PR", "SideWall"]),
+  BatteryM: new Set(["Brand", "Model", "Series", "Capacity", "Voltage", "Technology", "Application"]),
   SupplierM: new Set(["Name"]),
   CustomerM: new Set(["Name"]),
   ContractorM: new Set(["Name"]),

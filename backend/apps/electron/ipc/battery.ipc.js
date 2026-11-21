@@ -26,8 +26,6 @@ registerServiceHandler("batteries:update", {}, batteryService, "updateBattery")
 
 registerServiceHandler("batteries:delete", {}, batteryService, "deleteBattery")
 
-registerIpcHandler("batteries:suggest", {}, () => [])
-
 registerIpcHandler("batterySuppliers:getSuppliersByBatteryId", {}, (_event, batteryId) =>
   batterySupplierRepo.getSuppliersByBatteryId(batteryId)
 )
