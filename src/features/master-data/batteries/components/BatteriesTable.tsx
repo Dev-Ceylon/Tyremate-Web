@@ -34,7 +34,6 @@ export function BatteriesTable({
             <th>Brand</th>
             <th>Capacity</th>
             <th>Voltage</th>
-            <th>Series</th>
             <th>Warranty</th>
             <th>Supplier</th>
             <th>MRP (With VAT)</th>
@@ -50,7 +49,6 @@ export function BatteriesTable({
               <td>{battery.Brand || "-"}</td>
               <td>{battery.Capacity || "-"}</td>
               <td>{battery.Voltage || "12V"}</td>
-              <td>{battery.Series || "-"}</td>
               <td>{battery.WarrantyMonths ? `${battery.WarrantyMonths} Mos` : "-"}</td>
               <td>{battery.SupplierCodes || battery.SupplierNames || "-"}</td>
               <td>{formatNumber(battery.MRP_WithVAT)}</td>

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS BatteryM (
   Series TEXT,
   Voltage TEXT NOT NULL DEFAULT '12V',
   Capacity TEXT NOT NULL,
-  Technology TEXT NOT NULL DEFAULT 'VRLA Maintenance Free',
+  Technology TEXT,
   Application TEXT NOT NULL DEFAULT 'Motorcycle',
   WarrantyMonths INTEGER NOT NULL DEFAULT 12,
   BatchCode TEXT,

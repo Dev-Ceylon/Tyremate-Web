@@ -92,7 +92,7 @@ const toBatteryPayload = (payload = {}) => {
     Series: normalizeText(payload.Series),
     Voltage: normalizeText(payload.Voltage) || "12V",
     Capacity: capacity,
-    Technology: normalizeText(payload.Technology) || "VRLA Maintenance Free",
+    Technology: normalizeText(payload.Technology),
     Application: normalizeText(payload.Application) || "Motorcycle",
     WarrantyMonths: normalizeInteger(payload.WarrantyMonths, "Warranty months") ?? 12,
     BatchCode: normalizeText(payload.BatchCode),

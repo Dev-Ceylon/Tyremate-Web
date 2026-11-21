@@ -85,27 +85,7 @@ export function BatteryForm({
         )}
       </label>
 
-      <label className="field-label">
-        Series
-        {fetchSuggestions ? (
-          <SuggestionInput
-            label="Series"
-            hideLabel
-            value={formData.Series ?? ""}
-            onChange={(v) => onChange("Series", v)}
-            fetchSuggestions={(q) => fetchSuggestions("Series", q)}
-            placeholder="e.g. Standard VRLA or Lite VRLA"
-          />
-        ) : (
-          <input
-            className="text-input"
-            type="text"
-            value={formData.Series ?? ""}
-            onChange={(event) => onChange("Series", event.target.value)}
-            placeholder="e.g. Standard VRLA or Lite VRLA"
-          />
-        )}
-      </label>
+
 
       <label className="field-label">
         Capacity
@@ -153,27 +133,7 @@ export function BatteryForm({
         )}
       </label>
 
-      <label className="field-label">
-        Technology
-        {fetchSuggestions ? (
-          <SuggestionInput
-            label="Technology"
-            hideLabel
-            value={formData.Technology ?? ""}
-            onChange={(v) => onChange("Technology", v)}
-            fetchSuggestions={(q) => fetchSuggestions("Technology", q)}
-            placeholder="e.g. VRLA Maintenance Free"
-          />
-        ) : (
-          <input
-            className="text-input"
-            type="text"
-            value={formData.Technology ?? ""}
-            onChange={(event) => onChange("Technology", event.target.value)}
-            placeholder="e.g. VRLA Maintenance Free"
-          />
-        )}
-      </label>
+
 
       <label className="field-label">
         Application
@@ -213,16 +173,7 @@ export function BatteryForm({
         />
       </label>
 
-      <label className="field-label">
-        Batch Code
-        <input
-          className="text-input"
-          type="text"
-          value={formData.BatchCode ?? ""}
-          onChange={(event) => onChange("BatchCode", event.target.value)}
-          placeholder="Optional manufacturer batch code"
-        />
-      </label>
+
 
       {!hideSupplier && (
         <label className="field-label">
