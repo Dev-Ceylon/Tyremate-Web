@@ -113,9 +113,9 @@ export function BatteryForm({
         <input
           className="text-input"
           type="text"
-          value={formData.Voltage ?? "12V"}
+          value={formData.Voltage ?? ""}
           onChange={(event) => onChange("Voltage", event.target.value)}
-          placeholder="12V"
+          placeholder="e.g. 12V"
         />
       </label>
 
@@ -124,9 +124,9 @@ export function BatteryForm({
         <input
           className="text-input"
           type="text"
-          value={formData.Technology ?? "VRLA Maintenance Free"}
+          value={formData.Technology ?? ""}
           onChange={(event) => onChange("Technology", event.target.value)}
-          placeholder="VRLA Maintenance Free"
+          placeholder="e.g. VRLA Maintenance Free"
         />
       </label>
 
@@ -135,9 +135,9 @@ export function BatteryForm({
         <input
           className="text-input"
           type="text"
-          value={formData.Application ?? "Motorcycle"}
+          value={formData.Application ?? ""}
           onChange={(event) => onChange("Application", event.target.value)}
-          placeholder="Motorcycle"
+          placeholder="e.g. Motorcycle, Automotive"
         />
       </label>
 
@@ -147,7 +147,7 @@ export function BatteryForm({
           className="text-input"
           type="number"
           min={0}
-          value={formData.WarrantyMonths ?? 12}
+          value={formData.WarrantyMonths ?? ""}
           onChange={(event) =>
             onChange(
               "WarrantyMonths",
