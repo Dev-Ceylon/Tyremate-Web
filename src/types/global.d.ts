@@ -70,6 +70,14 @@ import type {
   StorageManagerLocationRecord,
   StorageManagerRecord,
 } from "../features/storage-manager/models/storageManager"
+import type {
+  BatteryStorageManagerPayload,
+  BatteryStorageManagerBatchPayload,
+  BatteryStorageManagerBatchRecord,
+  BatteryStorageManagerLocationBatchRecord,
+  BatteryStorageManagerLocationRecord,
+  BatteryStorageManagerRecord,
+} from "../features/storage-manager/models/batteryStorageManager"
 import type { ConsumablePayload, ConsumableRecord } from "../shared/models/consumables/consumable"
 import type { ConsumableLocationPayload, ConsumableLocationRecord } from "../shared/models/consumables/consumableLocation"
 import type { ConsumableStorageManagerPayload, ConsumableStorageManagerRecord } from "../shared/models/consumables/consumableStorageManager"
@@ -375,6 +383,24 @@ declare global {
         createConsumableStorageManager: (data: ConsumableStorageManagerPayload) => Promise<ConsumableStorageManagerRecord>
         updateConsumableStorageManager: (id: number, data: ConsumableStorageManagerPayload) => Promise<ConsumableStorageManagerRecord>
         deleteConsumableStorageManager: (id: number) => Promise<{ success: true }>
+      }
+
+      batteryStorageManagers: {
+        getBatteryStorageManagers: () => Promise<BatteryStorageManagerRecord[]>
+        getBatteryStorageManagersByLocation: (locationId: number) => Promise<BatteryStorageManagerLocationRecord[]>
+        getBatteryStorageManagerById: (id: number) => Promise<BatteryStorageManagerRecord>
+        getBatteryStorageManagersByBatteryId: (batteryId: number) => Promise<BatteryStorageManagerRecord[]>
+        getBatchesByBatteryId: (batteryId: number) => Promise<BatteryStorageManagerBatchRecord[]>
+        getBatchesByStorageManagerId: (id: number) => Promise<BatteryStorageManagerBatchRecord[]>
+        getBatchesByLocation: (locationId: number) => Promise<BatteryStorageManagerLocationBatchRecord[]>
+        getStorageLocationsByBranch: (branchId: number) => Promise<StorageLocationRecord[]>
+        getStorageLocationById: (id: number) => Promise<StorageLocationRecord>
+        createBatteryStorageManager: (data: BatteryStorageManagerPayload) => Promise<BatteryStorageManagerRecord>
+        updateBatteryStorageManager: (id: number, data: BatteryStorageManagerPayload) => Promise<BatteryStorageManagerRecord>
+        deleteBatteryStorageManager: (id: number) => Promise<{ success: true }>
+        createBatch: (storageManagerId: number, data: BatteryStorageManagerBatchPayload) => Promise<BatteryStorageManagerBatchRecord>
+        updateBatch: (id: number, data: BatteryStorageManagerBatchPayload) => Promise<BatteryStorageManagerBatchRecord>
+        deleteBatch: (id: number) => Promise<{ success: true }>
       }
 
       otherServices: {

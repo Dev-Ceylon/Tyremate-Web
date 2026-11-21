@@ -316,6 +316,38 @@ const api = {
     createBatterySupplier: (data) => ipcRenderer.invoke("batterySuppliers:create", data)
   },
 
+  batteryStorageManagers: {
+    getBatteryStorageManagers: () => ipcRenderer.invoke("batteryStorageManagers:getAll"),
+    getBatteryStorageManagersByLocation: (locationId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getByLocation", locationId),
+    getBatteryStorageManagerById: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:getById", id),
+    getBatteryStorageManagersByBatteryId: (batteryId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getByBatteryId", batteryId),
+    getBatchesByBatteryId: (batteryId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getBatchesByBatteryId", batteryId),
+    getBatchesByStorageManagerId: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:getBatchesByStorageManagerId", id),
+    getBatchesByLocation: (locationId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getBatchesByLocation", locationId),
+    getStorageLocationsByBranch: (branchId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getLocationsByBranch", branchId),
+    getStorageLocationById: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:getLocationById", id),
+    createBatteryStorageManager: (data) =>
+      ipcRenderer.invoke("batteryStorageManagers:create", data),
+    updateBatteryStorageManager: (id, data) =>
+      ipcRenderer.invoke("batteryStorageManagers:update", id, data),
+    deleteBatteryStorageManager: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:delete", id),
+    createBatch: (storageManagerId, data) =>
+      ipcRenderer.invoke("batteryStorageManagers:createBatch", storageManagerId, data),
+    updateBatch: (id, data) =>
+      ipcRenderer.invoke("batteryStorageManagers:updateBatch", id, data),
+    deleteBatch: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:deleteBatch", id),
+  },
+
   so: {
     getSOs: () => ipcRenderer.invoke("so:getAll"),
     getTodaySalesSummary: (date) => ipcRenderer.invoke("so:getTodaySalesSummary", date),

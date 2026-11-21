@@ -41,6 +41,10 @@ export const DYNAMIC_ROUTES: DynamicRoute[] = [
     pattern: "/storage-manager/consumables/locations/:locationId/branches/:branchId",
     page: "/storage-manager/consumables/location",
   },
+  {
+    pattern: "/storage-manager/batteries/locations/:locationId/branches/:branchId",
+    page: "/storage-manager/batteries/location",
+  },
 ]
 
 /** Every statically exported page path (logical paths without params). */
@@ -95,6 +99,7 @@ export const STATIC_PAGES = new Set<string>([
   "/storage-manager",
   "/storage-manager/tyres",
   "/storage-manager/consumables",
+  "/storage-manager/batteries",
   "/stock-snapshot",
   "/used-tyres",
   "/opex",
