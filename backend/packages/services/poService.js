@@ -15,6 +15,7 @@ const poBatteryAllocationsRepo = require("../repositories/poBatteryAllocationsRe
 const poTyreAllocationsService = require("./poTyreAllocationsService")
 const storageManagerService = require("./storageManagerService")
 const batteryStorageManagerService = require("./batteryStorageManagerService")
+const batteryStorageManagerRepo = require("../repositories/batteryStorageManagerRepository")
 const soReminderService = require("./soReminderService")
 const reminderService = require("./reminderService")
 const poAuditLogService = require("./poAuditLogService")
@@ -950,6 +951,17 @@ exports.AllocatePoTyreLocation = (payloads, ctx) => {
       if (po && (po.Category === "battery" || payload.PoBatteriesID)) {
         const lineId = normalizeId(payload.PoBatteriesID || payload.PoTyresID, "Line ID")
         const locationId = normalizeId(payload.LocationId, "LocationId")
+
+        const line = poBatteriesRepo.getPoBatteriesByPoId(poId).find((b) => (b.ID || b.Id) === lineId)
+        if (!line) {
+          throw new Error("Purchase Order Battery line item not found")
+        }
+
+        const loc = batteryStorageManagerRepo.getStorageLocationByIdForBatteries(locationId)
+        if (!loc) {
+          throw new Error("Storage Location not found")
+        }
+
         const created = poBatteryAllocationsRepo.createAllocation({
           POID: poId,
           PoBatteriesID: lineId,

@@ -80,7 +80,6 @@ CREATE TABLE IF NOT EXISTS BatteryStorageManager (
   CreatedBy TEXT,
   createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (BatteryId) REFERENCES BatteryM(Id),
-  FOREIGN KEY (LocationID) REFERENCES BatteryLocationM(Id),
   FOREIGN KEY (SourceTypeId) REFERENCES StorageSourceM(Id)
 );
 
@@ -117,7 +116,6 @@ CREATE TABLE IF NOT EXISTS BatteryExpiryReminder (
   createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (BatteryStorageManagerBatchID) REFERENCES BatteryStorageManagerBatch(Id) ON DELETE CASCADE,
   FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id),
-  FOREIGN KEY (LocationID) REFERENCES BatteryLocationM(Id),
   FOREIGN KEY (ReminderID) REFERENCES Reminders(ID)
 );
 
@@ -177,7 +175,6 @@ CREATE TABLE IF NOT EXISTS PoBatteryAllocations (
   LocationId INTEGER NOT NULL,
   FOREIGN KEY (POID) REFERENCES PO(ID),
   FOREIGN KEY (PoBatteriesID) REFERENCES POBatteries(ID),
-  FOREIGN KEY (LocationId) REFERENCES BatteryLocationM(Id),
   UNIQUE (POID, PoBatteriesID)
 );
 

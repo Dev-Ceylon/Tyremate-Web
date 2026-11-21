@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest"
-import { bootBackend, createSqlJsDriver } from "../helpers/backend"
+import { beforeEach, describe, expect, it } from "vitest"
+import { bootBackend, createSqlJsDriver, resetBackendModules } from "../helpers/backend"
 
 describe("Purchase Orders for Batteries & Category Separation", () => {
+  beforeEach(() => {
+    resetBackendModules()
+  })
+
   it("creates, allocates, batches, and fulfills battery purchase orders end-to-end without tyre regressions", async () => {
     const backend = await bootBackend(await createSqlJsDriver())
     await backend.login()
@@ -243,5 +247,176 @@ describe("Purchase Orders for Batteries & Category Separation", () => {
     expect(deleteResult.success).toBe(true)
 
     await expect(backend.invoke("po:getById", draftBatteryPo.ID)).rejects.toThrow("PO not found")
+  })
+
+  it("handles polymorphic location allocation (BatteryLocationM and StorageLocationM) and gracefully rejects invalid locations", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-POLY",
+      BranchName: "Poly Branch",
+    })
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const defaultType = locationTypes[0]
+
+    // 1. Create a dedicated BatteryLocation
+    const batteryLoc = await backend.invoke("batteryLocations:create", {
+      LocationCode: "BLOC-POLY-01",
+      LocationName: "Battery Poly Bay",
+      BranchId: branch.Id,
+      LocationTypeId: defaultType.Id,
+      Capacity: 50,
+    })
+
+    // 2. Create a generic StorageLocation (fallback for batteries)
+    const storageLoc = await backend.invoke("storageLocations:create", {
+      LocationCode: "SLOC-POLY-01",
+      LocationName: "General Storage Bay",
+      BranchId: branch.Id,
+      LocationTypeId: defaultType.Id,
+      Capacity: 50,
+    })
+
+    // 3. Create a Battery & PO
+    const battery = await backend.invoke("batteries:create", {
+      Brand: "Exide",
+      Model: "Matrix 12V 35Ah",
+      Voltage: "12V",
+      Capacity: "35Ah",
+    })
+
+    const rawPo = await backend.invoke("po:createStandalone", {
+      Category: "battery",
+      Date: "2026-11-22",
+      Lines: [
+        {
+          BatteryID: battery.Id,
+          Price: 9000,
+          Discount: 0,
+          Qty: 5,
+          Suppliers: [],
+        },
+      ],
+    })
+    const po = await backend.invoke("po:getById", rawPo.ID)
+    const batteryLine = po.Batteries[0]
+
+    // 4. Test allocating to BatteryLocationM
+    const allocBatteryLoc = await backend.invoke("po:allocateLocation", [
+      {
+        POID: po.ID,
+        PoBatteriesID: batteryLine.ID,
+        LocationId: batteryLoc.Id,
+      },
+    ])
+    expect(allocBatteryLoc.length).toBe(1)
+    expect(allocBatteryLoc[0].LocationId).toBe(batteryLoc.Id)
+
+    // 5. Test allocating to fallback StorageLocationM
+    const allocStorageLoc = await backend.invoke("po:allocateLocation", [
+      {
+        POID: po.ID,
+        PoBatteriesID: batteryLine.ID,
+        LocationId: storageLoc.Id,
+      },
+    ])
+    expect(allocStorageLoc.length).toBe(1)
+    expect(allocStorageLoc[0].LocationId).toBe(storageLoc.Id)
+
+    // 6. Test allocating to an invalid location ID -> should throw clean "Storage Location not found"
+    await expect(
+      backend.invoke("po:allocateLocation", [
+        {
+          POID: po.ID,
+          PoBatteriesID: batteryLine.ID,
+          LocationId: 999999,
+        },
+      ])
+    ).rejects.toThrow("Storage Location not found")
+  })
+
+  it("automatically migrates legacy PoBatteryAllocations table with StorageLocationM foreign key constraint", async () => {
+    // 1. Manually set up a raw SQLite driver with legacy schema constraint
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    // 2. Re-create PoBatteryAllocations with the legacy constraint pointing to StorageLocationM
+    backend.db.exec(`
+      CREATE TABLE IF NOT EXISTS LegacyStorageLoc (Id INTEGER PRIMARY KEY AUTOINCREMENT);
+      CREATE TABLE PoBatteryAllocations_legacy (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        POID INTEGER NOT NULL,
+        PoBatteriesID INTEGER NOT NULL,
+        LocationId INTEGER NOT NULL,
+        FOREIGN KEY (POID) REFERENCES PO(ID),
+        FOREIGN KEY (PoBatteriesID) REFERENCES POBatteries(ID),
+        FOREIGN KEY (LocationId) REFERENCES LegacyStorageLoc(Id),
+        UNIQUE (POID, PoBatteriesID)
+      );
+      DROP TABLE PoBatteryAllocations;
+      ALTER TABLE PoBatteryAllocations_legacy RENAME TO PoBatteryAllocations;
+    `)
+
+    // Verify it has the legacy foreign key on LocationId
+    const fksBefore = backend.db.prepare("PRAGMA foreign_key_list(PoBatteryAllocations)").all() as any[]
+    expect(fksBefore.some((fk) => fk.from === "LocationId" && fk.table === "LegacyStorageLoc")).toBe(true)
+
+    // 3. Re-boot backend with same driver bytes (simulating app reload on an existing browser IndexedDB)
+    const exportedBytes = driver.export()
+    resetBackendModules()
+
+    const reloadedDriver = await createSqlJsDriver(exportedBytes)
+    const reloadedBackend = await bootBackend(reloadedDriver)
+    await reloadedBackend.login()
+
+    // Verify startup migrated PoBatteryAllocations and removed single-table LocationId foreign key
+    const fksAfter = reloadedBackend.db.prepare("PRAGMA foreign_key_list(PoBatteryAllocations)").all() as any[]
+    expect(fksAfter.some((fk) => fk.from === "LocationId")).toBe(false)
+
+    // 4. Create battery location and battery PO, verify allocation succeeds
+    const branch = await reloadedBackend.invoke("branches:create", {
+      BranchCode: "BR-MIG",
+      BranchName: "Migrated Branch",
+    })
+    const locationTypes = await reloadedBackend.invoke("storageLocationTypes:getAll")
+    const batteryLoc = await reloadedBackend.invoke("batteryLocations:create", {
+      LocationCode: "BLOC-MIG-01",
+      LocationName: "Battery Migrated Bay",
+      BranchId: branch.Id,
+      LocationTypeId: locationTypes[0].Id,
+      Capacity: 50,
+    })
+    const battery = await reloadedBackend.invoke("batteries:create", {
+      Brand: "Lucas",
+      Model: "LU-12XL5B",
+      Voltage: "12V",
+      Capacity: "5Ah",
+    })
+    const rawPo = await reloadedBackend.invoke("po:createStandalone", {
+      Category: "battery",
+      Date: "2026-11-22",
+      Lines: [
+        {
+          BatteryID: battery.Id,
+          Price: 6500,
+          Discount: 0,
+          Qty: 3,
+          Suppliers: [],
+        },
+      ],
+    })
+    const po = await reloadedBackend.invoke("po:getById", rawPo.ID)
+    const allocResult = await reloadedBackend.invoke("po:allocateLocation", [
+      {
+        POID: po.ID,
+        PoBatteriesID: po.Batteries[0].ID,
+        LocationId: batteryLoc.Id,
+      },
+    ])
+    expect(allocResult.length).toBe(1)
+    expect(allocResult[0].LocationId).toBe(batteryLoc.Id)
   })
 })
