@@ -220,33 +220,3 @@ CREATE TABLE IF NOT EXISTS SoReturnBatteries (
   FOREIGN KEY (SalesReturnID) REFERENCES SalesReturn(SalesReturnID),
   FOREIGN KEY (StatusId) REFERENCES SalesReturnStatusM(Id)
 );
-
--- ============================================================================
--- 8. INITIAL SEEDING: Lucas Motorcycle Batteries
--- ============================================================================
-
--- Seed Document 1: Lucas Motorcycle Batteries (Standard VRLA, Effective June 16, 2026)
-INSERT OR IGNORE INTO BatteryM (
-  Brand, Model, Series, Voltage, Capacity, Technology, Application, WarrantyMonths, 
-  PriceValidityFrom, MRP_WithoutVAT, MRP_WithVAT, ActualSellingPrice
-) VALUES
-  ('Lucas', 'LU-12XL2.5L-C', 'Standard VRLA', '12V', '2.5Ah', 'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 4398.31, 5190.00, 5190.00),
-  ('Lucas', 'LU-12XL5B',     'Standard VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 6576.27, 7760.00, 7760.00),
-  ('Lucas', 'LU-12XL7B-B',   'Standard VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 8601.69, 10150.00, 10150.00),
-  ('Lucas', 'LU-12XL9B',     'Standard VRLA', '12V', '9Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 8792.37, 10375.00, 10375.00),
-  ('Lucas', 'LU-XPTZ4',      'Standard VRLA', '12V', '4Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 5669.49, 6690.00, 6690.00),
-  ('Lucas', 'LU-XPTZ5',      'Standard VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 6644.07, 7840.00, 7840.00),
-  ('Lucas', 'LU-XPTZ7',      'Standard VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 8389.83, 9900.00, 9900.00);
-
--- Seed Document 2: Lucas Motorcycle Batteries (Lite VRLA, Effective November 1, 2026)
-INSERT OR IGNORE INTO BatteryM (
-  Brand, Model, Series, Voltage, Capacity, Technology, Application, WarrantyMonths, 
-  PriceValidityFrom, MRP_WithoutVAT, MRP_WithVAT, ActualSellingPrice
-) VALUES
-  ('Lucas', 'LL-12XL2.5L-C', 'Lite VRLA', '12V', '2.5Ah', 'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 3610.17, 4260.00, 4260.00),
-  ('Lucas', 'LL-12XL5B',     'Lite VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 5330.51, 6290.00, 6290.00),
-  ('Lucas', 'LL-12XL7B-B',   'Lite VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 7364.41, 8690.00, 8690.00),
-  ('Lucas', 'LL-12XL9B',     'Lite VRLA', '12V', '9Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 7618.64, 8990.00, 8990.00),
-  ('Lucas', 'LL-XPTZ4',      'Lite VRLA', '12V', '4Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 4322.03, 5100.00, 5100.00),
-  ('Lucas', 'LL-XPTZ5',      'Lite VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 5110.17, 6030.00, 6030.00),
-  ('Lucas', 'LL-XPTZ7',      'Lite VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 7423.73, 8760.00, 8760.00);
