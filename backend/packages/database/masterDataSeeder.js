@@ -11,6 +11,7 @@ const {
   MASTER_CUSTOMER_SEED,
   MASTER_CONTRACTOR_SEED,
   MASTER_TYRE_SEED,
+  MASTER_BATTERY_SEED,
   MASTER_STORAGE_LOCATION_SEED,
   MASTER_CONSUMABLE_LOCATION_SEED,
   MASTER_BANK_DETAIL_SEED,
@@ -221,6 +222,58 @@ const seedTyres = (txDb, stats) => {
   })
 }
 
+const seedBatteries = (txDb, stats) => {
+  const insertBattery = txDb.prepare(`
+    INSERT INTO BatteryM (Brand, Model, Series, Voltage, Capacity, Technology, Application, WarrantyMonths,
+                          PriceValidityFrom, PriceValidityTo, PurchasedPrice, DiscountOffered, DiscountAmount,
+                          MRP_WithoutVAT, MRP_WithVAT, ActualSellingPrice)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  const selectBattery = txDb.prepare("SELECT Id FROM BatteryM WHERE Brand = ? AND Model = ?")
+  const selectSupplierId = txDb.prepare("SELECT SupplierID FROM SupplierM WHERE SupplierCode = ?")
+  const insertBatterySupplier = txDb.prepare(`
+    INSERT OR IGNORE INTO BatterySupplier (BatteryId, SupplierID, Price)
+    VALUES (?, ?, ?)
+  `)
+
+  MASTER_BATTERY_SEED.forEach((bat) => {
+    let batteryRow = selectBattery.get(bat.brand, bat.model)
+    let batteryId
+    if (!batteryRow) {
+      const info = insertBattery.run(
+        bat.brand,
+        bat.model,
+        bat.series || null,
+        bat.voltage || "12V",
+        bat.capacity,
+        bat.technology || "VRLA Maintenance Free",
+        bat.application || "Motorcycle",
+        bat.warrantyMonths || 12,
+        bat.priceValidityFrom || null,
+        bat.priceValidityTo || null,
+        bat.purchasedPrice || 0,
+        bat.discountOffered || 0,
+        bat.discountAmount || 0,
+        bat.mrpWithoutVat || 0,
+        bat.mrpWithVat || 0,
+        bat.actualSellingPrice || 0
+      )
+      batteryId = info.lastInsertRowid
+      stats.batteries += 1
+      console.log(`Seeded battery ${bat.brand} ${bat.model} (${bat.capacity})`)
+    } else {
+      batteryId = batteryRow.Id
+    }
+
+    ;(bat.batterySuppliers || []).forEach((link) => {
+      const supplier = selectSupplierId.get(link.supplierCode)
+      if (supplier) {
+        insertBatterySupplier.run(batteryId, supplier.SupplierID, link.price || 0)
+      }
+    })
+  })
+}
+
 const seedLocations = (txDb, table, idColumn, rows, stats, statsKey) => {
   const locationTypeIdByCode = txDb
     .prepare("SELECT Id, LocationTypeCode FROM StorageLocationTypeM")
@@ -287,6 +340,7 @@ const createMasterDataStats = () => ({
   customers: 0,
   contractors: 0,
   tyres: 0,
+  batteries: 0,
   storageLocations: 0,
   consumableLocations: 0,
   bankDetails: 0,
@@ -298,6 +352,7 @@ const seedMasterDataRows = (txDb, stats) => {
   seedParties(txDb, "CustomerM", "CustomerID", MASTER_CUSTOMER_SEED, stats, "customers")
   seedParties(txDb, "ContractorM", "ID", MASTER_CONTRACTOR_SEED, stats, "contractors")
   seedTyres(txDb, stats)
+  seedBatteries(txDb, stats)
   seedLocations(txDb, "StorageLocationM", "Id", MASTER_STORAGE_LOCATION_SEED, stats, "storageLocations")
   seedLocations(txDb, "ConsumableLocationM", "Id", MASTER_CONSUMABLE_LOCATION_SEED, stats, "consumableLocations")
   seedBankDetails(txDb, stats)
