@@ -26,6 +26,8 @@ registerServiceHandler("batteries:update", {}, batteryService, "updateBattery")
 
 registerServiceHandler("batteries:delete", {}, batteryService, "deleteBattery")
 
+registerIpcHandler("batteries:suggest", {}, () => [])
+
 registerIpcHandler("batterySuppliers:getSuppliersByBatteryId", {}, (_event, batteryId) =>
   batterySupplierRepo.getSuppliersByBatteryId(batteryId)
 )
@@ -40,4 +42,8 @@ registerIpcHandler("batterySuppliers:getSupplierIdsByBatteryId", {}, (_event, ba
 
 registerIpcHandler("batterySuppliers:syncBatterySuppliers", {}, (_event, batteryId, supplierIds) =>
   batterySupplierRepo.syncBatterySuppliers(batteryId, supplierIds)
+)
+
+registerIpcHandler("batterySuppliers:create", {}, (_event, payload) =>
+  batterySupplierRepo.create(payload)
 )

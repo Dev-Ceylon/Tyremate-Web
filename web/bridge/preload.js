@@ -298,6 +298,23 @@ const api = {
     createTyreSupplier: (data) => ipcRenderer.invoke("tyreSuppliers:create", data)
   },
 
+  batteries: {
+    suggest: (field, query) => ipcRenderer.invoke("batteries:suggest", field, query),
+    getBatteries: () => ipcRenderer.invoke("batteries:getAll"),
+    getBatteriesWithAvailableQuantity: () => ipcRenderer.invoke("batteries:getAllWithAvailableQuantity"),
+    getLowStockCount: () => ipcRenderer.invoke("batteries:getLowStockCount"),
+    getBatteryById: (batteryId) => ipcRenderer.invoke("batteries:getById", batteryId),
+    getBatteryByIdWithAvailableQuantity: (batteryId) => ipcRenderer.invoke("batteries:getByIdWithAvailableQuantity", batteryId),
+    createBattery: (data) => ipcRenderer.invoke("batteries:create", data),
+    updateBattery: (batteryId, data) => ipcRenderer.invoke("batteries:update", batteryId, data),
+    deleteBattery: (batteryId) => ipcRenderer.invoke("batteries:delete", batteryId)
+  },
+
+  batterySuppliers: {
+    getSuppliersByBatteryId: (batteryId) => ipcRenderer.invoke("batterySuppliers:getSuppliersByBatteryId", batteryId),
+    createBatterySupplier: (data) => ipcRenderer.invoke("batterySuppliers:create", data)
+  },
+
   so: {
     getSOs: () => ipcRenderer.invoke("so:getAll"),
     getTodaySalesSummary: (date) => ipcRenderer.invoke("so:getTodaySalesSummary", date),

@@ -29,11 +29,13 @@ export type StorageLocationTypeRecord = {
   LocationTypeName: string
 }
 import type { TyrePayload, TyreRecord } from "../features/master-data/tyres/models/tyre"
+import type { BatteryPayload, BatteryRecord } from "../features/master-data/batteries/models/battery"
 import type {
   BankDetailPayload,
   BankDetailRecord,
 } from "../features/master-data/bank-details/models/bankDetail"
 import type { TyreSupplier, TyreSupplierApiRecord } from "../features/tyre-suppliers/models/tyreSupplier"
+import type { BatterySupplier, BatterySupplierApiRecord } from "../features/battery-suppliers/models/batterySupplier"
 import type { User } from "../features/auth/models/user"
 import type {
   SalesOrderPaymentPayload,
@@ -419,6 +421,24 @@ declare global {
       tyreSuppliers: {
         getSuppliersByTyreId: (tyreId: number) => Promise<TyreSupplierApiRecord[]>
         getAll: () => Promise<TyreSupplierApiRecord[]>
+      }
+
+      batteries: {
+        suggest: (field: string, query: string) => Promise<string[]>
+        getBatteries: () => Promise<BatteryRecord[]>
+        getBatteriesWithAvailableQuantity: () => Promise<BatteryRecord[]>
+        getLowStockCount: () => Promise<CountRecord>
+        getBatteryById: (batteryId: number) => Promise<BatteryRecord>
+        getBatteryByIdWithAvailableQuantity: (batteryId: number) => Promise<BatteryRecord>
+        createBattery: (data: BatteryPayload) => Promise<BatteryRecord>
+        updateBattery: (batteryId: number, data: BatteryPayload) => Promise<BatteryRecord>
+        deleteBattery: (batteryId: number) => Promise<{ success: true }>
+      }
+
+      batterySuppliers: {
+        getSuppliersByBatteryId: (batteryId: number) => Promise<BatterySupplierApiRecord[]>
+        createBatterySupplier?: (data: { batteryId: number; supplierId: number; price: number }) => Promise<unknown>
+        getAll?: () => Promise<BatterySupplierApiRecord[]>
       }
 
       so: {
