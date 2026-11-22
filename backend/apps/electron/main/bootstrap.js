@@ -58,6 +58,8 @@ require("../../../packages/listeners/notificationLogger")
 const { registerAuthHandlers } = require("../ipc/authHandlers.ipc")
 const registerPrinterIpc = require("../ipc/printer.ipc")
 const { runSeed, initializeLookupIds } = require("../../../packages/database/seed")
+const { runMasterDataSeed, runDevMasterDataFeed } = require("../../../packages/database/masterDataSeeder")
+const { ENABLE_MASTER_DATA_SEED, ENABLE_DEV_MASTER_DATA_FEED } = require("../../../packages/config/seedConfig")
 const appSettingsRepository = require("../../../packages/repositories/appSettingsRepository")
 const { SCHEMA_HASH } = require("../../../platform/migrations.generated")
 require("../listeners/reminderIpcListener")
@@ -140,6 +142,16 @@ async function start({ startMonitors = true } = {}) {
   let seedResult = null
   if (!isLocked) {
     seedResult = await seedDatabase()
+    try {
+      if (ENABLE_MASTER_DATA_SEED) {
+        await runMasterDataSeed()
+      }
+      if (ENABLE_DEV_MASTER_DATA_FEED) {
+        await runDevMasterDataFeed()
+      }
+    } catch (error) {
+      logError(error, { channel: "masterDataSeed:startup" })
+    }
   }
   registerAuthHandlers()
   registerPrinterIpc()

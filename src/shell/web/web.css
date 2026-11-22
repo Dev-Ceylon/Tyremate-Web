@@ -82,6 +82,17 @@
 .tm-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tm-danger-zone { border: 1px solid rgba(185, 28, 28, 0.3); border-radius: var(--radius-md); padding: var(--space-4); display: grid; gap: var(--space-3); }
 .tm-toc { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tm-form-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.tm-dev-badge { font-size: var(--text-xs); text-transform: uppercase; }
+.tm-sample-data-box {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-2);
+}
 
 /* ------------------------------------------------------------------ */
 /* App header: brand + nav + actions; slide-in drawer below 1024px.    */

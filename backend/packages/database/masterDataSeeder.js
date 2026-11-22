@@ -3,6 +3,7 @@ const {
   ENABLE_MASTER_DATA_SEED,
   ENABLE_DEV_MASTER_DATA_FEED,
   DEV_MASTER_DATA_STOCK_LOCATION_CODE,
+  DEV_MASTER_DATA_BATTERY_STOCK_LOCATION_CODE,
   DEV_MASTER_DATA_STOCK_QTY,
 } = require("../config/seedConfig")
 const {
@@ -387,12 +388,11 @@ const seedDevelopmentStock = (txDb, stats) => {
   const source = txDb.prepare("SELECT Id FROM StorageSourceM WHERE SourceCode = ?").get(STORAGE_SOURCE_CODES.DEV_SEED)
   if (!source) throw new Error("Storage source DEV_SEED is not initialized; run the application lookup seed first")
 
-  const capacityNeeded = MASTER_TYRE_SEED.length * DEV_MASTER_DATA_STOCK_QTY
-  if (Number(location.UsedCapacity) + capacityNeeded > Number(location.Capacity)) {
-    throw new Error(`Development stock feed needs ${capacityNeeded} units but ${DEV_MASTER_DATA_STOCK_LOCATION_CODE} only has ${Number(location.Capacity) - Number(location.UsedCapacity)} capacity remaining`)
-  }
-
   const selectTyre = txDb.prepare("SELECT Id FROM TyreM WHERE Brand = ? AND Size = ? AND Pattern = ?")
+  const selectExistingTyreLot = txDb.prepare(`
+    SELECT Id FROM StorageManager
+    WHERE TyreId = ? AND LocationID = ? AND SourceTypeId = ? AND CreatedBy = ?
+  `)
   const insertStockLot = txDb.prepare(`
     INSERT INTO StorageManager (TyreId, LocationID, Qty, OrderID, SourceTypeId, SourceId, CreatedBy)
     VALUES (?, ?, ?, NULL, ?, NULL, ?)
@@ -402,10 +402,19 @@ const seedDevelopmentStock = (txDb, stats) => {
     VALUES (?, ?, ?, ?)
   `)
 
-  MASTER_TYRE_SEED.forEach((tyre) => {
+  const tyresToSeed = MASTER_TYRE_SEED.filter((tyre) => {
     const tyreRow = selectTyre.get(tyre.brand, tyre.size, tyre.pattern)
     if (!tyreRow) throw new Error(`Development stock tyre ${tyre.brand} ${tyre.size} ${tyre.pattern} was not seeded`)
+    return !selectExistingTyreLot.get(tyreRow.Id, location.Id, source.Id, DEV_MASTER_DATA_FEED_SEED_NAME)
+  })
 
+  const tyreCapacityNeeded = tyresToSeed.length * DEV_MASTER_DATA_STOCK_QTY
+  if (Number(location.UsedCapacity) + tyreCapacityNeeded > Number(location.Capacity)) {
+    throw new Error(`Development stock feed needs ${tyreCapacityNeeded} units but ${DEV_MASTER_DATA_STOCK_LOCATION_CODE} only has ${Number(location.Capacity) - Number(location.UsedCapacity)} capacity remaining`)
+  }
+
+  tyresToSeed.forEach((tyre) => {
+    const tyreRow = selectTyre.get(tyre.brand, tyre.size, tyre.pattern)
     const dot = getValidSeedDot(tyre.dot, tyre)
     const lot = insertStockLot.run(
       tyreRow.Id,
@@ -417,21 +426,77 @@ const seedDevelopmentStock = (txDb, stats) => {
     insertStockBatch.run(lot.lastInsertRowid, dot, DEV_MASTER_DATA_STOCK_QTY, DEV_MASTER_DATA_FEED_SEED_NAME)
     stats.stockLots += 1
     stats.stockQty += DEV_MASTER_DATA_STOCK_QTY
-    console.log(`Seeded development stock: ${tyre.brand} ${tyre.size} ${tyre.pattern}, DOT ${dot}, qty ${DEV_MASTER_DATA_STOCK_QTY}`)
+    console.log(`Seeded development stock tyre: ${tyre.brand} ${tyre.size} ${tyre.pattern}, DOT ${dot}, qty ${DEV_MASTER_DATA_STOCK_QTY}`)
   })
+
+  // 2. Battery opening stock seeding into DEV_MASTER_DATA_BATTERY_STOCK_LOCATION_CODE (KAN-BAT)
+  const batteryLocation = txDb.prepare(`
+    SELECT bl.Id, bl.Capacity, slt.LocationTypeCode,
+      COALESCE((SELECT SUM(bsm.Qty) FROM BatteryStorageManager bsm WHERE bsm.LocationID = bl.Id), 0) AS UsedCapacity
+    FROM BatteryLocationM bl
+    LEFT JOIN StorageLocationTypeM slt ON slt.Id = bl.LocationTypeId
+    WHERE bl.LocationCode = ?
+  `).get(DEV_MASTER_DATA_BATTERY_STOCK_LOCATION_CODE)
+
+  if (batteryLocation && String(batteryLocation.LocationTypeCode).toLowerCase() === "df") {
+    const selectBattery = txDb.prepare("SELECT Id FROM BatteryM WHERE Brand = ? AND Model = ?")
+    const selectExistingBatteryLot = txDb.prepare(`
+      SELECT Id FROM BatteryStorageManager
+      WHERE BatteryId = ? AND LocationID = ? AND SourceTypeId = ? AND CreatedBy = ?
+    `)
+    const insertBatteryStockLot = txDb.prepare(`
+      INSERT INTO BatteryStorageManager (BatteryId, LocationID, Qty, OrderID, SourceTypeId, SourceId, CreatedBy)
+      VALUES (?, ?, ?, NULL, ?, NULL, ?)
+    `)
+    const insertBatteryStockBatch = txDb.prepare(`
+      INSERT INTO BatteryStorageManagerBatch (BatteryStorageManagerID, BatchCode, MfgDate, ExpiryDate, Qty, CreatedBy)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `)
+
+    const batteriesToSeed = MASTER_BATTERY_SEED.filter((battery) => {
+      const batRow = selectBattery.get(battery.brand, battery.model)
+      if (!batRow) return false
+      return !selectExistingBatteryLot.get(batRow.Id, batteryLocation.Id, source.Id, DEV_MASTER_DATA_FEED_SEED_NAME)
+    })
+
+    const batteryCapacityNeeded = batteriesToSeed.length * DEV_MASTER_DATA_STOCK_QTY
+    if (Number(batteryLocation.UsedCapacity) + batteryCapacityNeeded <= Number(batteryLocation.Capacity)) {
+      batteriesToSeed.forEach((battery) => {
+        const batRow = selectBattery.get(battery.brand, battery.model)
+        const lot = insertBatteryStockLot.run(
+          batRow.Id,
+          batteryLocation.Id,
+          DEV_MASTER_DATA_STOCK_QTY,
+          source.Id,
+          DEV_MASTER_DATA_FEED_SEED_NAME,
+        )
+        insertBatteryStockBatch.run(
+          lot.lastInsertRowid,
+          `BAT-${battery.model}`,
+          "2026-01-01",
+          "2028-01-01",
+          DEV_MASTER_DATA_STOCK_QTY,
+          DEV_MASTER_DATA_FEED_SEED_NAME,
+        )
+        stats.stockLots += 1
+        stats.stockQty += DEV_MASTER_DATA_STOCK_QTY
+        console.log(`Seeded development stock battery: ${battery.brand} ${battery.model}, qty ${DEV_MASTER_DATA_STOCK_QTY}`)
+      })
+    }
+  }
 }
 
 const runMasterDataSeed = async (options = {}) => {
   if (!ENABLE_MASTER_DATA_SEED && !options.force) {
     console.log("Master data seed is disabled (set TM_SEED_MASTER_DATA=true to enable)")
-    return
+    return { skipped: true, disabled: true }
   }
 
   try {
     const stats = createMasterDataStats()
     const seedTransaction = db.transaction(() => {
       ensureSeedTrackingTable(db)
-      if (hasSeedRun(db, MASTER_DATA_SEED_NAME)) return { skipped: true }
+      if (!options.force && hasSeedRun(db, MASTER_DATA_SEED_NAME)) return { skipped: true }
 
       seedMasterDataRows(db, stats)
       markSeedRun(db, MASTER_DATA_SEED_NAME)
@@ -448,13 +513,14 @@ const runMasterDataSeed = async (options = {}) => {
   } catch (error) {
     console.error("Master data seed failed", error)
     if (options.force) throw error
+    return { error: error.message }
   }
 }
 
 const runDevMasterDataFeed = async (options = {}) => {
   if (!ENABLE_DEV_MASTER_DATA_FEED && !options.force) {
     console.log("Dev master data feed is disabled (set NODE_ENV=development and TM_DEV_MASTER_DATA_FEED=true to enable)")
-    return
+    return { skipped: true, disabled: true }
   }
 
   try {
@@ -462,12 +528,12 @@ const runDevMasterDataFeed = async (options = {}) => {
     const feedTransaction = db.transaction(() => {
       ensureSeedTrackingTable(db)
 
-      if (!hasSeedRun(db, MASTER_DATA_SEED_NAME)) {
+      if (options.force || !hasSeedRun(db, MASTER_DATA_SEED_NAME)) {
         seedMasterDataRows(db, stats)
         markSeedRun(db, MASTER_DATA_SEED_NAME)
       }
 
-      if (hasSeedRun(db, DEV_MASTER_DATA_FEED_SEED_NAME)) return { skipped: true }
+      if (!options.force && hasSeedRun(db, DEV_MASTER_DATA_FEED_SEED_NAME)) return { skipped: true }
 
       seedDevelopmentStock(db, stats)
       markSeedRun(db, DEV_MASTER_DATA_FEED_SEED_NAME)
@@ -484,6 +550,7 @@ const runDevMasterDataFeed = async (options = {}) => {
   } catch (error) {
     console.error("Dev master data feed failed", error)
     if (options.force) throw error
+    return { error: error.message }
   }
 }
 
