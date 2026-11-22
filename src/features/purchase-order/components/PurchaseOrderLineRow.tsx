@@ -3,6 +3,7 @@ import type { PurchaseOrderDisplayRow, UpdateApprovalHandler, UpdateSupplierDeli
 import type { GoodsReceiptLineRecord } from "../../goods-receipt/models/goodsReceipt"
 import { STATUS_CODES, getStatusColorClass, getStatusName, type StatusCode } from "../../../shared/constants/statusConstants"
 import { PurchaseOrderLineExpandedDetails } from "./PurchaseOrderLineExpandedDetails"
+import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
 
 interface PurchaseOrderLineRowProps {
   row: PurchaseOrderDisplayRow;
@@ -32,6 +33,7 @@ export const PurchaseOrderLineRow: React.FC<PurchaseOrderLineRowProps> = ({
   const detailsColSpan = poStatusCode === STATUS_CODES.COMPLETED ? 8 : 9
   const lineStatusClass = getStatusColorClass(row.StatusCode || STATUS_CODES.PENDING)
   const lineStatusName = getStatusName(row.StatusCode || STATUS_CODES.PENDING)
+  const isBattery = Boolean((row as any).BatteryID || (row as any).PoBatteriesID)
 
   return (
     <>
@@ -42,11 +44,11 @@ export const PurchaseOrderLineRow: React.FC<PurchaseOrderLineRowProps> = ({
               type="button"
               className={`line-toggle-button ${isExpanded ? "expanded" : ""}`}
               onClick={() => onToggleExpand(row.rowKey)}
-              aria-label={isExpanded ? "Collapse tyre details" : "Expand tyre details"}
+              aria-label={isExpanded ? (isBattery ? "Collapse battery details" : "Collapse tyre details") : (isBattery ? "Expand battery details" : "Expand tyre details")}
             >
               {isExpanded ? "−" : "+"}
             </button>
-            <strong>{row.Brand} / {row.Size} / {row.Pattern}</strong>
+            <strong>{formatOrderItemLabel(row)}</strong>
           </div>
         </td>
         <td className="text-right">${row.Price.toLocaleString()}</td>

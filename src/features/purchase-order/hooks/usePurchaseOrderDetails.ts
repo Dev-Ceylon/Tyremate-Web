@@ -13,6 +13,11 @@ export interface PurchaseOrderDisplayRow extends PoTyreRecord {
   Brand: string;
   Size: string;
   Pattern: string;
+  BatteryID?: number;
+  Model?: string;
+  Capacity?: string;
+  Voltage?: string;
+  Technology?: string;
   // Derived UI values
   lineTotal: number;
   isApproved: boolean;
@@ -183,6 +188,11 @@ export function usePurchaseOrderDetails() {
           Brand: brand,
           Size: sizeOrModel,
           Pattern: patternOrCapacity,
+          BatteryID: item.BatteryID,
+          Model: item.Model,
+          Capacity: item.Capacity,
+          Voltage: item.Voltage,
+          Technology: item.Technology,
           displaySupplier: null, 
           rowKey: `line-${item.ID}`,
           lineTotal,
@@ -198,10 +208,15 @@ export function usePurchaseOrderDetails() {
         const rowClass = isApproved ? "row-approved" : isRejected ? "row-rejected" : ""
 
         return {
-          ...base,
+          ...base, 
           Brand: brand,
           Size: sizeOrModel,
           Pattern: patternOrCapacity,
+          BatteryID: item.BatteryID,
+          Model: item.Model,
+          Capacity: item.Capacity,
+          Voltage: item.Voltage,
+          Technology: item.Technology,
           Qty: s.Qty,
           displaySupplier: s,
           rowKey: `line-${item.ID}-sup-${s.ID}`,

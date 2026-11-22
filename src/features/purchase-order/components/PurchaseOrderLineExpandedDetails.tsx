@@ -26,6 +26,7 @@ export const PurchaseOrderLineExpandedDetails: React.FC<PurchaseOrderLineExpande
   const [dateDrafts, setDateDrafts] = useState<Record<number, string>>({})
   const lineStatusClass = getStatusColorClass(row.StatusCode || STATUS_CODES.PENDING)
   const lineStatusName = getStatusName(row.StatusCode || STATUS_CODES.PENDING)
+  const isBattery = Boolean((row as any).BatteryID || (row as any).PoBatteriesID)
 
   const allocationRows = useMemo(() => row.displaySupplier ? [{
     id: row.displaySupplier.ID,
@@ -56,11 +57,11 @@ export const PurchaseOrderLineExpandedDetails: React.FC<PurchaseOrderLineExpande
           </span>
         </div>
         <div className="expanded-summary-card">
-          <span className="expanded-summary-label">Tyre line status</span>
+          <span className="expanded-summary-label">{isBattery ? "Battery line status" : "Tyre line status"}</span>
           <div className="expanded-summary-status-wrap">
             <span className={`status-badge ${lineStatusClass}`}>{lineStatusName}</span>
           </div>
-          <span className="expanded-summary-meta">Lifecycle state for this tyre line</span>
+          <span className="expanded-summary-meta">Lifecycle state for this {isBattery ? "battery" : "tyre"} line</span>
         </div>
       </div>
 
@@ -152,7 +153,7 @@ export const PurchaseOrderLineExpandedDetails: React.FC<PurchaseOrderLineExpande
           </div>
         </div>
       ) : (
-        <p className="secondary-text expanded-empty-state">No supplier allocations for this tyre line.</p>
+        <p className="secondary-text expanded-empty-state">No supplier allocations for this {isBattery ? "battery" : "tyre"} line.</p>
       )}
 
       {row.displaySupplier && (

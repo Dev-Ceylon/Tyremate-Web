@@ -6,6 +6,7 @@ type PoGoodsReceiptModalProps = {
   source?: "po"
   isOpen: boolean
   poId: number
+  category?: "tyre" | "battery"
   supplierAllocationId: number | null
   supplierName: string
   tyreLabel: string

@@ -11,6 +11,7 @@ type BatchDraft = {
 type UseGoodsReceiptFormOptions = {
   isOpen: boolean
   poId: number
+  category?: "tyre" | "battery"
   supplierAllocationId: number | null
   allocationQty: number
   receivedToDate: number
@@ -34,6 +35,7 @@ const emptyBatch = (key: number): BatchDraft => ({
 export function useGoodsReceiptForm({
   isOpen,
   poId,
+  category,
   supplierAllocationId,
   allocationQty,
   receivedToDate,
@@ -84,8 +86,9 @@ export function useGoodsReceiptForm({
   const submit = useCallback(async () => {
     setValidationMessage(null)
     if (!supplierAllocationId) return
+    const isBattery = category === "battery"
     if (!locationName) {
-      setValidationMessage("Allocate a storage location to this tyre line before posting a receipt.")
+      setValidationMessage(`Allocate a storage location to this ${isBattery ? "battery" : "tyre"} line before posting a receipt.`)
       return
     }
     if (!receiptDate) {
@@ -109,19 +112,21 @@ export function useGoodsReceiptForm({
       return
     }
     if ((shortage > 0 || overReceipt > 0 || Number(damagedQty) > 0) && !discrepancyReason.trim()) {
-      setValidationMessage("Enter a reason for shortages, over-receipts, or damaged tyres.")
+      setValidationMessage(`Enter a reason for shortages, over-receipts, or damaged ${isBattery ? "batteries" : "tyres"}.`)
       return
     }
 
     try {
       const receiptBatches: GoodsReceiptBatchPayload[] = batches.map(({ DOT, ReceivedQty, AcceptedQty }) => ({
-        DOT: DOT.trim() || null,
+        DOT: isBattery ? null : (DOT.trim() || null),
+        BatchCode: isBattery ? (DOT.trim() || null) : null,
         ReceivedQty: Number(ReceivedQty),
         AcceptedQty: Number(AcceptedQty),
       }))
       await onPost({
         POID: poId,
-        PoTyresSupplierID: supplierAllocationId,
+        PoTyresSupplierID: isBattery ? null : supplierAllocationId,
+        PoBatterySupplierID: isBattery ? supplierAllocationId : null,
         ReceiptDate: receiptDate,
         DeliveryNoteNumber: deliveryNoteNumber.trim() || null,
         DispatchedQty: Number(dispatchedQty),
@@ -135,6 +140,7 @@ export function useGoodsReceiptForm({
     }
   }, [
     supplierAllocationId,
+    category,
     locationName,
     receiptDate,
     batches,

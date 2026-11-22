@@ -5,6 +5,7 @@ import type { GoodsReceiptPayload } from "../models/goodsReceipt"
 type PoGoodsReceiptModalProps = {
   isOpen: boolean
   poId: number
+  category?: "tyre" | "battery"
   supplierAllocationId: number | null
   supplierName: string
   tyreLabel: string
@@ -19,6 +20,7 @@ type PoGoodsReceiptModalProps = {
 export function PoGoodsReceiptModal({
   isOpen,
   poId,
+  category,
   supplierAllocationId,
   supplierName,
   tyreLabel,
@@ -29,6 +31,7 @@ export function PoGoodsReceiptModal({
   onClose,
   onPost,
 }: PoGoodsReceiptModalProps) {
+  const isBattery = category === "battery"
   const {
     receiptDate,
     setReceiptDate,
@@ -50,6 +53,7 @@ export function PoGoodsReceiptModal({
   } = useGoodsReceiptForm({
     isOpen,
     poId,
+    category,
     supplierAllocationId,
     allocationQty,
     receivedToDate,
@@ -68,15 +72,15 @@ export function PoGoodsReceiptModal({
         <header className="goods-receipt-heading">
           <div>
             <p className="goods-receipt-eyebrow">Purchase order receipt</p>
-            <h2>Record delivered tyres</h2>
-            <p>Enter the delivery details, then reconcile each DOT batch.</p>
+            <h2>{isBattery ? "Record delivered batteries" : "Record delivered tyres"}</h2>
+            <p>{isBattery ? "Enter the delivery details, then reconcile each batch." : "Enter the delivery details, then reconcile each DOT batch."}</p>
           </div>
           <span className="goods-receipt-stamp">GRN</span>
         </header>
 
         <section className="goods-receipt-context" aria-label="Receipt allocation details">
           <div className="goods-receipt-tyre">
-            <span className="goods-receipt-context-label">Tyre line</span>
+            <span className="goods-receipt-context-label">{isBattery ? "Battery line" : "Tyre line"}</span>
             <strong>{tyreLabel}</strong>
             <span>{supplierName}</span>
           </div>
@@ -131,7 +135,7 @@ export function PoGoodsReceiptModal({
         <section className="goods-receipt-section goods-receipt-batches">
           <div className="goods-receipt-section-heading">
             <div>
-              <h3>DOT batch breakdown</h3>
+              <h3>{isBattery ? "Batch breakdown" : "DOT batch breakdown"}</h3>
               <p>Accepted units are added to stock; rejected units stay out of inventory.</p>
             </div>
             <button type="button" className="secondary-action" onClick={actions.addBatch}>Add batch</button>
@@ -140,7 +144,7 @@ export function PoGoodsReceiptModal({
             <table className="product-table goods-receipt-batch-table">
               <thead>
                 <tr>
-                  <th>DOT code</th>
+                  <th>{isBattery ? "Batch code" : "DOT code"}</th>
                   <th>Received</th>
                   <th>Accepted</th>
                   <th></th>
@@ -150,7 +154,7 @@ export function PoGoodsReceiptModal({
                 {batches.map((batch) => (
                   <tr key={batch.key}>
                     <td>
-                      <input className="text-input" value={batch.DOT} onChange={(event) => actions.updateBatch(batch.key, { DOT: event.target.value })} placeholder="DOT code" />
+                      <input className="text-input" value={batch.DOT} onChange={(event) => actions.updateBatch(batch.key, { DOT: event.target.value })} placeholder={isBattery ? "Batch code / Lot #" : "DOT code"} />
                     </td>
                     <td>
                       <input className="text-input" type="number" min="0" value={batch.ReceivedQty} onChange={(event) => actions.updateBatch(batch.key, { ReceivedQty: event.target.value })} />
@@ -176,7 +180,7 @@ export function PoGoodsReceiptModal({
 
         <label className="goods-receipt-field goods-receipt-reason">
           <span>Discrepancy reason</span>
-          <textarea className="text-input" rows={2} value={discrepancyReason} onChange={(event) => setDiscrepancyReason(event.target.value)} placeholder="Describe any quantity difference or damage" />
+          <textarea className="text-input" rows={2} value={discrepancyReason} onChange={(event) => setDiscrepancyReason(event.target.value)} placeholder={isBattery ? "Describe any quantity difference or damage to batteries" : "Describe any quantity difference or damage"} />
         </label>
 
         {validationMessage && <div className="goods-receipt-error" role="alert">{validationMessage}</div>}

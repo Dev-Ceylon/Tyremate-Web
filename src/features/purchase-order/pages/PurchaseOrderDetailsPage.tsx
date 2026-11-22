@@ -11,6 +11,7 @@ import { ProcurementValueCard } from "../components/ProcurementValueCard"
 import { PurchaseOrderLineRow } from "../components/PurchaseOrderLineRow"
 import { GoodsReceiptModal } from "../../goods-receipt/components/GoodsReceiptModal"
 import { LinkedInquiriesCard } from "../../inquiry/components/LinkedInquiriesCard"
+import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
 import type { PurchaseOrderDisplayRow } from "../hooks/usePurchaseOrderDetails"
 
 export default function PurchaseOrderDetailsPage() {
@@ -48,9 +49,10 @@ export default function PurchaseOrderDetailsPage() {
   const goodsReceiptAllocationId = goodsReceiptTarget?.displaySupplier?.ID ?? null
   const goodsReceiptReceivedToDate = goodsReceiptAllocationId
     ? goodsReceipts
-      .filter((receipt) => receipt.PoTyresSupplierID === goodsReceiptAllocationId)
+      .filter((receipt) => (receipt.PoBatterySupplierID ?? receipt.PoTyresSupplierID) === goodsReceiptAllocationId)
       .reduce((total, receipt) => total + receipt.ReceivedQty, 0)
     : 0
+  const goodsReceiptItemLabel = formatOrderItemLabel(goodsReceiptTarget, order.Category)
 
   return (
     <main className="app-shell">
@@ -153,9 +155,10 @@ export default function PurchaseOrderDetailsPage() {
       <GoodsReceiptModal
         isOpen={goodsReceiptTarget !== null}
         poId={order.ID}
+        category={order.Category}
         supplierAllocationId={goodsReceiptAllocationId}
         supplierName={goodsReceiptTarget?.displaySupplier?.SupplierName ?? ""}
-        tyreLabel={goodsReceiptTarget ? `${goodsReceiptTarget.Brand} / ${goodsReceiptTarget.Size} / ${goodsReceiptTarget.Pattern}` : ""}
+        tyreLabel={goodsReceiptItemLabel}
         allocationQty={goodsReceiptTarget?.displaySupplier?.Qty ?? 0}
         receivedToDate={goodsReceiptReceivedToDate}
         locationName={goodsReceiptTarget?.LocationName ?? ""}

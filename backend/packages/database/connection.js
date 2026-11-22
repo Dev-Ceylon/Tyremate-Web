@@ -148,6 +148,74 @@ try {
       db.pragma("foreign_keys = ON")
     }
   }
+
+  // Live schema compatibility for PO Goods Receipt tables:
+  // Add PoBatteriesID & PoBatterySupplierID to POGoodsReceiptLines and BatchCode to POGoodsReceiptBatches
+  // so battery goods receipts can be posted to the same unified GRN tables without breaking existing tyre receipts.
+  const poGoodsReceiptLinesExists = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='POGoodsReceiptLines'")
+    .get()
+  if (poGoodsReceiptLinesExists) {
+    const grLineColumns = new Set(
+      db.prepare("PRAGMA table_info(POGoodsReceiptLines)").all().map((column) => column.name),
+    )
+    if (!grLineColumns.has("PoBatteriesID") || !grLineColumns.has("PoBatterySupplierID")) {
+      db.pragma("foreign_keys = OFF")
+      db.exec(`
+        CREATE TABLE POGoodsReceiptLines_migrated (
+          ID INTEGER PRIMARY KEY AUTOINCREMENT,
+          GoodsReceiptID INTEGER NOT NULL,
+          PoTyresID INTEGER,
+          PoTyresSupplierID INTEGER,
+          PoBatteriesID INTEGER,
+          PoBatterySupplierID INTEGER,
+          LocationID INTEGER NOT NULL,
+          DispatchedQty INTEGER NOT NULL DEFAULT 0 CHECK (DispatchedQty >= 0),
+          ReceivedQty INTEGER NOT NULL CHECK (ReceivedQty > 0),
+          AcceptedQty INTEGER NOT NULL CHECK (AcceptedQty >= 0 AND AcceptedQty <= ReceivedQty),
+          DamagedQty INTEGER NOT NULL DEFAULT 0 CHECK (DamagedQty >= 0 AND DamagedQty <= ReceivedQty - AcceptedQty),
+          ShortageQty INTEGER NOT NULL DEFAULT 0 CHECK (ShortageQty >= 0),
+          OverReceiptQty INTEGER NOT NULL DEFAULT 0 CHECK (OverReceiptQty >= 0),
+          DiscrepancyReason TEXT,
+          FOREIGN KEY (GoodsReceiptID) REFERENCES POGoodsReceipts(ID),
+          FOREIGN KEY (PoTyresID) REFERENCES POTyres(ID),
+          FOREIGN KEY (PoTyresSupplierID) REFERENCES PoTyresSuppliers(ID),
+          FOREIGN KEY (PoBatteriesID) REFERENCES POBatteries(ID),
+          FOREIGN KEY (PoBatterySupplierID) REFERENCES PoBatterySuppliers(ID)
+        );
+        INSERT INTO POGoodsReceiptLines_migrated (
+          ID, GoodsReceiptID, PoTyresID, PoTyresSupplierID, LocationID,
+          DispatchedQty, ReceivedQty, AcceptedQty, DamagedQty,
+          ShortageQty, OverReceiptQty, DiscrepancyReason
+        )
+        SELECT
+          ID, GoodsReceiptID, PoTyresID, PoTyresSupplierID, LocationID,
+          DispatchedQty, ReceivedQty, AcceptedQty, DamagedQty,
+          ShortageQty, OverReceiptQty, DiscrepancyReason
+        FROM POGoodsReceiptLines;
+        DROP TABLE POGoodsReceiptLines;
+        ALTER TABLE POGoodsReceiptLines_migrated RENAME TO POGoodsReceiptLines;
+        CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_allocation ON POGoodsReceiptLines (PoTyresSupplierID, GoodsReceiptID);
+        CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_potyres ON POGoodsReceiptLines (PoTyresID, GoodsReceiptID);
+        CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_battery_allocation ON POGoodsReceiptLines (PoBatterySupplierID, GoodsReceiptID);
+        CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_pobatteries ON POGoodsReceiptLines (PoBatteriesID, GoodsReceiptID);
+      `)
+      db.pragma("foreign_keys = ON")
+    }
+  }
+
+  const poGoodsReceiptBatchesExists = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='POGoodsReceiptBatches'")
+    .get()
+  if (poGoodsReceiptBatchesExists) {
+    const batchColumns = new Set(
+      db.prepare("PRAGMA table_info(POGoodsReceiptBatches)").all().map((column) => column.name),
+    )
+    if (!batchColumns.has("BatchCode")) {
+      db.exec("ALTER TABLE POGoodsReceiptBatches ADD COLUMN BatchCode TEXT")
+      db.exec("UPDATE POGoodsReceiptBatches SET BatchCode = DOT WHERE BatchCode IS NULL AND DOT IS NOT NULL")
+    }
+  }
 } catch (error) {
   console.error("Failed to initialize database", error)
   throw new Error(`Database initialization failed: ${error.message}`)

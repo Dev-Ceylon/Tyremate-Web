@@ -1,5 +1,6 @@
 import { ActionMenu } from "../../../shared/ui/actionMenu/ActionMenu"
-import { formatTyreLabel } from "../../../shared/tyre/models/tyreDisplay"
+import { TyreIcon, BatteryIcon } from "../../../shared/ui/icons"
+import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
 import type { PendingGoodsReceiptRecord } from "../models/goodsReceipt"
 
 type PendingGoodsReceiptTableProps = {
@@ -36,7 +37,7 @@ export const PendingGoodsReceiptTable = ({
           <tr>
             <th>PO</th>
             <th>Supplier</th>
-            <th>Tyre</th>
+            <th>Item</th>
             <th className="text-center">Allocated</th>
             <th className="text-center">Received</th>
             <th className="text-center">Pending</th>
@@ -50,7 +51,7 @@ export const PendingGoodsReceiptTable = ({
             const isOverdue = !!row.ExpectedDeliveryDate && row.ExpectedDeliveryDate < localToday()
 
             return (
-              <tr key={row.PoTyresSupplierID}>
+              <tr key={`${row.Category ?? "tyre"}-${row.PoBatterySupplierID ?? row.PoTyresSupplierID}`}>
                 <td>
                   <button
                     type="button"
@@ -64,7 +65,25 @@ export const PendingGoodsReceiptTable = ({
                   <span className="mono-text">{row.SupplierCode}</span>
                   <div className="secondary-text">{row.SupplierName}</div>
                 </td>
-                <td>{formatTyreLabel(row)}</td>
+                <td>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span
+                      title={row.Category === "battery" ? "Battery" : "Tyre"}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: row.Category === "battery" ? "#3b82f6" : "#64748b",
+                        width: 18,
+                        height: 18,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {row.Category === "battery" ? <BatteryIcon /> : <TyreIcon />}
+                    </span>
+                    <span>{formatOrderItemLabel(row)}</span>
+                  </div>
+                </td>
                 <td className="text-center mono-text">{row.AllocatedQty}</td>
                 <td className="text-center mono-text">
                   {row.AcceptedToDateQty}

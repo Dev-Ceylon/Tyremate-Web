@@ -16,8 +16,10 @@ CREATE TABLE IF NOT EXISTS POGoodsReceipts (
 CREATE TABLE IF NOT EXISTS POGoodsReceiptLines (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,
   GoodsReceiptID INTEGER NOT NULL,
-  PoTyresID INTEGER NOT NULL,
-  PoTyresSupplierID INTEGER NOT NULL,
+  PoTyresID INTEGER,
+  PoTyresSupplierID INTEGER,
+  PoBatteriesID INTEGER,
+  PoBatterySupplierID INTEGER,
   LocationID INTEGER NOT NULL,
   DispatchedQty INTEGER NOT NULL DEFAULT 0 CHECK (DispatchedQty >= 0),
   ReceivedQty INTEGER NOT NULL CHECK (ReceivedQty > 0),
@@ -29,13 +31,15 @@ CREATE TABLE IF NOT EXISTS POGoodsReceiptLines (
   FOREIGN KEY (GoodsReceiptID) REFERENCES POGoodsReceipts(ID),
   FOREIGN KEY (PoTyresID) REFERENCES POTyres(ID),
   FOREIGN KEY (PoTyresSupplierID) REFERENCES PoTyresSuppliers(ID),
-  FOREIGN KEY (LocationID) REFERENCES StorageLocationM(Id)
+  FOREIGN KEY (PoBatteriesID) REFERENCES POBatteries(ID),
+  FOREIGN KEY (PoBatterySupplierID) REFERENCES PoBatterySuppliers(ID)
 );
 
 CREATE TABLE IF NOT EXISTS POGoodsReceiptBatches (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,
   GoodsReceiptLineID INTEGER NOT NULL,
   DOT TEXT,
+  BatchCode TEXT,
   ReceivedQty INTEGER NOT NULL CHECK (ReceivedQty > 0),
   AcceptedQty INTEGER NOT NULL CHECK (AcceptedQty >= 0 AND AcceptedQty <= ReceivedQty),
   FOREIGN KEY (GoodsReceiptLineID) REFERENCES POGoodsReceiptLines(ID) ON DELETE CASCADE
@@ -44,4 +48,6 @@ CREATE TABLE IF NOT EXISTS POGoodsReceiptBatches (
 CREATE INDEX IF NOT EXISTS idx_po_goods_receipts_poid ON POGoodsReceipts (POID, ID);
 CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_allocation ON POGoodsReceiptLines (PoTyresSupplierID, GoodsReceiptID);
 CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_potyres ON POGoodsReceiptLines (PoTyresID, GoodsReceiptID);
+CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_battery_allocation ON POGoodsReceiptLines (PoBatterySupplierID, GoodsReceiptID);
+CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_lines_pobatteries ON POGoodsReceiptLines (PoBatteriesID, GoodsReceiptID);
 CREATE INDEX IF NOT EXISTS idx_po_goods_receipt_batches_line ON POGoodsReceiptBatches (GoodsReceiptLineID);

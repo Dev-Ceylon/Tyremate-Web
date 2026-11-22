@@ -4,6 +4,7 @@ import { usePurchaseOrderStorageAllocation } from "../hooks/usePurchaseOrderStor
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
 import { LocationOptions } from "../components/LocationOptions"
 import { saveButtonLabel } from "../../../shared/ui/saveButtonLabel"
+import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
 
 export default function PurchaseOrderAllocateLocationPage() {
   const navigate = useNavigate()
@@ -95,9 +96,7 @@ export default function PurchaseOrderAllocateLocationPage() {
             <tbody>
               {lines.map((item: any) => {
                 const reservedByLocation = getReservedByLocation(item.ID)
-                const label = isBattery
-                  ? `${item.Brand} ${item.Model ? `- ${item.Model}` : ""} ${item.Capacity ? `(${item.Capacity}` : ""}${item.Voltage ? ` ${item.Voltage})` : item.Capacity ? ")" : ""}`
-                  : `${item.Brand} / ${item.Size} / ${item.Pattern}`
+                const label = formatOrderItemLabel(item, isBattery ? "battery" : "tyre")
 
                 return (
                   <tr key={item.ID}>

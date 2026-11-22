@@ -22,14 +22,16 @@ exports.createGoodsReceipt = (receipt) => {
 exports.createGoodsReceiptLine = (line) => {
   const result = db.prepare(`
     INSERT INTO POGoodsReceiptLines (
-      GoodsReceiptID, PoTyresID, PoTyresSupplierID, LocationID,
+      GoodsReceiptID, PoTyresID, PoTyresSupplierID, PoBatteriesID, PoBatterySupplierID, LocationID,
       DispatchedQty, ReceivedQty, AcceptedQty, DamagedQty,
       ShortageQty, OverReceiptQty, DiscrepancyReason
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     line.GoodsReceiptID,
-    line.PoTyresID,
-    line.PoTyresSupplierID,
+    line.PoTyresID ?? null,
+    line.PoTyresSupplierID ?? null,
+    line.PoBatteriesID ?? null,
+    line.PoBatterySupplierID ?? null,
     line.LocationID,
     line.DispatchedQty,
     line.ReceivedQty,
@@ -46,9 +48,15 @@ exports.createGoodsReceiptLine = (line) => {
 exports.createGoodsReceiptBatch = (batch) => {
   const result = db.prepare(`
     INSERT INTO POGoodsReceiptBatches (
-      GoodsReceiptLineID, DOT, ReceivedQty, AcceptedQty
-    ) VALUES (?, ?, ?, ?)
-  `).run(batch.GoodsReceiptLineID, batch.DOT ?? null, batch.ReceivedQty, batch.AcceptedQty)
+      GoodsReceiptLineID, DOT, BatchCode, ReceivedQty, AcceptedQty
+    ) VALUES (?, ?, ?, ?, ?)
+  `).run(
+    batch.GoodsReceiptLineID,
+    batch.DOT ?? batch.BatchCode ?? null,
+    batch.BatchCode ?? batch.DOT ?? null,
+    batch.ReceivedQty,
+    batch.AcceptedQty
+  )
 
   return Number(result.lastInsertRowid)
 }
@@ -58,8 +66,8 @@ exports.getPostedAcceptedQtyByAllocationId = (allocationId) => {
     SELECT COALESCE(SUM(grl.AcceptedQty), 0) AS AcceptedQty
     FROM POGoodsReceiptLines grl
     INNER JOIN POGoodsReceipts gr ON gr.ID = grl.GoodsReceiptID
-    WHERE grl.PoTyresSupplierID = ? AND gr.Status = 'Posted'
-  `).get(allocationId)
+    WHERE (grl.PoTyresSupplierID = ? OR grl.PoBatterySupplierID = ?) AND gr.Status = 'Posted'
+  `).get(allocationId, allocationId)
 
   return Number(row?.AcceptedQty ?? 0)
 }
@@ -75,12 +83,24 @@ exports.getPostedAcceptedQtyByPoTyresId = (poTyresId) => {
   return Number(row?.AcceptedQty ?? 0)
 }
 
+exports.getPostedAcceptedQtyByPoBatteriesId = (poBatteriesId) => {
+  const row = db.prepare(`
+    SELECT COALESCE(SUM(grl.AcceptedQty), 0) AS AcceptedQty
+    FROM POGoodsReceiptLines grl
+    INNER JOIN POGoodsReceipts gr ON gr.ID = grl.GoodsReceiptID
+    WHERE grl.PoBatteriesID = ? AND gr.Status = 'Posted'
+  `).get(poBatteriesId)
+
+  return Number(row?.AcceptedQty ?? 0)
+}
+
 exports.getGoodsReceiptsByPoId = (poId) => {
   return db.prepare(`
     SELECT
       gr.ID AS GoodsReceiptID,
       gr.GRNNumber,
       gr.POID,
+      po.Category,
       gr.SupplierID,
       sm.Name AS SupplierName,
       gr.ReceiptDate,
@@ -91,7 +111,12 @@ exports.getGoodsReceiptsByPoId = (poId) => {
       grl.ID AS GoodsReceiptLineID,
       grl.PoTyresID,
       grl.PoTyresSupplierID,
+      grl.PoBatteriesID,
+      grl.PoBatterySupplierID,
+      COALESCE(grl.PoBatterySupplierID, grl.PoTyresSupplierID) AS SupplierAllocationID,
       grl.LocationID,
+      COALESCE(blm.LocationName, slm.LocationName) AS LocationName,
+      COALESCE(blm.LocationCode, slm.LocationCode) AS LocationCode,
       grl.DispatchedQty,
       grl.ReceivedQty,
       grl.AcceptedQty,
@@ -99,14 +124,22 @@ exports.getGoodsReceiptsByPoId = (poId) => {
       grl.ShortageQty,
       grl.OverReceiptQty,
       grl.DiscrepancyReason,
-      t.Brand,
+      COALESCE(t.Brand, b.Brand) AS Brand,
       t.Size,
-      t.Pattern
+      t.Pattern,
+      b.Model,
+      b.Capacity,
+      b.Voltage
     FROM POGoodsReceipts gr
+    INNER JOIN PO po ON po.ID = gr.POID
     INNER JOIN SupplierM sm ON sm.SupplierID = gr.SupplierID
     INNER JOIN POGoodsReceiptLines grl ON grl.GoodsReceiptID = gr.ID
-    INNER JOIN POTyres pt ON pt.ID = grl.PoTyresID
-    INNER JOIN TyreM t ON t.Id = pt.TyreID
+    LEFT JOIN POTyres pt ON pt.ID = grl.PoTyresID
+    LEFT JOIN TyreM t ON t.Id = pt.TyreID
+    LEFT JOIN POBatteries pb ON pb.ID = grl.PoBatteriesID
+    LEFT JOIN BatteryM b ON b.Id = pb.BatteryID
+    LEFT JOIN StorageLocationM slm ON slm.Id = grl.LocationID
+    LEFT JOIN BatteryLocationM blm ON blm.Id = grl.LocationID
     WHERE gr.POID = ?
     ORDER BY gr.ID DESC, grl.ID ASC
   `).all(poId)
@@ -114,7 +147,13 @@ exports.getGoodsReceiptsByPoId = (poId) => {
 
 exports.getGoodsReceiptBatchesByLineId = (lineId) => {
   return db.prepare(`
-    SELECT ID, GoodsReceiptLineID, DOT, ReceivedQty, AcceptedQty
+    SELECT
+      ID,
+      GoodsReceiptLineID,
+      DOT,
+      COALESCE(BatchCode, DOT) AS BatchCode,
+      ReceivedQty,
+      AcceptedQty
     FROM POGoodsReceiptBatches
     WHERE GoodsReceiptLineID = ?
     ORDER BY ID ASC

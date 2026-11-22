@@ -9,6 +9,7 @@ type UsePendingGoodsReceiptsOptions = {
   expectedFrom?: string | null
   expectedTo?: string | null
   overdueOnly?: boolean
+  category?: "all" | "tyre" | "battery"
 }
 
 const toMessage = (err: unknown, fallback: string) =>
@@ -20,6 +21,7 @@ export function usePendingGoodsReceipts({
   expectedFrom,
   expectedTo,
   overdueOnly,
+  category,
 }: UsePendingGoodsReceiptsOptions = {}) {
   const [rows, setRows] = useState<Awaited<ReturnType<typeof goodsReceiptService.getPendingGoodsReceipts>>>([])
   const [loading, setLoading] = useState(true)
@@ -36,6 +38,7 @@ export function usePendingGoodsReceipts({
         ExpectedFrom: expectedFrom || null,
         ExpectedTo: expectedTo || null,
         OverdueOnly: Boolean(overdueOnly),
+        Category: category ?? null,
       })
       setRows(data)
       setError(null)
@@ -44,7 +47,7 @@ export function usePendingGoodsReceipts({
     } finally {
       setLoading(false)
     }
-  }, [poId, supplierId, expectedFrom, expectedTo, overdueOnly])
+  }, [poId, supplierId, expectedFrom, expectedTo, overdueOnly, category])
 
   useEffect(() => {
     fetchPending()

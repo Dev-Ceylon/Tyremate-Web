@@ -6,7 +6,8 @@ import { PendingGoodsReceiptTable } from "../components/PendingGoodsReceiptTable
 import { PendingDagGoodsReceiptTable } from "../components/PendingDagGoodsReceiptTable"
 import { GoodsReceiptModal } from "../components/GoodsReceiptModal"
 import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
-import { formatTyreLabel } from "../../../shared/tyre/models/tyreDisplay"
+import { TyreIcon, BatteryIcon } from "../../../shared/ui/icons"
+import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
 import type {
   DagGoodsReceiptPayload,
   GoodsReceiptPayload,
@@ -18,6 +19,7 @@ import type {
 export default function PendingGoodsReceiptPage() {
   const navigate = useNavigate()
   const [source, setSource] = useState<GoodsReceiptSource>("po")
+  const [poCategoryFilter, setPoCategoryFilter] = useState<"all" | "tyre" | "battery">("all")
 
   const [overdueOnly, setOverdueOnly] = useState(false)
   const [expectedFrom, setExpectedFrom] = useState("")
@@ -53,10 +55,17 @@ export default function PendingGoodsReceiptPage() {
   }
 
   const visiblePoRows = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return poRows
+    let list = poRows
+    if (poCategoryFilter === "tyre") {
+      list = list.filter((r) => r.Category !== "battery")
+    } else if (poCategoryFilter === "battery") {
+      list = list.filter((r) => r.Category === "battery")
+    }
 
-    return poRows.filter((row) =>
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return list
+
+    return list.filter((row) =>
       [
         String(row.POID),
         row.SupplierCode,
@@ -64,13 +73,16 @@ export default function PendingGoodsReceiptPage() {
         row.Brand ?? "",
         row.Size ?? "",
         row.Pattern ?? "",
+        row.Model ?? "",
+        row.Capacity ?? "",
+        row.Voltage ?? "",
         row.AllocatedLocationName ?? "",
       ]
         .join(" ")
         .toLowerCase()
         .includes(query)
     )
-  }, [poRows, searchQuery])
+  }, [poRows, poCategoryFilter, searchQuery])
 
   const visibleDagRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -93,7 +105,7 @@ export default function PendingGoodsReceiptPage() {
   }, [dagRows, searchQuery])
 
   const isFiltering = source === "po"
-    ? overdueOnly || !!expectedFrom || !!expectedTo || !!searchQuery.trim()
+    ? overdueOnly || !!expectedFrom || !!expectedTo || !!searchQuery.trim() || poCategoryFilter !== "all"
     : !!searchQuery.trim()
 
   return (
@@ -122,7 +134,7 @@ export default function PendingGoodsReceiptPage() {
           />
           <span className="table-count">
             {source === "po"
-              ? `${visiblePoRows.length} allocation${visiblePoRows.length === 1 ? "" : "s"} \u00b7 ${visiblePoRows.reduce((sum, row) => sum + row.PendingQty, 0)} tyre${visiblePoRows.reduce((sum, row) => sum + row.PendingQty, 0) === 1 ? "" : "s"} pending`
+              ? `${visiblePoRows.length} allocation${visiblePoRows.length === 1 ? "" : "s"} \u00b7 ${visiblePoRows.reduce((sum, row) => sum + row.PendingQty, 0)} item${visiblePoRows.reduce((sum, row) => sum + row.PendingQty, 0) === 1 ? "" : "s"} pending`
               : `${visibleDagRows.length} lot${visibleDagRows.length === 1 ? "" : "s"} \u00b7 ${visibleDagRows.reduce((sum, row) => sum + row.PendingQty, 0)} tyre${visibleDagRows.reduce((sum, row) => sum + row.PendingQty, 0) === 1 ? "" : "s"} in quarantine`}
           </span>
         </div>
@@ -133,7 +145,7 @@ export default function PendingGoodsReceiptPage() {
             <input
               type="search"
               className="text-input"
-              placeholder={source === "po" ? "PO, supplier or tyre" : "DAG, customer or tyre"}
+              placeholder={source === "po" ? "PO, supplier, tyre or battery" : "DAG, customer or tyre"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -141,6 +153,41 @@ export default function PendingGoodsReceiptPage() {
 
           {source === "po" && (
             <>
+              <div className="table-filter-field">
+                <span className="filter-field-label">Category</span>
+                <div className="po-category-segment" role="radiogroup" aria-label="Filter item category">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={poCategoryFilter === "all"}
+                    className={`po-category-pill ${poCategoryFilter === "all" ? "po-category-pill-active" : ""}`}
+                    onClick={() => setPoCategoryFilter("all")}
+                  >
+                    <span>All</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={poCategoryFilter === "tyre"}
+                    className={`po-category-pill ${poCategoryFilter === "tyre" ? "po-category-pill-active" : ""}`}
+                    onClick={() => setPoCategoryFilter("tyre")}
+                  >
+                    <TyreIcon />
+                    <span>Tyres</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={poCategoryFilter === "battery"}
+                    className={`po-category-pill ${poCategoryFilter === "battery" ? "po-category-pill-active" : ""}`}
+                    onClick={() => setPoCategoryFilter("battery")}
+                  >
+                    <BatteryIcon />
+                    <span>Batteries</span>
+                  </button>
+                </div>
+              </div>
+
               <label className="table-filter-field">
                 <span className="filter-field-label">Expected From</span>
                 <input
@@ -184,6 +231,7 @@ export default function PendingGoodsReceiptPage() {
                 setExpectedFrom("")
                 setExpectedTo("")
                 setOverdueOnly(false)
+                setPoCategoryFilter("all")
               }}
             >
               Clear
@@ -221,9 +269,10 @@ export default function PendingGoodsReceiptPage() {
           source="po"
           isOpen
           poId={selectedPo.POID}
-          supplierAllocationId={selectedPo.PoTyresSupplierID}
+          category={selectedPo.Category}
+          supplierAllocationId={selectedPo.PoBatterySupplierID ?? selectedPo.PoTyresSupplierID}
           supplierName={selectedPo.SupplierName}
-          tyreLabel={formatTyreLabel(selectedPo)}
+          tyreLabel={formatOrderItemLabel(selectedPo)}
           allocationQty={selectedPo.AllocatedQty}
           receivedToDate={selectedPo.AcceptedToDateQty}
           locationName={selectedPo.AllocatedLocationName ?? "-"}
