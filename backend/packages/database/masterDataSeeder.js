@@ -94,7 +94,7 @@ const seedParties = (txDb, table, idColumn, rows, stats, statsKey) => {
   const isContractor = table === "ContractorM"
 
   const infoStatement = isSupplier
-    ? "INSERT OR IGNORE INTO SupplierM (SupplierCode, Name, TinNo, VatNo) VALUES (?, ?, ?, ?)"
+    ? "INSERT OR IGNORE INTO SupplierM (SupplierCode, Name, TinNo, VatNo, SupplierTypeID) VALUES (?, ?, ?, ?, ?)"
     : isCustomer
       ? "INSERT OR IGNORE INTO CustomerM (CustomerCode, Name, TinNo, VatNo, Birthday) VALUES (?, ?, ?, ?, ?)"
       : "INSERT INTO ContractorM (Name, Rating) VALUES (?, ?)"
@@ -107,6 +107,14 @@ const seedParties = (txDb, table, idColumn, rows, stats, statsKey) => {
 
   const selectByName = isContractor
     ? txDb.prepare("SELECT ID FROM ContractorM WHERE Name = ?")
+    : null
+
+  const selectSupplierTypeId = isSupplier
+    ? txDb.prepare("SELECT Id FROM SupplierTypeM WHERE LOWER(TypeCode) = LOWER(?) OR LOWER(TypeName) = LOWER(?)")
+    : null
+
+  const updateSupplierType = isSupplier
+    ? txDb.prepare("UPDATE SupplierM SET SupplierTypeID = ? WHERE SupplierID = ? AND (SupplierTypeID IS NULL OR SupplierTypeID = 0)")
     : null
 
   const insertParty = txDb.prepare(infoStatement)
@@ -141,12 +149,22 @@ const seedParties = (txDb, table, idColumn, rows, stats, statsKey) => {
         isNew = true
       }
     } else {
+      let supplierTypeId = null
+      if (isSupplier && row.supplierTypeCode && selectSupplierTypeId) {
+        const typeRow = selectSupplierTypeId.get(row.supplierTypeCode, row.supplierTypeCode)
+        supplierTypeId = typeRow ? typeRow.Id : null
+      }
+
       const insertArgs = isSupplier
-        ? [row.supplierCode, row.name, row.tinNo || null, row.vatNo || null]
+        ? [row.supplierCode, row.name, row.tinNo || null, row.vatNo || null, supplierTypeId]
         : [row.customerCode, row.name, row.tinNo || null, row.vatNo || null, row.birthday || null]
 
       const info = insertParty.run(...insertArgs)
       partyId = selectByCode.get(row[isSupplier ? "supplierCode" : "customerCode"])[idColumn]
+
+      if (isSupplier && supplierTypeId && updateSupplierType) {
+        updateSupplierType.run(supplierTypeId, partyId)
+      }
 
       if (info.changes === 0) {
         console.log(`${isSupplier ? "Supplier" : "Customer"} ${row[isSupplier ? "supplierCode" : "customerCode"]} already exists`)
@@ -186,41 +204,43 @@ const seedTyres = (txDb, stats) => {
   `)
 
   MASTER_TYRE_SEED.forEach((tyre) => {
-    if (selectTyre.get(tyre.brand, tyre.size, tyre.pattern)) {
-      console.log(`Tyre ${tyre.brand} ${tyre.size} (${tyre.pattern}) already exists`)
-      return
+    let tyreRow = selectTyre.get(tyre.brand, tyre.size, tyre.pattern)
+    let tyreId
+    if (!tyreRow) {
+      const info = insertTyre.run(
+        tyre.brand,
+        tyre.size,
+        tyre.pattern,
+        tyre.ll_sr || null,
+        tyre.pr || null,
+        tyre.sideWall || null,
+        tyre.dot || null,
+        tyre.priceValidityFrom || null,
+        tyre.priceValidityTo || null,
+        tyre.purchasedPrice || 0,
+        tyre.dagCost ?? null,
+        tyre.discountOffered || 0,
+        tyre.discountAmount || 0,
+        tyre.mrpWithoutVat || 0,
+        tyre.mrpWithVat || 0,
+        tyre.actualSellingPrice || 0
+      )
+      tyreId = info.lastInsertRowid
+      stats.tyres += 1
+      console.log(`Seeded tyre ${tyre.brand} ${tyre.size} (${tyre.pattern})`)
+    } else {
+      tyreId = tyreRow.Id
     }
-
-    const info = insertTyre.run(
-      tyre.brand,
-      tyre.size,
-      tyre.pattern,
-      tyre.ll_sr || null,
-      tyre.pr || null,
-      tyre.sideWall || null,
-      tyre.dot || null,
-      tyre.priceValidityFrom || null,
-      tyre.priceValidityTo || null,
-      tyre.purchasedPrice || 0,
-      tyre.dagCost ?? null,
-      tyre.discountOffered || 0,
-      tyre.discountAmount || 0,
-      tyre.mrpWithoutVat || 0,
-      tyre.mrpWithVat || 0,
-      tyre.actualSellingPrice || 0
-    )
-
-    const tyreId = info.lastInsertRowid
 
     ;(tyre.tyreSuppliers || []).forEach((link) => {
       const supplier = selectSupplierId.get(link.supplierCode)
       if (supplier) {
-        insertTyreSupplier.run(tyreId, supplier.SupplierID, link.price || 0)
+        const info = insertTyreSupplier.run(tyreId, supplier.SupplierID, link.price || 0)
+        if (info.changes > 0) {
+          stats.tyreSuppliers = (stats.tyreSuppliers || 0) + 1
+        }
       }
     })
-
-    stats.tyres += 1
-    console.log(`Seeded tyre ${tyre.brand} ${tyre.size} (${tyre.pattern})`)
   })
 }
 
@@ -270,7 +290,13 @@ const seedBatteries = (txDb, stats) => {
     ;(bat.batterySuppliers || []).forEach((link) => {
       const supplier = selectSupplierId.get(link.supplierCode)
       if (supplier) {
-        insertBatterySupplier.run(batteryId, supplier.SupplierID, link.price || 0)
+        const info = insertBatterySupplier.run(batteryId, supplier.SupplierID, link.price || 0)
+        if (info.changes > 0) {
+          stats.batterySuppliers = (stats.batterySuppliers || 0) + 1
+          console.log(`Linked battery ${bat.brand} ${bat.model} to supplier ${link.supplierCode} (price: ${link.price})`)
+        }
+      } else {
+        console.warn(`Battery supplier ${link.supplierCode} not found for ${bat.brand} ${bat.model}`)
       }
     })
   })
@@ -343,6 +369,8 @@ const createMasterDataStats = () => ({
   contractors: 0,
   tyres: 0,
   batteries: 0,
+  tyreSuppliers: 0,
+  batterySuppliers: 0,
   storageLocations: 0,
   consumableLocations: 0,
   batteryLocations: 0,

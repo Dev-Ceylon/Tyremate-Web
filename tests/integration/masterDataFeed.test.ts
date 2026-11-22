@@ -16,6 +16,7 @@ describe("master data feed and admin sample data seeder", () => {
     expect(result1.master.stats.batteries).toBeGreaterThan(0)
     expect(result1.master.stats.storageLocations).toBeGreaterThan(0)
     expect(result1.master.stats.batteryLocations).toBeGreaterThan(0)
+    expect(result1.master.stats.batterySuppliers).toBeGreaterThan(0)
     expect(result1.stock.stats.stockLots).toBeGreaterThan(0)
     expect(result1.stock.stats.stockQty).toBeGreaterThan(0)
 
@@ -24,7 +25,11 @@ describe("master data feed and admin sample data seeder", () => {
     expect(branches.length).toBeGreaterThanOrEqual(4)
 
     const suppliers = await backend.invoke("suppliers:getAll")
-    expect(suppliers.length).toBeGreaterThanOrEqual(5)
+    expect(suppliers.length).toBeGreaterThanOrEqual(7)
+    const klevSupplier = suppliers.find((s: any) => s.SupplierCode === "SUP-KLEV01")
+    expect(klevSupplier).toBeDefined()
+    expect(klevSupplier.Name).toBe("Klevenberg (Pvt) Ltd")
+    expect(klevSupplier.SupplierTypeCode).toBe("bat")
 
     const customers = await backend.invoke("customers:getAll")
     expect(customers.length).toBeGreaterThanOrEqual(5)
@@ -32,8 +37,28 @@ describe("master data feed and admin sample data seeder", () => {
     const tyres = await backend.invoke("tyres:getAll")
     expect(tyres.length).toBeGreaterThanOrEqual(10)
 
+    // Verify Batteries and their linked suppliers
     const batteries = await backend.invoke("batteries:getAll")
     expect(batteries.length).toBeGreaterThanOrEqual(14)
+    // Every Lucas battery must be linked to Klevenberg
+    const lucasBatteries = batteries.filter((b: any) => b.Brand === "Lucas")
+    expect(lucasBatteries.length).toBeGreaterThanOrEqual(14)
+    lucasBatteries.forEach((bat: any) => {
+      expect(bat.SupplierCodes).toContain("SUP-KLEV01")
+      expect(bat.SupplierNames).toContain("Klevenberg (Pvt) Ltd")
+      expect(bat.SupplierIDs.length).toBeGreaterThan(0)
+    })
+
+    // Verify battery supplier lookup IPC
+    const sampleBattery = lucasBatteries[0]
+    const suppliersForBattery = await backend.invoke("batterySuppliers:getSuppliersByBatteryId", sampleBattery.Id)
+    expect(suppliersForBattery.length).toBeGreaterThan(0)
+    expect(suppliersForBattery[0].SupplierCode).toBe("SUP-KLEV01")
+    expect(suppliersForBattery[0].Price).toBeGreaterThan(0)
+
+    // Verify reverse lookup: batteries for Klevenberg
+    const batteriesForKlev = await backend.invoke("batterySuppliers:getBatteriesBySupplierId", klevSupplier.SupplierID)
+    expect(batteriesForKlev.length).toBeGreaterThanOrEqual(14)
 
     const batteryLocations = await backend.invoke("batteryLocations:getAll")
     expect(batteryLocations.some((loc: any) => loc.LocationCode === "KAN-BAT")).toBe(true)
