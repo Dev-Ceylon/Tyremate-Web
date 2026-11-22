@@ -10,18 +10,28 @@ exports.createDeliveryLine = (line) => {
         SoTyreStorageAllocationID,
         StorageManagerID,
         StorageManagerBatchID,
+        SoBatteryID,
+        BatteryID,
+        SoBatteryStorageAllocationID,
+        BatteryStorageManagerID,
+        BatteryStorageManagerBatchID,
         Qty,
         Amount
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       line.SODeliveryID,
-      line.SoTyreID,
-      line.TyreID,
+      line.SoTyreID ?? null,
+      line.TyreID ?? null,
       line.SoTyreStorageAllocationID ?? null,
       line.StorageManagerID ?? null,
       line.StorageManagerBatchID ?? null,
+      line.SoBatteryID ?? null,
+      line.BatteryID ?? null,
+      line.SoBatteryStorageAllocationID ?? null,
+      line.BatteryStorageManagerID ?? null,
+      line.BatteryStorageManagerBatchID ?? null,
       line.Qty,
       line.Amount ?? 0
     )
@@ -40,7 +50,13 @@ exports.getLinesByDeliveryId = (deliveryId) => {
         SoTyreStorageAllocationID,
         StorageManagerID,
         StorageManagerBatchID,
-        Qty
+        SoBatteryID,
+        BatteryID,
+        SoBatteryStorageAllocationID,
+        BatteryStorageManagerID,
+        BatteryStorageManagerBatchID,
+        Qty,
+        Amount
       FROM SODeliveryLine
       WHERE SODeliveryID = ?
       ORDER BY ID ASC
@@ -50,18 +66,19 @@ exports.getLinesByDeliveryId = (deliveryId) => {
 
 // How much of each reservation has already changed hands. Keyed by the storage
 // allocation so "remaining collectable" per lot/batch is exact even when the
-// same tyre is spread across several reservations.
+// same product is spread across several reservations.
 exports.getAllocationDeliverySummary = (soId) => {
   return db
     .prepare(`
       SELECT
-        dl.SoTyreStorageAllocationID AS AllocationID,
+        COALESCE(dl.SoTyreStorageAllocationID, dl.SoBatteryStorageAllocationID) AS AllocationID,
         dl.SoTyreID,
+        dl.SoBatteryID,
         COALESCE(SUM(dl.Qty), 0) AS DeliveredQty
       FROM SODeliveryLine dl
       INNER JOIN SODelivery d ON d.ID = dl.SODeliveryID
-      WHERE d.SoID = ? AND dl.SoTyreStorageAllocationID IS NOT NULL
-      GROUP BY dl.SoTyreStorageAllocationID
+      WHERE d.SoID = ? AND (dl.SoTyreStorageAllocationID IS NOT NULL OR dl.SoBatteryStorageAllocationID IS NOT NULL)
+      GROUP BY COALESCE(dl.SoTyreStorageAllocationID, dl.SoBatteryStorageAllocationID)
     `)
     .all(soId)
 }

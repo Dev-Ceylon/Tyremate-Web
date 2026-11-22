@@ -482,11 +482,12 @@ declare global {
       }
 
       so: {
-        getSOs: () => Promise<SoDetailedRecord[]>
+        getSOs: (category?: string) => Promise<SoDetailedRecord[]>
         getTodaySalesSummary: (date: string) => Promise<SoTodaySalesSummary>
         getSalesTrendSummary: (fromDate: string, toDate: string) => Promise<SalesTrendPoint[]>
         getSOById: (soId: number) => Promise<SoDetailedRecord>
         getTyresBySoId: (soId: number) => Promise<SoTyreRecord[]>
+        getBatteriesBySoId: (soId: number) => Promise<any[]>
         getWarehouseDispatch: (soId: number) => Promise<SoWarehouseDispatch>
         getDeliveryWarehouseDispatch: (soId: number, deliveryId: number) => Promise<SoWarehouseDispatch>
         getDeliveryProgress: (soId: number) => Promise<SoDeliveryProgress>
@@ -512,6 +513,7 @@ declare global {
         createReturn: (soId: number, data: SoReturnTyresPayload) => Promise<SoTyreRecord>
         getReturnsBySoId: (soId: number) => Promise<any[]>
         getAllocationsBySoTyreId: (soTyreId: number) => Promise<SoTyreStorageAllocationRecord[]>
+        getAllocationsBySoBatteryId: (soBatteryId: number) => Promise<any[]>
       }
 
       paymentReceipt: {

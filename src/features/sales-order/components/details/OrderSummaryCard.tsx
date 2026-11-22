@@ -65,6 +65,15 @@ export function OrderSummaryCard({ order, showCompleteSalesOrder, deliveryProgre
           </>
         )}
         <div className="detail-card-row">
+          <span className="detail-card-key">Category</span>
+          <span className="detail-card-val">
+            <StatusBadge
+              label={order.Category === "battery" ? "Batteries" : "Tyres"}
+              tone={order.Category === "battery" ? "pending" : "approved"}
+            />
+          </span>
+        </div>
+        <div className="detail-card-row">
           <span className="detail-card-key">Date</span>
           <span className="detail-card-val">{order.Date}</span>
         </div>

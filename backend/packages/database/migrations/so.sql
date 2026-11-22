@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS SO (
   SoID INTEGER PRIMARY KEY AUTOINCREMENT,
   Date TEXT NOT NULL,
+  Category TEXT NOT NULL DEFAULT 'tyre',
   CreatedDateTime DATETIME DEFAULT (datetime('now', 'localtime')),
   IsAdminApproved INTEGER NOT NULL DEFAULT 0 CHECK (IsAdminApproved IN (0, 1)),
   IsCompleted INTEGER NOT NULL DEFAULT 0 CHECK (IsCompleted IN (0, 1)),

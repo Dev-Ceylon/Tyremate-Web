@@ -1,10 +1,13 @@
 const soService = require("../../../packages/services/soService")
 const soTyresService = require("../../../packages/services/soTyresService")
 const soAllocationRepo = require("../../../packages/repositories/soTyreStorageAllocationRepository")
+const soBatteriesRepo = require("../../../packages/repositories/soBatteriesRepository")
+const soBatteryAllocationRepo = require("../../../packages/repositories/soBatteryStorageAllocationRepository")
 const { registerIpcHandler, registerServiceHandler } = require("./errorMiddleware")
 
-registerIpcHandler("so:getAll", { permission: "so.view" }, () => soService.getSOs())
+registerIpcHandler("so:getAll", { permission: "so.view" }, (_event, category) => soService.getSOs(category))
 registerIpcHandler("so:getAllocationsBySoTyreId", { permission: "so.view" }, (_event, soTyreId) => soAllocationRepo.getAllocationsBySoTyreId(soTyreId))
+registerIpcHandler("so:getAllocationsBySoBatteryId", { permission: "so.view" }, (_event, soBatteryId) => soBatteryAllocationRepo.getAllocationsBySoBatteryId(soBatteryId))
 
 registerIpcHandler("so:getTodaySalesSummary", { permission: "so.view" }, (_event, date) => soService.getTodaySalesSummary(date))
 
@@ -13,6 +16,7 @@ registerIpcHandler("so:getSalesTrendSummary", { permission: "so.view" }, (_event
 registerIpcHandler("so:getById", { permission: "so.view" }, (_event, soId) => soService.getSOById(soId))
 
 registerIpcHandler("so:getTyresBySoId", { permission: "so.view" }, (_event, soId) => soTyresService.getSoTyresBySoId(soId))
+registerIpcHandler("so:getBatteriesBySoId", { permission: "so.view" }, (_event, soId) => soBatteriesRepo.getSoBatteriesBySoId(soId))
 
 registerIpcHandler("so:getWarehouseDispatch", { permission: "so.view" }, (_event, soId) => soService.getWarehouseDispatch(soId))
 registerIpcHandler("so:getDeliveryWarehouseDispatch", { permission: "so.view" }, (_event, soId, deliveryId) => soService.getDeliveryWarehouseDispatch(soId, deliveryId))

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
 import type { StorageAllocationInput } from "../models/salesOrder"
+import type { SOCategory } from "../../../shared/constants/soCategoryConstants"
 import {
   useQuantityManagerStock,
   type StockLotRow,
@@ -10,8 +11,11 @@ import { NewerStockWarningModal } from "./NewerStockWarningModal"
 
 type QuantitySelectModalProps = {
   isOpen: boolean
-  tyreId: number | null
-  tyreLabel: string
+  tyreId?: number | null
+  itemId?: number | null
+  tyreLabel?: string
+  itemLabel?: string
+  category?: SOCategory
   initialAllocations: StorageAllocationInput[]
   onClose: () => void
   onConfirm: (allocations: StorageAllocationInput[]) => void
@@ -32,21 +36,27 @@ const remainingAvailableQty = (row: StockLotRow): number => {
 
 const renderDot = (row: StockLotRow): string => {
   if (row.StorageManagerBatchID === null) return "-"
-  return row.dot || "-"
+  return row.dot || row.batchCode || (row.expiryDate ? `Exp: ${row.expiryDate}` : "-")
 }
 
 export function QuantitySelectModal({
   isOpen,
-  tyreId,
-  tyreLabel,
+  tyreId = null,
+  itemId = null,
+  tyreLabel = "",
+  itemLabel = "",
+  category = "tyre",
   initialAllocations,
   onClose,
   onConfirm,
 }: QuantitySelectModalProps) {
+  const targetId = itemId ?? tyreId
+  const displayLabel = itemLabel || tyreLabel
   const { rows, loading, error, totalQty, updateAllocated, updateTakeNow } = useQuantityManagerStock(
     isOpen,
-    tyreId,
+    targetId,
     initialAllocations,
+    category,
   )
   const [rowError, setRowError] = useState<string | null>(null)
   const [showNewerStockWarning, setShowNewerStockWarning] = useState(false)
@@ -96,7 +106,7 @@ export function QuantitySelectModal({
         return `Quantity must be a whole number for batch ${renderDot(row)}`
       }
       if (row.StorageManagerBatchID !== null && value > row.availableQty) {
-        return `Quantity for DOT ${renderDot(row)} exceeds its available stock (${row.availableQty})`
+        return `Quantity for batch ${renderDot(row)} exceeds its available stock (${row.availableQty})`
       }
 
       const takeNow = toNonNegativeInt(row.takeNow)
@@ -104,11 +114,11 @@ export function QuantitySelectModal({
         return `Take now must be a whole number for batch ${renderDot(row)}`
       }
       if (takeNow > value) {
-        return `Take now for DOT ${renderDot(row)} cannot exceed its allocated quantity (${value})`
+        return `Take now for batch ${renderDot(row)} cannot exceed its allocated quantity (${value})`
       }
     }
     if (allocatedTotal <= 0) {
-      return "Allocate at least one tyre"
+      return `Allocate at least one ${category === "battery" ? "battery" : "tyre"}`
     }
     return null
   }
@@ -160,7 +170,7 @@ export function QuantitySelectModal({
     <>
       <AppModal
         isOpen={isOpen}
-        title={tyreLabel ? `Quantity Select - ${tyreLabel}` : "Quantity Select"}
+        title={displayLabel ? `Quantity Select - ${displayLabel}` : "Quantity Select"}
         onClose={onClose}
       >
       <div className="stock-allocation-modal">
@@ -174,7 +184,7 @@ export function QuantitySelectModal({
               <table className="product-table">
                 <thead>
                   <tr>
-                    <th>DOT</th>
+                    <th>{category === "battery" ? "Batch / Expiry" : "DOT"}</th>
                     <th>Location</th>
                     <th>Available</th>
                     <th>Qty</th>
@@ -193,7 +203,7 @@ export function QuantitySelectModal({
                       </td>
                       <td>
                         {row.StorageManagerBatchID === null ? (
-                          <span className="secondary-text">Auto (FIFO)</span>
+                          <span className="secondary-text">{category === "battery" ? "Auto (FEFO)" : "Auto (FIFO)"}</span>
                         ) : (
                           row.locationName
                         )}

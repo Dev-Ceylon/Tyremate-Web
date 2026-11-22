@@ -3,16 +3,23 @@ const soRepo = require("../repositories/soRepository")
 const tyreRepo = require("../repositories/tyreRepository")
 const soCustomerRepo = require("../repositories/soCustomerRepository")
 const soTyresRepo = require("../repositories/soTyresRepository")
+const soBatteriesRepo = require("../repositories/soBatteriesRepository")
 const poRepo = require("../repositories/poRepository")
 const poService = require("./poService")
 const goodsReceiptRepo = require("../repositories/goodsReceiptRepository")
 const poTyresRepo = require("../repositories/poTyresRepository")
+const poBatteriesRepo = require("../repositories/poBatteriesRepository")
 const poTyresSuppliersRepo = require("../repositories/poTyresSuppliersRepository")
 const poTyreAllocationsRepo = require("../repositories/poTyreAllocationsRepository")
 const storageManagerRepo = require("../repositories/storageManagerRepository")
 const storageManagerBatchRepo = require("../repositories/storageManagerBatchRepository")
 const storageManagerService = require("./storageManagerService")
+const batteryStorageManagerRepo = require("../repositories/batteryStorageManagerRepository")
+const batteryStorageManagerBatchRepo = require("../repositories/batteryStorageManagerBatchRepository")
+const batteryRepo = require("../repositories/batteryRepository")
 const soAllocationRepo = require("../repositories/soTyreStorageAllocationRepository")
+const soBatteryAllocationRepo = require("../repositories/soBatteryStorageAllocationRepository")
+const { SO_CATEGORIES } = require("../constants/soCategoryConstants")
 const soDeliveryRepo = require("../repositories/soDeliveryRepository")
 const soDeliveryLineRepo = require("../repositories/soDeliveryLineRepository")
 const manufactureOrderRepo = require("../repositories/manufactureOrderRepository")
@@ -323,6 +330,7 @@ const collectInquiryIds = (payload = {}) => {
 const toSOPayload = (payload = {}) => {
   return {
     Date: normalizeDate(payload.Date, "Date"),
+    Category: payload.Category || "tyre",
     IsAdminApproved: normalizeBooleanFlag(payload.IsAdminApproved, "IsAdminApproved"),
     IsCompleted: normalizeBooleanFlag(payload.IsCompleted, "IsCompleted"),
     IsPaymentCompleted: normalizeBooleanFlag(payload.IsPaymentCompleted, "IsPaymentCompleted")
@@ -331,6 +339,7 @@ const toSOPayload = (payload = {}) => {
 
 const toSalesOrderCreatePayload = (payload = {}) => {
   const so = toSOPayload(payload)
+  const isBattery = so.Category === "battery"
   const customerId = payload.CustomerID ? normalizePositiveId(payload.CustomerID, "CustomerID") : null
   const linesInput = Array.isArray(payload.Lines) ? payload.Lines : []
 
@@ -372,8 +381,8 @@ const toSalesOrderCreatePayload = (payload = {}) => {
         throw new Error(`Allocation Qty must be greater than 0 on line ${row}`)
       }
 
-      const storageManagerId = allocation?.StorageManagerID
-      const storageManagerBatchId = allocation?.StorageManagerBatchID
+      const storageManagerId = allocation?.StorageManagerID ?? allocation?.BatteryStorageManagerID
+      const storageManagerBatchId = allocation?.StorageManagerBatchID ?? allocation?.BatteryStorageManagerBatchID
 
       // Per-lot take-now: how many of this allocation the customer collects at
       // creation. null means "not specified" (the line-level TakeNowQty rules apply).
@@ -409,7 +418,7 @@ const toSalesOrderCreatePayload = (payload = {}) => {
 
     const qty = allocations.reduce((sum, allocation) => sum + allocation.Qty, 0)
 
-    // How many of this line's reserved tyres the customer takes at creation.
+    // How many of this line's reserved items the customer takes at creation.
     // null means "auto" = everything that is in stock (the form's default).
     const takeNowRaw = line?.TakeNowQty
     const takeNowQty =
@@ -422,7 +431,8 @@ const toSalesOrderCreatePayload = (payload = {}) => {
     }
 
     return {
-      TyreID: normalizePositiveId(line?.TyreID, `TyreID on line ${row}`),
+      TyreID: !isBattery ? normalizePositiveId(line?.TyreID, `TyreID on line ${row}`) : null,
+      BatteryID: isBattery ? normalizePositiveId(line?.BatteryID, `BatteryID on line ${row}`) : null,
       Price: normalizeNumber(line?.Price, `Price on line ${row}`),
       Discount: normalizeNumber(line?.Discount, `Discount on line ${row}`),
       Qty: qty,
@@ -459,8 +469,8 @@ const processSOPayment = (soId, paymentData) => {
   })
 }
 
-exports.getSOs = () => {
-  return soRepo.getAllSOs()
+exports.getSOs = (category) => {
+  return soRepo.getAllSOs(category)
 }
 
 exports.getTodaySalesSummary = (date) => {
@@ -487,40 +497,68 @@ exports.getSOById = (soId) => {
     throw new Error("SO not found")
   }
 
+  const isBattery = (so.Category || "tyre") === "battery"
+
   let po = poRepo.getPOBySoId(normalizedId)
 
-  if (po) {
+  if (po && !isBattery) {
     poService.allocateArrivedStockToSo(normalizedId, po.ID)
   }
 
-  const tyres = soTyresRepo.getSoTyresBySoId?.(normalizedId) || []
+  const tyres = !isBattery ? (soTyresRepo.getSoTyresBySoId?.(normalizedId) || []) : []
+  const batteries = isBattery ? (soBatteriesRepo.getSoBatteriesBySoId?.(normalizedId) || []) : []
 
   if (po) {
     const arrivedStatusId = getStatusIdByCode(STATUS_CODES.ARRIVED);
     const completedStatusId = getStatusIdByCode(STATUS_CODES.COMPLETED);
     const isPOArrived = po.StatusID === arrivedStatusId || po.StatusID === completedStatusId;
 
-    const poTyreLines = (poTyresRepo.getPoTyresByPoId(po.ID) || []).map((pTyre) => {
-      const receivedQty = goodsReceiptRepo.getPostedAcceptedQtyByPoTyresId(pTyre.ID || pTyre.Id) || 0
-      const orderedQty = Number(pTyre.Qty || 0)
-      return {
-        ...pTyre,
-        ReceivedQty: receivedQty,
-        PendingQty: Math.max(0, orderedQty - receivedQty),
+    if (isBattery) {
+      const poBatteryLines = (poBatteriesRepo.getPoBatteriesByPoId(po.ID) || []).map((pBat) => {
+        const receivedQty = goodsReceiptRepo.getPostedAcceptedQtyByPoBatteriesId?.(pBat.ID || pBat.Id) || 0
+        const orderedQty = Number(pBat.Qty || 0)
+        return {
+          ...pBat,
+          ReceivedQty: receivedQty,
+          PendingQty: Math.max(0, orderedQty - receivedQty),
+        }
+      })
+
+      const totalOrdered = poBatteryLines.reduce((sum, b) => sum + Number(b.Qty || 0), 0)
+      const totalReceived = poBatteryLines.reduce((sum, b) => sum + Number(b.ReceivedQty || 0), 0)
+      const isPartiallyReceived = totalReceived > 0 && totalReceived < totalOrdered
+
+      po = {
+        ...po,
+        Batteries: poBatteryLines,
+        IsPOArrived: isPOArrived,
+        IsPartiallyReceived: isPartiallyReceived,
+        TotalOrdered: totalOrdered,
+        TotalReceived: totalReceived,
       }
-    })
+    } else {
+      const poTyreLines = (poTyresRepo.getPoTyresByPoId(po.ID) || []).map((pTyre) => {
+        const receivedQty = goodsReceiptRepo.getPostedAcceptedQtyByPoTyresId(pTyre.ID || pTyre.Id) || 0
+        const orderedQty = Number(pTyre.Qty || 0)
+        return {
+          ...pTyre,
+          ReceivedQty: receivedQty,
+          PendingQty: Math.max(0, orderedQty - receivedQty),
+        }
+      })
 
-    const totalOrdered = poTyreLines.reduce((sum, t) => sum + Number(t.Qty || 0), 0)
-    const totalReceived = poTyreLines.reduce((sum, t) => sum + Number(t.ReceivedQty || 0), 0)
-    const isPartiallyReceived = totalReceived > 0 && totalReceived < totalOrdered
+      const totalOrdered = poTyreLines.reduce((sum, t) => sum + Number(t.Qty || 0), 0)
+      const totalReceived = poTyreLines.reduce((sum, t) => sum + Number(t.ReceivedQty || 0), 0)
+      const isPartiallyReceived = totalReceived > 0 && totalReceived < totalOrdered
 
-    po = {
-      ...po,
-      Tyres: poTyreLines,
-      IsPOArrived: isPOArrived,
-      IsPartiallyReceived: isPartiallyReceived,
-      TotalOrdered: totalOrdered,
-      TotalReceived: totalReceived,
+      po = {
+        ...po,
+        Tyres: poTyreLines,
+        IsPOArrived: isPOArrived,
+        IsPartiallyReceived: isPartiallyReceived,
+        TotalOrdered: totalOrdered,
+        TotalReceived: totalReceived,
+      }
     }
   }
 
@@ -615,12 +653,13 @@ exports.getSOById = (soId) => {
   }
 
   const settledAmount = calculateSettledAmountFromAggregatedPaymentsArray(paymentsDetails)
-  const netTotal = calculatePayableTotal(tyres)
+  const netTotal = calculatePayableTotal(isBattery ? batteries : tyres)
 
   const walkinCustomer = soWalkinLinkRepo.getWalkinCustomerForSo(normalizedId)
 
   return {
     ...so,
+    Category: so.Category || "tyre",
     Customer: walkinCustomer
       ? {
           IsWalkinCustomer: true,
@@ -638,6 +677,7 @@ exports.getSOById = (soId) => {
           CustomerCode: so.CustomerCode,
         },
     Tyres: tyres,
+    Batteries: batteries,
     PO: po || null,
     Payments: paymentsDetails,
     Returns: returns,
@@ -679,11 +719,16 @@ exports.getWarehouseDispatch = (soId) => {
 
     const site = siteMap.get(siteKey)
 
+    const isBat = Boolean(row.BatteryID || row.SoBatteryID)
+    const displayName = isBat
+      ? `${row.Brand || "NA"} ${row.Model || "NA"} (${row.Capacity || ""} ${row.Voltage || ""})`.trim()
+      : `${row.Brand || "NA"} / ${row.Size || "NA"} - ${row.Pattern || "NA"}`
+
     site.lines.push({
-      tyreId: row.TyreID,
-      displayName: `${row.Brand || "NA"} / ${row.Size || "NA"} - ${row.Pattern || "NA"}`,
-      dot: row.DOT || "",
-      storageManagerId: row.StorageManagerID ?? null,
+      tyreId: row.TyreID ?? row.BatteryID,
+      displayName,
+      dot: row.BatchCode || row.DOT || "",
+      storageManagerId: (row.StorageManagerID ?? row.BatteryStorageManagerID) ?? null,
       qty: row.Qty,
     })
 
@@ -727,11 +772,16 @@ exports.getDeliveryWarehouseDispatch = (soId, deliveryId) => {
     }
 
     const site = siteMap.get(siteKey)
+    const isBat = Boolean(row.BatteryID || row.SoBatteryID)
+    const displayName = isBat
+      ? `${row.Brand || "NA"} ${row.Model || "NA"} (${row.Capacity || ""} ${row.Voltage || ""})`.trim()
+      : `${row.Brand || "NA"} / ${row.Size || "NA"} - ${row.Pattern || "NA"}`
+
     site.lines.push({
-      tyreId: row.TyreID,
-      displayName: `${row.Brand || "NA"} / ${row.Size || "NA"} - ${row.Pattern || "NA"}`,
-      dot: row.DOT || "",
-      storageManagerId: row.StorageManagerID ?? null,
+      tyreId: row.TyreID ?? row.BatteryID,
+      displayName,
+      dot: row.BatchCode || row.DOT || "",
+      storageManagerId: (row.StorageManagerID ?? row.BatteryStorageManagerID) ?? null,
       qty: row.Qty,
     })
     site.totalQty += row.Qty
@@ -786,31 +836,39 @@ exports.getDeliveryProgress = (soId) => {
     throw new Error("SO not found")
   }
 
+  const isBattery = (so.Category || "tyre") === "battery"
+
   // Ensure any stock that arrived on the linked PO is allocated to this SO
   const po = poRepo.getPOBySoId(normalizedSoId)
-  if (po) {
+  if (po && !isBattery) {
     poService.allocateArrivedStockToSo(normalizedSoId, po.ID)
   }
 
-  const allocations = soAllocationRepo.getAllocationsBySoId(normalizedSoId)
+  const allocations = isBattery
+    ? soBatteryAllocationRepo.getAllocationsBySoId(normalizedSoId)
+    : soAllocationRepo.getAllocationsBySoId(normalizedSoId)
+
   const deliveredByAllocation = new Map(
     soDeliveryLineRepo
       .getAllocationDeliverySummary(normalizedSoId)
       .map((row) => [row.AllocationID, row.DeliveredQty])
   )
 
-  const allocationsBySoTyre = new Map()
+  const allocationsByLineId = new Map()
 
   const allocationDetails = allocations.map((allocation) => {
     const deliveredQty = deliveredByAllocation.get(allocation.AllocationID) || 0
     const remainingQty = Math.max(0, allocation.Qty - deliveredQty)
+    const lineId = isBattery ? allocation.SoBatteryID : allocation.SoTyreID
 
     const detail = {
       AllocationID: allocation.AllocationID,
-      StorageManagerID: allocation.StorageManagerID,
-      StorageManagerBatchID: allocation.StorageManagerBatchID,
+      StorageManagerID: isBattery ? allocation.BatteryStorageManagerID : allocation.StorageManagerID,
+      StorageManagerBatchID: isBattery ? allocation.BatteryStorageManagerBatchID : allocation.StorageManagerBatchID,
       LocationName: allocation.LocationName,
-      DOT: allocation.DOT,
+      DOT: allocation.BatchCode || allocation.DOT || "-",
+      BatchCode: allocation.BatchCode,
+      ExpiryDate: allocation.ExpiryDate,
       Price: allocation.Price,
       Discount: allocation.Discount,
       Qty: allocation.Qty,
@@ -818,16 +876,20 @@ exports.getDeliveryProgress = (soId) => {
       RemainingQty: remainingQty,
     }
 
-    if (!allocationsBySoTyre.has(allocation.SoTyreID)) {
-      allocationsBySoTyre.set(allocation.SoTyreID, [])
+    if (!allocationsByLineId.has(lineId)) {
+      allocationsByLineId.set(lineId, [])
     }
-    allocationsBySoTyre.get(allocation.SoTyreID).push(detail)
+    allocationsByLineId.get(lineId).push(detail)
 
-    return { SoTyreID: allocation.SoTyreID, ...detail }
+    return { SoTyreID: lineId, SoBatteryID: lineId, ...detail }
   })
 
-  const lines = soTyresRepo.getSoTyresBySoId(normalizedSoId).map((line) => {
-    const lineAllocations = allocationsBySoTyre.get(line.ID) || []
+  const rawLines = isBattery
+    ? soBatteriesRepo.getSoBatteriesBySoId(normalizedSoId)
+    : soTyresRepo.getSoTyresBySoId(normalizedSoId)
+
+  const lines = rawLines.map((line) => {
+    const lineAllocations = allocationsByLineId.get(line.ID) || []
     const allocatedQty = lineAllocations.reduce((sum, a) => sum + a.Qty, 0)
     const deliveredQty = lineAllocations.reduce((sum, a) => sum + a.DeliveredQty, 0)
 
@@ -835,10 +897,15 @@ exports.getDeliveryProgress = (soId) => {
 
     return {
       SoTyreID: line.ID,
-      TyreID: line.TyreID,
+      SoBatteryID: isBattery ? line.ID : null,
+      TyreID: isBattery ? null : line.TyreID,
+      BatteryID: isBattery ? line.BatteryID : null,
       Brand: line.Brand,
-      Size: line.Size,
-      Pattern: line.Pattern,
+      Size: isBattery ? line.Model : line.Size,
+      Pattern: isBattery ? `${line.Capacity || ""} ${line.Voltage || ""}`.trim() : line.Pattern,
+      Model: isBattery ? line.Model : null,
+      Capacity: isBattery ? line.Capacity : null,
+      Voltage: isBattery ? line.Voltage : null,
       OrderedQty: line.Qty,
       DeliveredQty: deliveredQty,
       RemainingToCollect: Math.max(0, line.Qty - deliveredQty),
@@ -1058,10 +1125,13 @@ exports.recordDelivery = (soId, payload, ctx) => {
       : null
     const notes = normalizeText(payload?.Notes)
 
+    const isBattery = (so.Category || "tyre") === "battery"
+    const allocationsList = isBattery
+      ? soBatteryAllocationRepo.getAllocationsBySoId(normalizedSoId)
+      : soAllocationRepo.getAllocationsBySoId(normalizedSoId)
+
     const allocationsById = new Map(
-      soAllocationRepo
-        .getAllocationsBySoId(normalizedSoId)
-        .map((allocation) => [allocation.AllocationID, allocation])
+      allocationsList.map((allocation) => [allocation.AllocationID, allocation])
     )
 
     const deliveredByAllocation = new Map(
@@ -1074,8 +1144,8 @@ exports.recordDelivery = (soId, payload, ctx) => {
 
     rawLines.forEach((rawLine) => {
       const allocationId = normalizePositiveId(
-        rawLine?.SoTyreStorageAllocationID,
-        "SoTyreStorageAllocationID"
+        rawLine?.SoTyreStorageAllocationID ?? rawLine?.SoBatteryStorageAllocationID ?? rawLine?.AllocationID,
+        "AllocationID"
       )
       const qty = normalizeInteger(rawLine?.Qty, "Qty")
 
@@ -1115,16 +1185,29 @@ exports.recordDelivery = (soId, payload, ctx) => {
     for (const [allocationId, qty] of requestedByAllocation.entries()) {
       const allocation = allocationsById.get(allocationId)
 
-      soDeliveryLineRepo.createDeliveryLine({
-        SODeliveryID: delivery.ID,
-        SoTyreID: allocation.SoTyreID,
-        TyreID: allocation.TyreID,
-        SoTyreStorageAllocationID: allocationId,
-        StorageManagerID: allocation.StorageManagerID,
-        StorageManagerBatchID: allocation.StorageManagerBatchID,
-        Qty: qty,
-        Amount: calculateDeliveredLineAmount(allocation, qty),
-      })
+      if (isBattery) {
+        soDeliveryLineRepo.createDeliveryLine({
+          SODeliveryID: delivery.ID,
+          SoBatteryID: allocation.SoBatteryID,
+          BatteryID: allocation.BatteryID,
+          SoBatteryStorageAllocationID: allocationId,
+          BatteryStorageManagerID: allocation.BatteryStorageManagerID,
+          BatteryStorageManagerBatchID: allocation.BatteryStorageManagerBatchID,
+          Qty: qty,
+          Amount: calculateDeliveredLineAmount(allocation, qty),
+        })
+      } else {
+        soDeliveryLineRepo.createDeliveryLine({
+          SODeliveryID: delivery.ID,
+          SoTyreID: allocation.SoTyreID,
+          TyreID: allocation.TyreID,
+          SoTyreStorageAllocationID: allocationId,
+          StorageManagerID: allocation.StorageManagerID,
+          StorageManagerBatchID: allocation.StorageManagerBatchID,
+          Qty: qty,
+          Amount: calculateDeliveredLineAmount(allocation, qty),
+        })
+      }
     }
 
     delivery = maybeIssueGatePass(delivery, ctx)
@@ -1175,6 +1258,14 @@ const detectLineDiscountViolations = (lines) => {
 
   lines.forEach((line, index) => {
     const row = index + 1
+    if (line.BatteryID) {
+      const battery = batteryRepo.getBatteryById(line.BatteryID)
+      if (!battery) {
+        throw new Error(`Battery not found on line ${row}`)
+      }
+      return
+    }
+
     const tyre = tyreRepo.getTyreById(line.TyreID)
 
     if (!tyre) {
@@ -1347,6 +1438,7 @@ const recordSkippedOldStockViolation = ({ so, soTyre, line, violations, ctx }) =
 
 exports.createSOWithAutoPO = (payload, ctx) => {
   const data = toSalesOrderCreatePayload(payload)
+  const isBattery = data.Category === "battery"
   const isPaymentCompleted = deriveIsPaymentCompleted(data.Lines, data.Payment)
 
   const discountViolations = detectLineDiscountViolations(data.Lines)
@@ -1354,6 +1446,7 @@ exports.createSOWithAutoPO = (payload, ctx) => {
   const createTransaction = db.transaction(() => {
     const so = soRepo.createSO({
       Date: data.Date,
+      Category: data.Category || "tyre",
       IsAdminApproved: data.IsAdminApproved,
       IsCompleted: data.IsCompleted,
       IsPaymentCompleted: isPaymentCompleted,
@@ -1379,13 +1472,253 @@ exports.createSOWithAutoPO = (payload, ctx) => {
       let remainingToAllocate = line.Qty
       let fulfilledFromStock = 0
       const drainedAllocations = []
+
+      if (isBattery) {
+        let hasPerLotTakeNow = false
+
+        for (const allocation of line.Allocations) {
+          if (allocation.StorageManagerID === null) continue
+          if (remainingToAllocate <= 0) break
+
+          const row = batteryStorageManagerRepo.getBatteryStorageManagerById(allocation.StorageManagerID)
+
+          if (!row) {
+            throw new Error(`Battery storage lot #${allocation.StorageManagerID} not found on line ${rowNumber}`)
+          }
+
+          if (row.BatteryId !== line.BatteryID) {
+            throw new Error(
+              `Battery storage lot #${allocation.StorageManagerID} does not belong to the battery on line ${rowNumber}`,
+            )
+          }
+
+          const deductQty = Math.min(allocation.Qty, Number(row.Qty ?? 0), remainingToAllocate)
+          if (deductQty <= 0) continue
+
+          const lotTakeNowRaw = allocation.TakeNowQty
+          const lotTakeNow =
+            lotTakeNowRaw === null || lotTakeNowRaw === undefined
+              ? null
+              : Math.min(lotTakeNowRaw, deductQty)
+          if (lotTakeNow !== null) hasPerLotTakeNow = true
+
+          const drainedForLot = []
+
+          if (allocation.StorageManagerBatchID !== null) {
+            const pickedBatch = batteryStorageManagerBatchRepo.getBatchById(allocation.StorageManagerBatchID)
+
+            if (!pickedBatch || pickedBatch.BatteryStorageManagerID !== row.Id) {
+              throw new Error(
+                `Battery storage batch #${allocation.StorageManagerBatchID} not found on line ${rowNumber}`,
+              )
+            }
+
+            const batchDeductQty = Math.min(deductQty, Number(pickedBatch.Qty ?? 0))
+            if (batchDeductQty > 0) {
+              const remainingBatchQty = Math.max(0, Number(pickedBatch.Qty ?? 0) - batchDeductQty)
+              batteryStorageManagerBatchRepo.updateBatteryStorageManagerBatch(pickedBatch.Id, {
+                BatchCode: pickedBatch.BatchCode,
+                MfgDate: pickedBatch.MfgDate,
+                ExpiryDate: pickedBatch.ExpiryDate,
+                Qty: remainingBatchQty,
+              })
+              drainedForLot.push({
+                StorageManagerBatchID: pickedBatch.Id,
+                Qty: batchDeductQty,
+              })
+            }
+          } else {
+            const lotBatches = batteryStorageManagerBatchRepo.getBatchesByStorageManagerIdOrderedByExpiry(row.Id)
+            let drainedFromBatches = 0
+
+            for (const batch of lotBatches) {
+              if (drainedFromBatches >= deductQty) break
+
+              const batchDeductQty = Math.min(batch.Qty, deductQty - drainedFromBatches)
+              if (batchDeductQty <= 0) continue
+
+              const remainingBatchQty = Math.max(0, Number(batch.Qty ?? 0) - batchDeductQty)
+              batteryStorageManagerBatchRepo.updateBatteryStorageManagerBatch(batch.Id, {
+                BatchCode: batch.BatchCode,
+                MfgDate: batch.MfgDate,
+                ExpiryDate: batch.ExpiryDate,
+                Qty: remainingBatchQty,
+              })
+              drainedFromBatches += batchDeductQty
+
+              drainedForLot.push({
+                StorageManagerBatchID: batch.Id,
+                Qty: batchDeductQty,
+              })
+            }
+          }
+
+          batteryStorageManagerRepo.updateBatteryStorageManager(row.Id, {
+            ...row,
+            Qty: Number(row.Qty ?? 0) - deductQty,
+          })
+
+          remainingToAllocate -= deductQty
+          fulfilledFromStock += deductQty
+
+          const drainedThroughBatches = drainedForLot.reduce((sum, d) => sum + d.Qty, 0)
+          const lotOnlyQty = deductQty - drainedThroughBatches
+
+          if (lotOnlyQty > 0) {
+            drainedForLot.push({
+              StorageManagerBatchID: null,
+              Qty: lotOnlyQty,
+            })
+          }
+
+          let lotTakeNowRemaining = lotTakeNow
+
+          drainedAllocations.push(
+            ...drainedForLot.map((drained) => {
+              const takenNowQty =
+                lotTakeNow === null
+                  ? null
+                  : Math.min(Math.max(lotTakeNowRemaining, 0), drained.Qty)
+              if (lotTakeNow !== null) lotTakeNowRemaining -= takenNowQty
+
+              return {
+                StorageManagerID: row.Id,
+                StorageManagerBatchID: drained.StorageManagerBatchID,
+                Qty: drained.Qty,
+                TakeNowQty: takenNowQty,
+              }
+            }),
+          )
+        }
+
+        const autoRequested = line.Allocations
+          .filter((allocation) => allocation.StorageManagerID === null)
+          .reduce((sum, allocation) => sum + allocation.Qty, 0)
+        let remainingAuto = Math.min(autoRequested, remainingToAllocate)
+
+        if (remainingAuto > 0) {
+          const batchRows = batteryStorageManagerBatchRepo.getBatchesByBatteryIdOrderedByExpiry(line.BatteryID)
+
+          for (const batch of batchRows) {
+            if (remainingAuto <= 0) break
+
+            const deductQty = Math.min(remainingAuto, Number(batch.Qty ?? 0))
+            if (deductQty <= 0) continue
+
+            const lot = batteryStorageManagerRepo.getBatteryStorageManagerById(batch.BatteryStorageManagerID)
+            if (!lot) continue
+
+            const remainingBatchQty = Math.max(0, Number(batch.Qty ?? 0) - deductQty)
+            batteryStorageManagerBatchRepo.updateBatteryStorageManagerBatch(batch.Id, {
+              BatchCode: batch.BatchCode,
+              MfgDate: batch.MfgDate,
+              ExpiryDate: batch.ExpiryDate,
+              Qty: remainingBatchQty,
+            })
+
+            batteryStorageManagerRepo.updateBatteryStorageManager(batch.BatteryStorageManagerID, {
+              ...lot,
+              Qty: Number(lot.Qty ?? 0) - deductQty,
+            })
+
+            remainingAuto -= deductQty
+            fulfilledFromStock += deductQty
+            drainedAllocations.push({
+              StorageManagerID: batch.BatteryStorageManagerID,
+              StorageManagerBatchID: batch.Id,
+              Qty: deductQty,
+              TakeNowQty: null,
+            })
+          }
+
+          if (remainingAuto > 0) {
+            const legacyRows = batteryStorageManagerRepo.getBatteryStorageManagersByBatteryIdWithoutBatches(line.BatteryID)
+
+            for (const row of legacyRows) {
+              if (remainingAuto <= 0) break
+
+              const deductQty = Math.min(remainingAuto, Number(row.Qty ?? 0))
+              if (deductQty <= 0) continue
+
+              batteryStorageManagerRepo.updateBatteryStorageManager(row.Id, {
+                ...row,
+                Qty: Number(row.Qty ?? 0) - deductQty,
+              })
+
+              remainingAuto -= deductQty
+              fulfilledFromStock += deductQty
+              drainedAllocations.push({
+                StorageManagerID: row.Id,
+                StorageManagerBatchID: null,
+                Qty: deductQty,
+              })
+            }
+          }
+        }
+
+        const realNeedToOrderQty = line.Qty - fulfilledFromStock
+
+        const createdSoBattery = soBatteriesRepo.createSoBattery({
+          SoID: so.SoID,
+          BatteryID: line.BatteryID,
+          Price: line.Price,
+          Discount: line.Discount,
+          Qty: line.Qty,
+          NeedToOrderQty: realNeedToOrderQty,
+          IsAdminApproved: line.IsAdminApproved,
+        })
+
+        const createdAllocations = []
+        for (const allocation of drainedAllocations) {
+          const createdAllocation = soBatteryAllocationRepo.createAllocation({
+            SoBatteryID: createdSoBattery.ID || createdSoBattery.Id,
+            BatteryStorageManagerID: allocation.StorageManagerID,
+            BatteryStorageManagerBatchID: allocation.StorageManagerBatchID,
+            Qty: allocation.Qty,
+          })
+          createdAllocations.push({
+            ...createdAllocation,
+            TakeNowQty: allocation.TakeNowQty ?? null,
+          })
+        }
+
+        const collectableQty = createdAllocations.reduce((sum, allocation) => sum + allocation.Qty, 0)
+        const takeNowQty = line.TakeNowQty === null ? collectableQty : line.TakeNowQty
+
+        if (takeNowQty > collectableQty) {
+          throw new Error(
+            `Take now qty (${takeNowQty}) exceeds the ${collectableQty} in stock on line ${rowNumber}`,
+          )
+        }
+
+        let takeNowRemaining = takeNowQty
+        for (const allocation of createdAllocations) {
+          const takenQty =
+            allocation.TakeNowQty === null
+              ? hasPerLotTakeNow
+                ? 0
+                : Math.min(Math.max(takeNowRemaining, 0), allocation.Qty)
+              : allocation.TakeNowQty
+
+          if (allocation.TakeNowQty === null && !hasPerLotTakeNow) takeNowRemaining -= takenQty
+          if (takenQty <= 0) continue
+
+          initialDeliveryLines.push({
+            SoBatteryID: createdSoBattery.ID || createdSoBattery.Id,
+            BatteryID: line.BatteryID,
+            SoBatteryStorageAllocationID: allocation.Id,
+            BatteryStorageManagerID: allocation.BatteryStorageManagerID,
+            BatteryStorageManagerBatchID: allocation.BatteryStorageManagerBatchID,
+            Qty: takenQty,
+            Amount: calculateDeliveredLineAmount(line, takenQty),
+          })
+        }
+
+        return createdSoBattery
+      }
+
       const fifoTracker = createFifoTracker(line.TyreID)
       const fifoViolations = []
-
-      // Per-lot take-now: when the caller says how many of each picked lot the
-      // customer collects at creation, those counts are honoured exactly
-      // instead of the line-level greedy walk below. Take-now intent travels
-      // with each drained batch entry.
       let hasPerLotTakeNow = false
 
       // Explicit lot picks reduce stock only from those storage manager lots.
@@ -1673,29 +2006,45 @@ exports.createSOWithAutoPO = (payload, ctx) => {
     const linesToOrder = lineItems.filter((line) => line.NeedToOrderQty > 0)
     let po = null
     let poTyres = []
+    let poBatteries = []
 
     if (linesToOrder.length > 0) {
       const poStatusId = getStatusId('PENDING')
 
       po = poRepo.createPO({
         SoID: so.SoID,
+        Category: isBattery ? "battery" : "tyre",
         StatusID: poStatusId,
         IsAdminApproved: 0,
         IsSupplierApproved: 0,
         Date: so.Date,
       })
 
-      poTyres = linesToOrder.map((line) =>
-        poTyresRepo.createPoTyre({
-          POID: po.ID,
-          TyreID: line.TyreID,
-          Price: line.Price,
-          Discount: line.Discount,
-          Qty: line.NeedToOrderQty,
-          IsAdminApproved: 0,
-          StatusID: poStatusId,
-        }),
-      )
+      if (isBattery) {
+        poBatteries = linesToOrder.map((line) =>
+          poBatteriesRepo.createPoBattery({
+            POID: po.ID,
+            BatteryID: line.BatteryID,
+            Price: line.Price,
+            Discount: line.Discount,
+            Qty: line.NeedToOrderQty,
+            IsAdminApproved: 0,
+            StatusID: poStatusId,
+          }),
+        )
+      } else {
+        poTyres = linesToOrder.map((line) =>
+          poTyresRepo.createPoTyre({
+            POID: po.ID,
+            TyreID: line.TyreID,
+            Price: line.Price,
+            Discount: line.Discount,
+            Qty: line.NeedToOrderQty,
+            IsAdminApproved: 0,
+            StatusID: poStatusId,
+          }),
+        )
+      }
     }
 
     let delivery = null
@@ -1729,6 +2078,7 @@ exports.createSOWithAutoPO = (payload, ctx) => {
       lineItems,
       po,
       poTyres,
+      poBatteries,
       delivery: delivery
         ? decorateDeliveryWithGatePass(so.SoID, delivery.ID)
         : null,
@@ -1744,7 +2094,8 @@ exports.recomputeSoPaymentStatus = (soId) => {
   if (!existingSo) throw new Error("Sales Order not found")
 
   const updatedSoDetails = exports.getSOById(normalizedSoId)
-  const payableTotal = calculatePayableTotal(updatedSoDetails.Tyres)
+  const isBattery = (updatedSoDetails.Category || "tyre") === "battery"
+  const payableTotal = calculatePayableTotal(isBattery ? updatedSoDetails.Batteries : updatedSoDetails.Tyres)
   const settledAmount = calculateSettledAmountFromAggregatedPaymentsArray(updatedSoDetails.Payments)
   const newIsPaymentCompleted = settledAmount >= payableTotal - 0.01 ? 1 : 0
 
@@ -1783,7 +2134,8 @@ exports.makeAPaymentForSo = (soId, paymentPayload, ctx) => {
     const updatedSoDetails = exports.getSOById(normalizedSoId); // Call the service's own method
 
     // Recalculate IsPaymentCompleted
-    const payableTotal = calculatePayableTotal(updatedSoDetails.Tyres);
+    const isBattery = (updatedSoDetails.Category || "tyre") === "battery"
+    const payableTotal = calculatePayableTotal(isBattery ? updatedSoDetails.Batteries : updatedSoDetails.Tyres);
     const currentSettledAmount = calculateSettledAmountFromAggregatedPaymentsArray(updatedSoDetails.Payments);
     const newIsPaymentCompleted = (currentSettledAmount >= (payableTotal - 0.01)) ? 1 : 0;
 
@@ -1862,7 +2214,8 @@ exports.completeChequePayment = (soId, paymentId, ctx) => {
     const updatedSoDetails = exports.getSOById(normalizedSoId);
 
     // Recalculate if the SO is now fully paid including the newly collected cheque
-    const payableTotal = calculatePayableTotal(updatedSoDetails.Tyres);
+    const isBattery = (updatedSoDetails.Category || "tyre") === "battery"
+    const payableTotal = calculatePayableTotal(isBattery ? updatedSoDetails.Batteries : updatedSoDetails.Tyres);
     const settledAmount = calculateSettledAmountFromAggregatedPaymentsArray(updatedSoDetails.Payments);
     const newIsPaymentCompleted = settledAmount >= payableTotal - 0.01 ? 1 : 0;
 
@@ -1987,20 +2340,53 @@ exports.deleteSO = (soId, ctx) => {
 
   const deleteTransaction = db.transaction(() => {
     const before = exports.getSOById(normalizedId)
-    const soTyres = soTyresRepo.getSoTyresBySoId?.(normalizedId) || []
+    const isBattery = (before?.Category || "tyre") === "battery"
 
-    soTyres.forEach((soTyre) => {
-      const allocations = soAllocationRepo.getAllocationsBySoTyreId(soTyre.ID)
+    if (isBattery) {
+      const soBatteries = soBatteriesRepo.getSoBatteriesBySoId?.(normalizedId) || []
 
-allocations.forEach((allocation) => {
+      soBatteries.forEach((soBattery) => {
+        const allocations = soBatteryAllocationRepo.getAllocationsBySoBatteryId(soBattery.ID)
+
+        allocations.forEach((allocation) => {
+          if (allocation.BatteryStorageManagerID) {
+            const lot = batteryStorageManagerRepo.getBatteryStorageManagerById(allocation.BatteryStorageManagerID)
+            if (lot) {
+              batteryStorageManagerRepo.updateBatteryStorageManager(lot.Id, {
+                ...lot,
+                Qty: Number(lot.Qty ?? 0) + allocation.Qty,
+              })
+            }
+          }
+          if (allocation.BatteryStorageManagerBatchID) {
+            const batch = batteryStorageManagerBatchRepo.getBatchById(allocation.BatteryStorageManagerBatchID)
+            if (batch) {
+              batteryStorageManagerBatchRepo.updateBatteryStorageManagerBatch(batch.Id, {
+                ...batch,
+                Qty: Number(batch.Qty ?? 0) + allocation.Qty,
+              })
+            }
+          }
+        })
+
+        soBatteryAllocationRepo.deleteAllocation(soBattery.ID)
+      })
+    } else {
+      const soTyres = soTyresRepo.getSoTyresBySoId?.(normalizedId) || []
+
+      soTyres.forEach((soTyre) => {
+        const allocations = soAllocationRepo.getAllocationsBySoTyreId(soTyre.ID)
+
+        allocations.forEach((allocation) => {
           storageManagerService.restoreTyreStockToStorage(soTyre.TyreID, allocation.Qty, {
             storageManagerId: allocation.StorageManagerID,
             storageManagerBatchId: allocation.StorageManagerBatchID,
           })
         })
 
-      soAllocationRepo.deleteAllocationsBySoTyreId(soTyre.ID)
-    })
+        soAllocationRepo.deleteAllocationsBySoTyreId(soTyre.ID)
+      })
+    }
 
     const po = poRepo.getPOBySoId(normalizedId)
 

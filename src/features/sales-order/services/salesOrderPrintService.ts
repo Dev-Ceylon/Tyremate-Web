@@ -6,9 +6,13 @@ export function buildSalesOrderPrintData(so: any) {
   const netTotal = (so.TotalSale ?? 0) - (so.TotalDiscount ?? 0)
   const status = so.IsAdminApproved ? "Approved" : "Draft"
   const paymentStatus = so.IsPaymentCompleted === 1 ? "Completed" : "Pending"
+  const isBattery = so.Category === "battery"
 
-  const tyres = (so.Tyres || []).map((t: any) => ({
-    displayName: `${t.Brand || "NA"} / ${t.Size || "NA"} - ${t.Pattern || "NA"}`,
+  const rawLines = isBattery ? (so.Batteries || []) : (so.Tyres || [])
+  const tyres = rawLines.map((t: any) => ({
+    displayName: isBattery
+      ? `${t.Brand || "NA"} / ${t.Model || "NA"} (${t.Capacity || "NA"} ${t.Voltage || "NA"})`
+      : `${t.Brand || "NA"} / ${t.Size || "NA"} - ${t.Pattern || "NA"}`,
     price: t.Price.toLocaleString(),
     discount: String(t.Discount),
     qty: String(t.Qty),

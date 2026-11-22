@@ -216,6 +216,110 @@ try {
       db.exec("UPDATE POGoodsReceiptBatches SET BatchCode = DOT WHERE BatchCode IS NULL AND DOT IS NOT NULL")
     }
   }
+
+  // Live schema compatibility for Sales Orders, Delivery, and Invoicing (Batteries):
+  const soExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SO'").get()
+  if (soExists) {
+    const soColumns = new Set(
+      db.prepare("PRAGMA table_info(SO)").all().map((col) => col.name),
+    )
+    if (!soColumns.has("Category")) {
+      db.exec("ALTER TABLE SO ADD COLUMN Category TEXT DEFAULT 'tyre'")
+    }
+  }
+
+  const soDeliveryLineExists = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SODeliveryLine'")
+    .get()
+  if (soDeliveryLineExists) {
+    const deliveryLineCols = new Set(
+      db.prepare("PRAGMA table_info(SODeliveryLine)").all().map((col) => col.name),
+    )
+    if (!deliveryLineCols.has("BatteryID")) {
+      db.pragma("foreign_keys = OFF")
+      db.exec(`
+        CREATE TABLE SODeliveryLine_migrated (
+          ID INTEGER PRIMARY KEY AUTOINCREMENT,
+          SODeliveryID INTEGER NOT NULL,
+          SoTyreID INTEGER,
+          TyreID INTEGER,
+          SoTyreStorageAllocationID INTEGER,
+          StorageManagerID INTEGER,
+          StorageManagerBatchID INTEGER,
+          SoBatteryID INTEGER,
+          BatteryID INTEGER,
+          SoBatteryStorageAllocationID INTEGER,
+          BatteryStorageManagerID INTEGER,
+          BatteryStorageManagerBatchID INTEGER,
+          Qty INTEGER NOT NULL CHECK (Qty > 0),
+          Amount REAL NOT NULL DEFAULT 0,
+          FOREIGN KEY (SODeliveryID) REFERENCES SODelivery(ID) ON DELETE CASCADE,
+          FOREIGN KEY (SoTyreID) REFERENCES SoTyres(ID),
+          FOREIGN KEY (TyreID) REFERENCES TyreM(Id),
+          FOREIGN KEY (SoTyreStorageAllocationID) REFERENCES SoTyreStorageAllocation(Id),
+          FOREIGN KEY (StorageManagerID) REFERENCES StorageManager(Id),
+          FOREIGN KEY (SoBatteryID) REFERENCES SoBatteries(ID),
+          FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id),
+          FOREIGN KEY (SoBatteryStorageAllocationID) REFERENCES SoBatteryStorageAllocation(Id),
+          FOREIGN KEY (BatteryStorageManagerID) REFERENCES BatteryStorageManager(Id)
+        );
+        INSERT INTO SODeliveryLine_migrated (
+          ID, SODeliveryID, SoTyreID, TyreID, SoTyreStorageAllocationID, StorageManagerID, StorageManagerBatchID, Qty, Amount
+        )
+        SELECT ID, SODeliveryID, SoTyreID, TyreID, SoTyreStorageAllocationID, StorageManagerID, StorageManagerBatchID, Qty, Amount
+        FROM SODeliveryLine;
+        DROP TABLE SODeliveryLine;
+        ALTER TABLE SODeliveryLine_migrated RENAME TO SODeliveryLine;
+        CREATE INDEX IF NOT EXISTS idx_so_delivery_line_delivery ON SODeliveryLine (SODeliveryID);
+      `)
+      db.pragma("foreign_keys = ON")
+    }
+  }
+
+  const invoiceLineExists = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='InvoiceLine'")
+    .get()
+  if (invoiceLineExists) {
+    const invoiceLineCols = new Set(
+      db.prepare("PRAGMA table_info(InvoiceLine)").all().map((col) => col.name),
+    )
+    if (!invoiceLineCols.has("BatteryID")) {
+      db.pragma("foreign_keys = OFF")
+      db.exec(`
+        CREATE TABLE InvoiceLine_migrated (
+          InvoiceLineID INTEGER PRIMARY KEY AUTOINCREMENT,
+          InvoiceID INTEGER NOT NULL,
+          LineType TEXT NOT NULL CHECK (LineType IN ('tyre', 'battery', 'service', 'consumable', 'other')),
+          TyreID INTEGER,
+          BatteryID INTEGER,
+          SerialNo TEXT,
+          Description TEXT,
+          Size TEXT,
+          Pattern TEXT,
+          Brand TEXT,
+          Model TEXT,
+          Capacity TEXT,
+          Voltage TEXT,
+          Qty REAL NOT NULL DEFAULT 0,
+          UnitPrice REAL NOT NULL DEFAULT 0,
+          Discount REAL NOT NULL DEFAULT 0,
+          LineTotal REAL NOT NULL DEFAULT 0,
+          FOREIGN KEY (InvoiceID) REFERENCES Invoice(InvoiceID) ON DELETE CASCADE,
+          FOREIGN KEY (TyreID) REFERENCES TyreM(Id),
+          FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id)
+        );
+        INSERT INTO InvoiceLine_migrated (
+          InvoiceLineID, InvoiceID, LineType, TyreID, SerialNo, Description, Size, Pattern, Brand, Qty, UnitPrice, Discount, LineTotal
+        )
+        SELECT InvoiceLineID, InvoiceID, LineType, TyreID, SerialNo, Description, Size, Pattern, Brand, Qty, UnitPrice, Discount, LineTotal
+        FROM InvoiceLine;
+        DROP TABLE InvoiceLine;
+        ALTER TABLE InvoiceLine_migrated RENAME TO InvoiceLine;
+        CREATE INDEX IF NOT EXISTS idx_invoice_line_invoice ON InvoiceLine (InvoiceID);
+      `)
+      db.pragma("foreign_keys = ON")
+    }
+  }
 } catch (error) {
   console.error("Failed to initialize database", error)
   throw new Error(`Database initialization failed: ${error.message}`)

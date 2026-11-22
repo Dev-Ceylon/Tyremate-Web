@@ -65,7 +65,12 @@ export function RecordDeliveryModal({
       line.Allocations.forEach((allocation) => {
         const qty = qtyByAllocation[allocation.AllocationID] ?? 0
         if (qty > 0) {
-          built.push({ SoTyreStorageAllocationID: allocation.AllocationID, Qty: qty })
+          built.push({
+            SoTyreStorageAllocationID: allocation.AllocationID,
+            SoBatteryStorageAllocationID: allocation.AllocationID,
+            AllocationID: allocation.AllocationID,
+            Qty: qty,
+          })
         }
       })
     })
@@ -75,7 +80,7 @@ export function RecordDeliveryModal({
 
   const handleConfirm = () => {
     if (lines.length === 0) {
-      setError("Select at least one tyre quantity to hand over.")
+      setError("Select at least one quantity to hand over.")
       return
     }
     if (!deliveryDate) {
@@ -97,7 +102,7 @@ export function RecordDeliveryModal({
           <p className="secondary-text">Nothing is currently collectable for this order.</p>
         ) : (
           <>
-            <div className="login-form" style={{ marginBottom: "1rem" }}>
+            <div className="login-form so-delivery-date-field">
               <label className="field-label">
                 Delivery Date
                 <input
@@ -122,10 +127,12 @@ export function RecordDeliveryModal({
 
             <div className="delivery-pick-list">
               {collectableLines.map((line) => (
-                <div key={line.SoTyreID} className="delivery-pick-line">
+                <div key={line.SoTyreID ?? line.SoBatteryID} className="delivery-pick-line">
                   <div className="delivery-pick-line-header">
                     <span className="font-medium">
-                      {line.Brand || "NA"} / {line.Size || "NA"} - {line.Pattern || "NA"}
+                      {line.Size
+                        ? `${line.Brand || "NA"} / ${line.Size || "NA"} - ${line.Pattern || "NA"}`
+                        : `${line.Brand || "NA"} / ${line.Model || "NA"} (${line.Capacity || "NA"} ${line.Voltage || "NA"})`}
                     </span>
                     <span className="stat-badge">Still to collect {line.RemainingToCollect}</span>
                   </div>
@@ -134,7 +141,7 @@ export function RecordDeliveryModal({
                       <thead>
                         <tr>
                           <th>Location</th>
-                          <th>DOT</th>
+                          <th>{line.Size ? "DOT" : "Batch / Expiry"}</th>
                           <th className="text-right">Remaining</th>
                           <th className="text-right">Deliver Qty</th>
                         </tr>
@@ -143,7 +150,7 @@ export function RecordDeliveryModal({
                         {line.Allocations.map((allocation) => (
                           <tr key={allocation.AllocationID}>
                             <td>{allocation.LocationName || "NA"}</td>
-                            <td>{allocation.DOT || "-"}</td>
+                            <td>{allocation.DOT || allocation.BatchCode || (allocation.ExpiryDate ? `Exp: ${allocation.ExpiryDate}` : "-")}</td>
                             <td className="text-right">{allocation.RemainingQty}</td>
                             <td className="text-right">
                               {allocation.RemainingQty > 0 ? (
@@ -179,7 +186,7 @@ export function RecordDeliveryModal({
           </>
         )}
 
-        <div className="modal-actions" style={{ marginTop: "2rem" }}>
+        <div className="modal-actions modal-actions-mt">
           <button
             type="button"
             className="primary-action"

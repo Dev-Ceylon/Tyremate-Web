@@ -4,6 +4,8 @@ import { CreateCustomerDialog } from "../../master-data/customers/components/Cre
 import type { CustomerRecord } from "../../master-data/customers/models/customer"
 import { CreateTyreDialog } from "../../master-data/tyres/components/CreateTyreDialog"
 import type { TyreRecord } from "../../master-data/tyres/models/tyre"
+import { CreateBatteryDialog } from "../../master-data/batteries/components/CreateBatteryDialog"
+import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
 import { SalesOrderForm } from "../components/SalesOrderForm"
 import { QuantitySelectModal } from "../components/QuantitySelectModal"
@@ -22,6 +24,7 @@ export default function SalesOrderCreatePage() {
   const { showToast } = useToast()
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false)
   const [isCreateTyreOpen, setIsCreateTyreOpen] = useState(false)
+  const [isCreateBatteryOpen, setIsCreateBatteryOpen] = useState(false)
   const [manageRowId, setManageRowId] = useState<number | null>(null)
 
   const handleError = useCallback((message: string) => {
@@ -37,11 +40,13 @@ export default function SalesOrderCreatePage() {
     lines,
     customers,
     tyres,
+    batteries,
     initializing,
     submitting,
     error,
     totalAmount,
     updateField,
+    setCategory,
     addLine,
     removeLine,
     updateLine,
@@ -49,13 +54,16 @@ export default function SalesOrderCreatePage() {
     onChangeLineTakeNow,
     setLineAllocations,
     setLineTyre,
+    setLineBattery,
     reloadCustomers,
     reloadTyres,
+    reloadBatteries,
     selectCustomer,
     setCustomerMode,
     updateWalkinCustomer,
     walkinCustomerErrors,
     selectTyreForOrder,
+    selectBatteryForOrder,
     submitOrder,
   } = useSalesOrderForm({
     inquiryId,
@@ -99,11 +107,26 @@ export default function SalesOrderCreatePage() {
     })
   }, [reloadTyres, selectTyreForOrder, showToast])
 
+  const handleBatteryCreated = useCallback(async (battery: BatteryRecord) => {
+    await reloadBatteries()
+    selectBatteryForOrder(battery.Id)
+    showToast({
+      variant: "success",
+      title: "Battery created",
+      message: "New battery is ready and added to this sales order.",
+    })
+  }, [reloadBatteries, selectBatteryForOrder, showToast])
+
+  const isBattery = formData.Category === "battery"
   const managedLine =
     manageRowId !== null ? lines.find((line) => line.RowId === manageRowId) ?? null : null
 
-  const getTyreLabel = (tyreId: number) => {
-    const tyre = tyres.find((tyre) => tyre.Id === tyreId)
+  const getItemLabel = (id: number) => {
+    if (isBattery) {
+      const battery = batteries.find((b) => b.Id === id)
+      return battery ? `${battery.Brand || "NA"} ${battery.Model || "NA"} (${battery.Capacity || "NA"} ${battery.Voltage || "NA"})` : ""
+    }
+    const tyre = tyres.find((tyre) => tyre.Id === id)
     return tyre ? `${tyre.Brand || "NA"} / ${tyre.Size || "NA"}` : ""
   }
 
@@ -120,6 +143,16 @@ export default function SalesOrderCreatePage() {
     },
     [manageRowId, setLineAllocations],
   )
+
+  const managedItemId = managedLine
+    ? isBattery
+      ? managedLine.BatteryID !== "" && managedLine.BatteryID !== undefined
+        ? Number(managedLine.BatteryID)
+        : null
+      : managedLine.TyreID !== ""
+        ? Number(managedLine.TyreID)
+        : null
+    : null
 
   return (
     <main className="app-shell">
@@ -140,21 +173,25 @@ export default function SalesOrderCreatePage() {
             lines,
             customers,
             tyres,
+            batteries,
             totalAmount,
             takingAmount,
             submitting: submitting || initializing,
             walkinCustomerErrors,
           }}
           actions={{
+            onCategoryChange: setCategory,
             onChangeDate: (value) => updateField("Date", value),
             onChangeCustomerMode: setCustomerMode,
             onChangeCustomer: (value) => updateField("CustomerID", value),
             onChangeWalkinCustomer: updateWalkinCustomer,
             onOpenCreateCustomer: () => setIsCreateCustomerOpen(true),
             onOpenCreateTyre: () => setIsCreateTyreOpen(true),
+            onOpenCreateBattery: () => setIsCreateBatteryOpen(true),
             onAddLine: addLine,
             onRemoveLine: removeLine,
             onChangeLineTyre: (rowId, value) => setLineTyre(rowId, value),
+            onChangeLineBattery: (rowId, value) => setLineBattery(rowId, value),
             onChangeLinePrice: (rowId, value) => updateLine(rowId, "Price", value),
             onChangeLineDiscount: (rowId, value) => updateLine(rowId, "Discount", value),
             onChangeLineQty,
@@ -177,6 +214,12 @@ export default function SalesOrderCreatePage() {
           isOpen={isCreateTyreOpen}
           onClose={() => setIsCreateTyreOpen(false)}
           onCreated={handleTyreCreated}
+        />
+
+        <CreateBatteryDialog
+          isOpen={isCreateBatteryOpen}
+          onClose={() => setIsCreateBatteryOpen(false)}
+          onCreated={handleBatteryCreated}
         />
 
         <PaymentModalController
@@ -202,8 +245,9 @@ export default function SalesOrderCreatePage() {
 
         <QuantitySelectModal
           isOpen={manageRowId !== null && managedLine !== null}
-          tyreId={managedLine && managedLine.TyreID !== "" ? managedLine.TyreID : null}
-          tyreLabel={managedLine && managedLine.TyreID !== "" ? getTyreLabel(managedLine.TyreID) : ""}
+          category={formData.Category}
+          itemId={managedItemId}
+          itemLabel={managedItemId !== null ? getItemLabel(managedItemId) : ""}
           initialAllocations={managedLine?.Allocations ?? []}
           onClose={handleManageClose}
           onConfirm={handleManageConfirm}

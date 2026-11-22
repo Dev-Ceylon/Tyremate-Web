@@ -176,20 +176,27 @@ export default function InvoiceDetailsPage() {
               </tr>
             </thead>
             <tbody>
-              {record.Lines?.map((line) => (
-                <tr key={line.InvoiceLineID}>
-                  <td>
-                    <span className="font-medium">
-                      {line.Description || [line.Brand, line.Size, line.Pattern].filter(Boolean).join(" / ") || "-"}
-                    </span>
-                    {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
-                  </td>
-                  <td className="text-right">{line.Qty}</td>
-                  <td className="text-right">${fmt(line.UnitPrice)}</td>
-                  <td className="text-right">{line.Discount}</td>
-                  <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
-                </tr>
-              ))}
+              {record.Lines?.map((line) => {
+                const isBatteryLine = line.LineType === "battery" || Boolean(line.BatteryID)
+                const specText = isBatteryLine
+                  ? [line.Brand, line.Model, line.Capacity, line.Voltage].filter(Boolean).join(" / ")
+                  : [line.Brand, line.Size, line.Pattern].filter(Boolean).join(" / ")
+
+                return (
+                  <tr key={line.InvoiceLineID}>
+                    <td>
+                      <span className="font-medium">
+                        {line.Description || specText || "-"}
+                      </span>
+                      {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
+                    </td>
+                    <td className="text-right">{line.Qty}</td>
+                    <td className="text-right">${fmt(line.UnitPrice)}</td>
+                    <td className="text-right">{line.Discount}</td>
+                    <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,7 @@
 import type { SalesOrderPaymentPayload, SalesOrderPaymentResult, CompleteChequePaymentResult } from "../models/payment"
 import type { CustomerRecord } from "../../master-data/customers/models/customer"
 import type { TyreRecord } from "../../master-data/tyres/models/tyre"
+import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import type { SalesTrendPoint } from "../../../shared/models/salesTrend"
 import type {
   CreateSalesOrderPayload,
@@ -15,6 +16,8 @@ import type {
   SoTodaySalesSummary,
   SoTyrePayload,
   SoTyreRecord,
+  SoBatteryRecord,
+  SoBatteryStorageAllocationRecord,
   SoWarehouseDispatch,
 } from "../models/salesOrder"
 import type { SoDeliveryProgress, SoDeliveryRecord, SOGatePassRecord, RecordSoDeliveryPayload } from "../models/delivery"
@@ -28,8 +31,16 @@ export const salesOrderClient = {
     return window.api.tyres.getTyresWithAvailableQuantity()
   },
 
-  getSOs(): Promise<SoDetailedRecord[]> {
-    return window.api.so.getSOs()
+  getBatteries(): Promise<BatteryRecord[]> {
+    return window.api.batteries?.getBatteriesWithAvailableQuantity
+      ? window.api.batteries.getBatteriesWithAvailableQuantity()
+      : window.api.batteries?.getBatteries
+        ? window.api.batteries.getBatteries()
+        : Promise.resolve([])
+  },
+
+  getSOs(category?: string): Promise<SoDetailedRecord[]> {
+    return window.api.so.getSOs(category)
   },
 
   getTodaySalesSummary(date: string): Promise<SoTodaySalesSummary> {
@@ -46,6 +57,14 @@ export const salesOrderClient = {
 
   getTyresBySoId(soId: number): Promise<SoTyreRecord[]> {
     return window.api.so.getTyresBySoId(soId)
+  },
+
+  getBatteriesBySoId(soId: number): Promise<SoBatteryRecord[]> {
+    return window.api.so.getBatteriesBySoId(soId)
+  },
+
+  getAllocationsBySoBatteryId(soBatteryId: number): Promise<SoBatteryStorageAllocationRecord[]> {
+    return window.api.so.getAllocationsBySoBatteryId(soBatteryId)
   },
 
   getWarehouseDispatch(soId: number): Promise<SoWarehouseDispatch> {

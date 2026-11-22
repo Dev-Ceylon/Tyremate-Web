@@ -361,11 +361,12 @@ const api = {
   },
 
   so: {
-    getSOs: () => ipcRenderer.invoke("so:getAll"),
+    getSOs: (category) => ipcRenderer.invoke("so:getAll", category),
     getTodaySalesSummary: (date) => ipcRenderer.invoke("so:getTodaySalesSummary", date),
     getSalesTrendSummary: (fromDate, toDate) => ipcRenderer.invoke("so:getSalesTrendSummary", fromDate, toDate),
     getSOById: (soId) => ipcRenderer.invoke("so:getById", soId),
     getTyresBySoId: (soId) => ipcRenderer.invoke("so:getTyresBySoId", soId),
+    getBatteriesBySoId: (soId) => ipcRenderer.invoke("so:getBatteriesBySoId", soId),
     getWarehouseDispatch: (soId) => ipcRenderer.invoke("so:getWarehouseDispatch", soId),
     getDeliveryWarehouseDispatch: (soId, deliveryId) => ipcRenderer.invoke("so:getDeliveryWarehouseDispatch", soId, deliveryId),
     getDeliveryProgress: (soId) => ipcRenderer.invoke("so:getDeliveryProgress", soId),
@@ -384,6 +385,7 @@ const api = {
     createReturn: (soId, data) => ipcRenderer.invoke("so:createReturn", soId, data),
     getReturnsBySoId: (soId) => ipcRenderer.invoke("so:getReturnsBySoId", soId),
     getAllocationsBySoTyreId: (soTyreId) => ipcRenderer.invoke("so:getAllocationsBySoTyreId", soTyreId),
+    getAllocationsBySoBatteryId: (soBatteryId) => ipcRenderer.invoke("so:getAllocationsBySoBatteryId", soBatteryId),
     completeSO: (soId) => ipcRenderer.invoke("so:complete", soId)
   },
 

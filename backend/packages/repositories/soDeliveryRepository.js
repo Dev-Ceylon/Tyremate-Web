@@ -141,20 +141,36 @@ const getDeliveryLines = (deliveryId) => {
         dl.SoTyreStorageAllocationID,
         dl.StorageManagerID,
         dl.StorageManagerBatchID,
+        dl.SoBatteryID,
+        dl.BatteryID,
+        dl.SoBatteryStorageAllocationID,
+        dl.BatteryStorageManagerID,
+        dl.BatteryStorageManagerBatchID,
         dl.Qty,
         dl.Amount,
-        t.Brand,
+        COALESCE(t.Brand, b.Brand) AS Brand,
         t.Size,
         t.Pattern,
-        sl.Id AS LocationID,
-        sl.LocationName,
-        sl.LocationCode,
-        smb.DOT
+        b.Model,
+        b.Capacity,
+        b.Voltage,
+        b.Application,
+        b.Technology,
+        COALESCE(bl.Id, sl.Id) AS LocationID,
+        COALESCE(bl.LocationName, sl.LocationName, 'Battery Bay') AS LocationName,
+        COALESCE(bl.LocationCode, sl.LocationCode, '') AS LocationCode,
+        COALESCE(smb.DOT, bsmb.BatchCode) AS DOT,
+        bsmb.BatchCode,
+        bsmb.ExpiryDate
       FROM SODeliveryLine dl
-      INNER JOIN TyreM t ON t.Id = dl.TyreID
+      LEFT JOIN TyreM t ON t.Id = dl.TyreID
+      LEFT JOIN BatteryM b ON b.Id = dl.BatteryID
       LEFT JOIN StorageManager sm ON sm.Id = dl.StorageManagerID
       LEFT JOIN StorageLocationM sl ON sl.Id = sm.LocationID
       LEFT JOIN StorageManagerBatch smb ON smb.Id = dl.StorageManagerBatchID
+      LEFT JOIN BatteryStorageManager bsm ON bsm.Id = dl.BatteryStorageManagerID
+      LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
+      LEFT JOIN BatteryStorageManagerBatch bsmb ON bsmb.Id = dl.BatteryStorageManagerBatchID
       WHERE dl.SODeliveryID = ?
       ORDER BY dl.ID ASC
     `)

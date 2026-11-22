@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react"
 import type { CustomerRecord } from "../../master-data/customers/models/customer"
 import type { TyreRecord } from "../../master-data/tyres/models/tyre"
+import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import { salesOrderService } from "../services/salesOrderService"
 import type {
   CreateSalesOrderWithAutoPOResult,
@@ -9,6 +10,10 @@ import type {
 } from "../models/salesOrder"
 import { inquiryService } from "../../inquiry/services/inquiryService"
 import type { InquiryRecord } from "../../inquiry/models/inquiry"
+import {
+  SO_CATEGORIES,
+  type SOCategory,
+} from "../../../shared/constants/soCategoryConstants"
 import {
   calculateLineTotal,
   calculateNeedToOrderQty,
@@ -26,6 +31,7 @@ import {
 export type SalesOrderLineForm = {
   RowId: number
   TyreID: number | ""
+  BatteryID?: number | ""
   Price: number
   MRP_WithVAT: number
   Discount: number
@@ -45,6 +51,7 @@ export const getCollectableQty = (line: Pick<SalesOrderLineForm, "Qty" | "NeedTo
 
 type SalesOrderFormState = {
   Date: string
+  Category: SOCategory
   CustomerMode: "registered" | "walkin"
   CustomerID: number | ""
   WalkinCustomer: WalkinCustomerForm
@@ -55,9 +62,10 @@ type UseSalesOrderFormOptions = {
   inquiryId?: number | null
 }
 
-const createEmptyLine = (tyreId: number | "" = ""): SalesOrderLineForm => ({
+const createEmptyLine = (category: SOCategory = "tyre", itemId: number | "" = ""): SalesOrderLineForm => ({
   RowId: Date.now() + Math.floor(Math.random() * 1000),
-  TyreID: tyreId,
+  TyreID: category === "tyre" ? itemId : "",
+  BatteryID: category === "battery" ? itemId : "",
   Price: 0,
   MRP_WithVAT: 0,
   Discount: 0,
@@ -72,6 +80,7 @@ const createEmptyLine = (tyreId: number | "" = ""): SalesOrderLineForm => ({
 
 const createInitialState = (): SalesOrderFormState => ({
   Date: new Date().toISOString().slice(0, 10),
+  Category: SO_CATEGORIES.TYRE,
   CustomerMode: "registered",
   CustomerID: "",
   WalkinCustomer: createEmptyWalkinCustomer(),
@@ -84,6 +93,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
   const [lines, setLines] = useState<SalesOrderLineForm[]>([createEmptyLine()])
   const [customers, setCustomers] = useState<CustomerRecord[]>([])
   const [tyres, setTyres] = useState<TyreRecord[]>([])
+  const [batteries, setBatteries] = useState<BatteryRecord[]>([])
   const [initializing, setInitializing] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -93,7 +103,8 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       const customer = inquiry.Customer
 
       if (customer?.IsWalkinCustomer) {
-        setFormData({
+        setFormData((prev) => ({
+          ...prev,
           Date: new Date().toISOString().slice(0, 10),
           CustomerMode: "walkin",
           CustomerID: "",
@@ -106,7 +117,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
             TinNo: customer.TinNo ?? "",
             VatNo: customer.VatNo ?? "",
           },
-        })
+        }))
       } else if (inquiry.CustomerID) {
         setFormData((prev) => ({
           ...prev,
@@ -157,14 +168,16 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
     setError(null)
 
     try {
-      const [customerRows, tyreRows, sourceInquiry] = await Promise.all([
+      const [customerRows, tyreRows, batteryRows, sourceInquiry] = await Promise.all([
         salesOrderService.getCustomers(),
         salesOrderService.getTyres(),
+        salesOrderService.getBatteries ? salesOrderService.getBatteries() : Promise.resolve([]),
         inquiryId ? inquiryService.getInquiryById(inquiryId) : Promise.resolve(null),
       ])
 
       setCustomers(customerRows)
       setTyres(tyreRows)
+      setBatteries(batteryRows)
 
       if (sourceInquiry) {
         applyInquiryPrefill(sourceInquiry, tyreRows)
@@ -207,6 +220,20 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
     }
   }, [onError])
 
+  const reloadBatteries = useCallback(async () => {
+    try {
+      const batteryRows = await salesOrderService.getBatteries()
+      setBatteries(batteryRows)
+      return batteryRows
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load batteries"
+      setError(message)
+      onError?.(message)
+      return []
+    }
+  }, [onError])
+
   useEffect(() => {
     void loadOptions()
   }, [loadOptions])
@@ -214,6 +241,14 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
   const updateField = useCallback(
     <K extends keyof SalesOrderFormState>(field: K, value: SalesOrderFormState[K]) => {
       setFormData((prev) => ({ ...prev, [field]: value }))
+    },
+    [],
+  )
+
+  const setCategory = useCallback(
+    (newCat: SOCategory) => {
+      setFormData((prev) => ({ ...prev, Category: newCat }))
+      setLines([createEmptyLine(newCat)])
     },
     [],
   )
@@ -238,8 +273,8 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
   )
 
   const addLine = useCallback(() => {
-    setLines((prev) => [...prev, createEmptyLine()])
-  }, [])
+    setLines((prev) => [...prev, createEmptyLine(formData.Category)])
+  }, [formData.Category])
 
   const removeLine = useCallback((rowId: number) => {
     setLines((prev) => (prev.length === 1 ? prev : prev.filter((line) => line.RowId !== rowId)))
@@ -286,13 +321,48 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
     )
   }, [tyres])
 
+  const setLineBattery = useCallback((rowId: number, batteryId: number | "") => {
+    const selectedBattery =
+      batteryId === ""
+        ? null
+        : batteries.find((battery) => battery.Id === batteryId) ?? null
+    const sellingPrice = Number(selectedBattery?.ActualSellingPrice ?? 0) || 0
+    const mrpWithVat = Number((selectedBattery as any)?.MRP_WithVAT ?? 0) || 0
+    const maxDiscount =
+      selectedBattery?.DiscountOffered !== null && selectedBattery?.DiscountOffered !== undefined
+        ? Number(selectedBattery.DiscountOffered)
+        : null
+    const availableQty = getAvailableQuantity(selectedBattery)
+
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.RowId !== rowId) return line
+
+        const needToOrderQty = calculateNeedToOrderQty(line.Qty, availableQty)
+
+        return {
+          ...line,
+          BatteryID: batteryId,
+          Price: sellingPrice,
+          MRP_WithVAT: mrpWithVat,
+          MaxDiscount: maxDiscount,
+          NeedToOrderQty: needToOrderQty,
+          TakeNowQty: Math.max(0, line.Qty - needToOrderQty),
+        }
+      }),
+    )
+  }, [batteries])
+
   const onChangeLineQty = useCallback((rowId: number, value: number) => {
     setLines((prev) =>
       prev.map((line) => {
         if (line.RowId !== rowId) return line
 
-        const selectedTyre = tyres.find((tyre) => tyre.Id === line.TyreID)
-        const availableQty = getAvailableQuantity(selectedTyre)
+        const isBattery = formData.Category === "battery"
+        const selectedItem = isBattery
+          ? batteries.find((b) => b.Id === line.BatteryID)
+          : tyres.find((t) => t.Id === line.TyreID)
+        const availableQty = getAvailableQuantity(selectedItem)
         const needToOrderQty = calculateNeedToOrderQty(value, availableQty)
 
         return {
@@ -304,7 +374,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
         }
       }),
     )
-  }, [tyres])
+  }, [tyres, batteries, formData.Category])
 
   // Commits explicit lot quantities picked in the Quantity Manager. Qty always
   // equals the sum of the allocation quantities and, once committed, the Qty
@@ -321,8 +391,11 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
             (sum, allocation) => sum + (allocation.TakeNowQty ?? 0),
             0,
           )
-          const selectedTyre = tyres.find((tyre) => tyre.Id === line.TyreID)
-          const availableQty = getAvailableQuantity(selectedTyre)
+          const isBattery = formData.Category === "battery"
+          const selectedItem = isBattery
+            ? batteries.find((b) => b.Id === line.BatteryID)
+            : tyres.find((t) => t.Id === line.TyreID)
+          const availableQty = getAvailableQuantity(selectedItem)
           const needToOrderQty = calculateNeedToOrderQty(total, availableQty)
           const collectable = Math.max(0, total - needToOrderQty)
 
@@ -337,7 +410,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
         }),
       )
     },
-    [tyres],
+    [tyres, batteries, formData.Category],
   )
 
   // Editing the line-level Take Now redistributes the take-now across the
@@ -395,9 +468,65 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       }
 
       const needToOrderQty = calculateNeedToOrderQty(1, availableQty)
-      return [...prev, { ...createEmptyLine(tyreId), Price: sellingPrice, MRP_WithVAT: mrpWithVat, MaxDiscount: maxDiscount, NeedToOrderQty: needToOrderQty, TakeNowQty: Math.max(0, 1 - needToOrderQty) }]
+      return [
+        ...prev,
+        {
+          ...createEmptyLine("tyre", tyreId),
+          Price: sellingPrice,
+          MRP_WithVAT: mrpWithVat,
+          MaxDiscount: maxDiscount,
+          NeedToOrderQty: needToOrderQty,
+          TakeNowQty: Math.max(0, 1 - needToOrderQty),
+        },
+      ]
     })
   }, [tyres])
+
+  const selectBatteryForOrder = useCallback((batteryId: number) => {
+    const selectedBattery = batteries.find((battery) => battery.Id === batteryId) ?? null
+    const sellingPrice = Number(selectedBattery?.ActualSellingPrice ?? 0) || 0
+    const mrpWithVat = Number((selectedBattery as any)?.MRP_WithVAT ?? 0) || 0
+    const maxDiscount =
+      selectedBattery?.DiscountOffered !== null && selectedBattery?.DiscountOffered !== undefined
+        ? Number(selectedBattery.DiscountOffered)
+        : null
+    const availableQty = getAvailableQuantity(selectedBattery)
+
+    setLines((prev) => {
+      const firstEmpty = prev.findIndex((line) => !line.BatteryID)
+
+      if (firstEmpty >= 0) {
+        return prev.map((line, index) => {
+          if (index !== firstEmpty) return line
+
+          const needToOrderQty = calculateNeedToOrderQty(line.Qty, availableQty)
+
+          return {
+            ...line,
+            BatteryID: batteryId,
+            Price: sellingPrice,
+            MRP_WithVAT: mrpWithVat,
+            MaxDiscount: maxDiscount,
+            NeedToOrderQty: needToOrderQty,
+            TakeNowQty: Math.max(0, line.Qty - needToOrderQty),
+          }
+        })
+      }
+
+      const needToOrderQty = calculateNeedToOrderQty(1, availableQty)
+      return [
+        ...prev,
+        {
+          ...createEmptyLine("battery", batteryId),
+          Price: sellingPrice,
+          MRP_WithVAT: mrpWithVat,
+          MaxDiscount: maxDiscount,
+          NeedToOrderQty: needToOrderQty,
+          TakeNowQty: Math.max(0, 1 - needToOrderQty),
+        },
+      ]
+    })
+  }, [batteries])
 
   const totalAmount = useMemo(() => {
     return lines.reduce((sum, line) => sum + calculateLineTotal(line), 0)
@@ -410,9 +539,9 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
 
   const resetForm = useCallback(() => {
     setFormData(createInitialState())
-    setLines([createEmptyLine()])
+    setLines([createEmptyLine(formData.Category)])
     setError(null)
-  }, [])
+  }, [formData.Category])
 
   const validate = useCallback(() => {
     if (formData.CustomerMode === "registered" && !formData.CustomerID) {
@@ -428,24 +557,26 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       throw new Error("Date is required")
     }
 
+    const isBattery = formData.Category === "battery"
     if (lines.length === 0) {
-      throw new Error("At least one tyre line is required")
+      throw new Error(`At least one ${isBattery ? "battery" : "tyre"} line is required`)
     }
 
-    const selectedTyres = new Set<number>()
+    const selectedItems = new Set<number>()
 
     lines.forEach((line, index) => {
       const row = index + 1
+      const itemId = isBattery ? line.BatteryID : line.TyreID
 
-      if (!line.TyreID) {
-        throw new Error(`Tyre is required on line ${row}`)
+      if (!itemId) {
+        throw new Error(`${isBattery ? "Battery" : "Tyre"} is required on line ${row}`)
       }
 
-      if (selectedTyres.has(line.TyreID)) {
-        throw new Error(`Duplicate tyre selected on line ${row}`)
+      if (selectedItems.has(Number(itemId))) {
+        throw new Error(`Duplicate ${isBattery ? "battery" : "tyre"} selected on line ${row}`)
       }
 
-      selectedTyres.add(line.TyreID)
+      selectedItems.add(Number(itemId))
 
       if (!Number.isInteger(line.Qty) || line.Qty <= 0) {
         throw new Error(`Qty must be greater than 0 on line ${row}`)
@@ -466,7 +597,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
         )
       }
     })
-  }, [formData.CustomerMode, formData.CustomerID, formData.WalkinCustomer, formData.Date, lines])
+  }, [formData.CustomerMode, formData.CustomerID, formData.WalkinCustomer, formData.Date, formData.Category, lines])
 
   const submitOrder = useCallback(
     async (payment?: SalesOrderPaymentInput): Promise<CreateSalesOrderWithAutoPOResult | null> => {
@@ -476,11 +607,14 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       try {
         validate()
 
+        const isBattery = formData.Category === "battery"
         const isAdminApproved = 1
         const isCompleted = isAdminApproved === 1 && lines.every((line) => line.NeedToOrderQty === 0) ? 1 : 0
 
         const payloadLines = lines.map((line) => ({
-          TyreID: Number(line.TyreID),
+          ...(isBattery
+            ? { BatteryID: Number(line.BatteryID), TyreID: null }
+            : { TyreID: Number(line.TyreID), BatteryID: null }),
           Price: line.Price,
           MRP_WithVAT: line.MRP_WithVAT,
           Discount: line.Discount,
@@ -503,6 +637,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
 
         const result = await salesOrderService.createSalesOrder({
           Date: formData.Date,
+          Category: formData.Category,
           InquiryID: inquiryId ?? undefined,
           CustomerID: isWalkin ? null : Number(formData.CustomerID),
           ...(isWalkin ? walkinPayload : {}),
@@ -549,13 +684,16 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
     lines,
     customers,
     tyres,
+    batteries,
     initializing,
     submitting,
     error,
     totalAmount,
     updateField,
+    setCategory,
     reloadCustomers,
     reloadTyres,
+    reloadBatteries,
     addLine,
     removeLine,
     updateLine,
@@ -565,7 +703,9 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
     selectCustomer: (customerId: number) => updateField("CustomerID", customerId),
     setCustomerMode,
     selectTyreForOrder,
+    selectBatteryForOrder,
     setLineTyre,
+    setLineBattery,
     updateWalkinCustomer,
     walkinCustomerErrors,
     submitOrder,
