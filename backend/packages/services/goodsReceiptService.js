@@ -136,9 +136,34 @@ exports.postGoodsReceipt = (payload = {}, ctx) => {
   }
 
   const isBattery = po.Category === "battery"
-  const batches = normalizeBatches(payload.Batches, isBattery)
-  const receivedQty = batches.reduce((sum, batch) => sum + batch.ReceivedQty, 0)
-  const acceptedQty = batches.reduce((sum, batch) => sum + batch.AcceptedQty, 0)
+  let receivedQty = 0
+  let acceptedQty = 0
+  let batches = []
+
+  if (isBattery) {
+    if (Array.isArray(payload.Batches) && payload.Batches.length > 0) {
+      batches = normalizeBatches(payload.Batches, true)
+    }
+    if (payload.ReceivedQty != null) {
+      receivedQty = normalizeQty(payload.ReceivedQty, "ReceivedQty")
+    } else if (batches.length > 0) {
+      receivedQty = batches.reduce((sum, batch) => sum + batch.ReceivedQty, 0)
+    } else {
+      receivedQty = normalizeQty(payload.DispatchedQty ?? 0, "ReceivedQty")
+    }
+
+    if (payload.AcceptedQty != null) {
+      acceptedQty = normalizeQty(payload.AcceptedQty, "AcceptedQty")
+    } else if (batches.length > 0) {
+      acceptedQty = batches.reduce((sum, batch) => sum + batch.AcceptedQty, 0)
+    } else {
+      acceptedQty = receivedQty
+    }
+  } else {
+    batches = normalizeBatches(payload.Batches, false)
+    receivedQty = batches.reduce((sum, batch) => sum + batch.ReceivedQty, 0)
+    acceptedQty = batches.reduce((sum, batch) => sum + batch.AcceptedQty, 0)
+  }
   const rejectedQty = receivedQty - acceptedQty
 
   if (receivedQty <= 0) throw new Error("Received quantity must be greater than zero")

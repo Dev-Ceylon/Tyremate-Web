@@ -108,19 +108,17 @@ describe("Goods Receipts for Batteries", () => {
     const batteryOnlyPending = await backend.invoke("goodsReceipts:getPending", { Category: "battery" })
     expect(batteryOnlyPending.some((r: any) => r.POID === createdPo.ID)).toBe(true)
 
-    // 6. Post Goods Receipt with Alphanumeric Batches
+    // 6. Post Goods Receipt for Batteries WITHOUT Batches (only received and accepted amounts)
     const grnPayload = {
       POID: createdPo.ID,
       PoBatterySupplierID: supplierAllocation.ID,
       ReceiptDate: "2026-11-22",
       DeliveryNoteNumber: "DN-BAT-2026-001",
       DispatchedQty: 10,
+      ReceivedQty: 10,
+      AcceptedQty: 10,
       DamagedQty: 0,
       DiscrepancyReason: null,
-      Batches: [
-        { BatchCode: "LUC-LOT-001", ReceivedQty: 6, AcceptedQty: 6 },
-        { BatchCode: "LUC-LOT-002", ReceivedQty: 4, AcceptedQty: 4 },
-      ],
     }
 
     const postedReceipt = await backend.invoke("goodsReceipts:post", grnPayload)
@@ -134,10 +132,8 @@ describe("Goods Receipts for Batteries", () => {
       "batteryStorageManagers:getBatchesByBatteryId",
       battery.Id
     )
-    expect(storageBatches.length).toBe(2)
-    const batchCodes = storageBatches.map((b: any) => b.BatchCode)
-    expect(batchCodes).toContain("LUC-LOT-001")
-    expect(batchCodes).toContain("LUC-LOT-002")
+    expect(storageBatches.length).toBe(1)
+    expect(storageBatches[0].Qty).toBe(10)
 
     // 8. Verify Pending Goods Receipts count reduced to 0
     const pendingAfter = await backend.invoke("goodsReceipts:getPending", { POID: createdPo.ID })
@@ -153,7 +149,7 @@ describe("Goods Receipts for Batteries", () => {
     expect(poReceipts[0].GRNNumber).toBe(postedReceipt.GRNNumber)
     expect(poReceipts[0].Brand).toBe("Lucas")
     expect(poReceipts[0].Model).toBe("LU-12XL7B-B")
-    expect(poReceipts[0].Batches.length).toBe(2)
+    expect(poReceipts[0].Batches.length).toBe(0)
   })
 
   it("migrates legacy POGoodsReceiptLines and POGoodsReceiptBatches schemas on existing databases without error", async () => {

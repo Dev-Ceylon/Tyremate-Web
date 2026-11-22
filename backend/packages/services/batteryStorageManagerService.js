@@ -480,13 +480,24 @@ exports.addArrivedPOToStorage = (batteryId, locationId, qty, options = {}) => {
       CreatedBy: creator,
     })
 
-    for (const batch of batches) {
+    if (batches.length > 0) {
+      for (const batch of batches) {
+        batteryStorageManagerBatchRepo.createBatteryStorageManagerBatch({
+          BatteryStorageManagerID: created.Id,
+          BatchCode: batch.BatchCode,
+          MfgDate: batch.MfgDate,
+          ExpiryDate: batch.ExpiryDate,
+          Qty: batch.Qty,
+          CreatedBy: creator,
+        })
+      }
+    } else {
       batteryStorageManagerBatchRepo.createBatteryStorageManagerBatch({
         BatteryStorageManagerID: created.Id,
-        BatchCode: batch.BatchCode,
-        MfgDate: batch.MfgDate,
-        ExpiryDate: batch.ExpiryDate,
-        Qty: batch.Qty,
+        BatchCode: null,
+        MfgDate: null,
+        ExpiryDate: null,
+        Qty: normalizedQty,
         CreatedBy: creator,
       })
     }

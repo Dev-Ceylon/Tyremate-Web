@@ -13,9 +13,11 @@ export interface GoodsReceiptPayload {
   ReceiptDate: string
   DeliveryNoteNumber?: string | null
   DispatchedQty: number
+  ReceivedQty?: number
+  AcceptedQty?: number
   DamagedQty: number
   DiscrepancyReason?: string | null
-  Batches: GoodsReceiptBatchPayload[]
+  Batches?: GoodsReceiptBatchPayload[]
 }
 
 export interface GoodsReceiptBatchRecord extends GoodsReceiptBatchPayload {

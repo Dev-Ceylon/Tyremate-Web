@@ -39,6 +39,10 @@ export function PoGoodsReceiptModal({
     setDeliveryNoteNumber,
     dispatchedQty,
     setDispatchedQty,
+    receivedQty,
+    setReceivedQty,
+    acceptedQty,
+    setAcceptedQty,
     damagedQty,
     setDamagedQty,
     discrepancyReason,
@@ -73,7 +77,7 @@ export function PoGoodsReceiptModal({
           <div>
             <p className="goods-receipt-eyebrow">Purchase order receipt</p>
             <h2>{isBattery ? "Record delivered batteries" : "Record delivered tyres"}</h2>
-            <p>{isBattery ? "Enter the delivery details, then reconcile each batch." : "Enter the delivery details, then reconcile each DOT batch."}</p>
+            <p>{isBattery ? "Enter the delivery details and quantities received and accepted." : "Enter the delivery details, then reconcile each DOT batch."}</p>
           </div>
           <span className="goods-receipt-stamp">GRN</span>
         </header>
@@ -109,7 +113,7 @@ export function PoGoodsReceiptModal({
           <div className="goods-receipt-section-heading">
             <div>
               <h3>Delivery details</h3>
-              <p>Record the carrier document and delivery quantities.</p>
+              <p>{isBattery ? "Record the carrier document and battery quantities." : "Record the carrier document and delivery quantities."}</p>
             </div>
           </div>
           <div className="goods-receipt-fields">
@@ -125,6 +129,18 @@ export function PoGoodsReceiptModal({
               <span>Dispatched quantity</span>
               <input className="text-input" type="number" min="0" step="1" value={dispatchedQty} onChange={(event) => setDispatchedQty(event.target.value)} />
             </label>
+            {isBattery && (
+              <>
+                <label className="goods-receipt-field">
+                  <span>Received quantity</span>
+                  <input className="text-input" type="number" min="0" step="1" value={receivedQty} onChange={(event) => setReceivedQty(event.target.value)} />
+                </label>
+                <label className="goods-receipt-field">
+                  <span>Accepted quantity</span>
+                  <input className="text-input" type="number" min="0" step="1" value={acceptedQty} onChange={(event) => setAcceptedQty(event.target.value)} />
+                </label>
+              </>
+            )}
             <label className="goods-receipt-field">
               <span>Damaged quantity</span>
               <input className="text-input" type="number" min="0" step="1" value={damagedQty} onChange={(event) => setDamagedQty(event.target.value)} />
@@ -132,51 +148,60 @@ export function PoGoodsReceiptModal({
           </div>
         </section>
 
-        <section className="goods-receipt-section goods-receipt-batches">
-          <div className="goods-receipt-section-heading">
-            <div>
-              <h3>{isBattery ? "Batch breakdown" : "DOT batch breakdown"}</h3>
-              <p>Accepted units are added to stock; rejected units stay out of inventory.</p>
-            </div>
-            <button type="button" className="secondary-action" onClick={actions.addBatch}>Add batch</button>
-          </div>
-          <div className="table-scroll goods-receipt-batch-scroll">
-            <table className="product-table goods-receipt-batch-table">
-              <thead>
-                <tr>
-                  <th>{isBattery ? "Batch code" : "DOT code"}</th>
-                  <th>Received</th>
-                  <th>Accepted</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {batches.map((batch) => (
-                  <tr key={batch.key}>
-                    <td>
-                      <input className="text-input" value={batch.DOT} onChange={(event) => actions.updateBatch(batch.key, { DOT: event.target.value })} placeholder={isBattery ? "Batch code / Lot #" : "DOT code"} />
-                    </td>
-                    <td>
-                      <input className="text-input" type="number" min="0" value={batch.ReceivedQty} onChange={(event) => actions.updateBatch(batch.key, { ReceivedQty: event.target.value })} />
-                    </td>
-                    <td>
-                      <input className="text-input" type="number" min="0" value={batch.AcceptedQty} onChange={(event) => actions.updateBatch(batch.key, { AcceptedQty: event.target.value })} />
-                    </td>
-                    <td>
-                      <button type="button" className="secondary-action" onClick={() => actions.removeBatch(batch.key)}>Remove</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="goods-receipt-reconciliation">
+        {isBattery ? (
+          <div className="goods-receipt-reconciliation" style={{ marginTop: "1rem" }}>
             <div><span>Received</span><strong>{receivedTotal}</strong></div>
             <div><span>Accepted</span><strong>{acceptedTotal}</strong></div>
             <div><span>Shortage</span><strong>{shortage}</strong></div>
             <div><span>Over-receipt</span><strong>{overReceipt}</strong></div>
           </div>
-        </section>
+        ) : (
+          <section className="goods-receipt-section goods-receipt-batches">
+            <div className="goods-receipt-section-heading">
+              <div>
+                <h3>DOT batch breakdown</h3>
+                <p>Accepted units are added to stock; rejected units stay out of inventory.</p>
+              </div>
+              <button type="button" className="secondary-action" onClick={actions.addBatch}>Add batch</button>
+            </div>
+            <div className="table-scroll goods-receipt-batch-scroll">
+              <table className="product-table goods-receipt-batch-table">
+                <thead>
+                  <tr>
+                    <th>DOT code</th>
+                    <th>Received</th>
+                    <th>Accepted</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {batches.map((batch) => (
+                    <tr key={batch.key}>
+                      <td>
+                        <input className="text-input" value={batch.DOT} onChange={(event) => actions.updateBatch(batch.key, { DOT: event.target.value })} placeholder="DOT code" />
+                      </td>
+                      <td>
+                        <input className="text-input" type="number" min="0" value={batch.ReceivedQty} onChange={(event) => actions.updateBatch(batch.key, { ReceivedQty: event.target.value })} />
+                      </td>
+                      <td>
+                        <input className="text-input" type="number" min="0" value={batch.AcceptedQty} onChange={(event) => actions.updateBatch(batch.key, { AcceptedQty: event.target.value })} />
+                      </td>
+                      <td>
+                        <button type="button" className="secondary-action" onClick={() => actions.removeBatch(batch.key)}>Remove</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="goods-receipt-reconciliation">
+              <div><span>Received</span><strong>{receivedTotal}</strong></div>
+              <div><span>Accepted</span><strong>{acceptedTotal}</strong></div>
+              <div><span>Shortage</span><strong>{shortage}</strong></div>
+              <div><span>Over-receipt</span><strong>{overReceipt}</strong></div>
+            </div>
+          </section>
+        )}
 
         <label className="goods-receipt-field goods-receipt-reason">
           <span>Discrepancy reason</span>

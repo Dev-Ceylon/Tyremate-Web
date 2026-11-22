@@ -43,10 +43,12 @@ export function GoodsReceiptHistory({ supplierAllocationId, receipts }: GoodsRec
                     <td className="text-right">{receipt.DamagedQty}</td>
                     <td className="text-right">{receipt.ShortageQty} / {receipt.OverReceiptQty}</td>
                     <td>
-                      {receipt.Batches.map(
-                        (batch) =>
-                          `${batch.BatchCode || batch.DOT || (isBattery ? "No Batch" : "No DOT")}: ${batch.AcceptedQty}/${batch.ReceivedQty}`
-                      ).join(", ")}
+                      {receipt.Batches.length > 0
+                        ? receipt.Batches.map(
+                            (batch) =>
+                              `${batch.BatchCode || batch.DOT || (isBattery ? "No Batch" : "No DOT")}: ${batch.AcceptedQty}/${batch.ReceivedQty}`
+                          ).join(", ")
+                        : "-"}
                     </td>
                   </tr>
                 ))}
