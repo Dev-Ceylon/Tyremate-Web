@@ -6402,6 +6402,11 @@
   min-width: 220px;
 }
 
+.inq-price-input {
+  min-width: 110px;
+  width: 130px;
+}
+
 .inq-num-input {
   min-width: 80px;
   width: 90px;
@@ -6522,4 +6527,132 @@
     text-align: center;
   }
 }
+
+/* Inquiry line items responsive card transformation */
+.inq-cell-label {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .inq-items-scroll {
+    overflow-x: visible;
+    border-radius: 0;
+  }
+
+  .inq-items-table {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .inq-items-table thead {
+    display: none;
+  }
+
+  .inq-items-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .inq-item-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 10px;
+    background: var(--surface-sunken, #f8fafc);
+    border: 1px solid var(--border-subtle, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--space-3);
+  }
+
+  .inq-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0;
+    border: none;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .inq-cell-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* Row 1: Product Selector spans full width */
+  .inq-product-cell {
+    grid-column: 1 / -1;
+  }
+
+  .inq-product-cell .inq-line-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Row 2: Price, Discount %, Qty in 3 equal columns */
+  .inq-price-cell {
+    grid-column: 1 / 2;
+  }
+
+  .inq-discount-cell {
+    grid-column: 2 / 3;
+  }
+
+  .inq-qty-cell {
+    grid-column: 3 / 4;
+  }
+
+  .inq-price-cell .inq-price-input,
+  .inq-discount-cell .inq-num-input,
+  .inq-qty-cell .inq-qty-input {
+    width: 100%;
+    min-width: 0;
+    text-align: right;
+  }
+
+  /* Row 3: On Hand, To Order, and Actions in 3 equal columns */
+  .inq-stock-cell {
+    grid-column: 1 / 2;
+    background: var(--color-white, #ffffff);
+    padding: 6px 8px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--border-subtle, #e2e8f0);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .inq-to-order-cell {
+    grid-column: 2 / 3;
+    background: var(--color-white, #ffffff);
+    padding: 6px 8px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--border-subtle, #e2e8f0);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .inq-stock-cell .inq-cell-value,
+  .inq-to-order-cell .inq-cell-value {
+    font-weight: 700;
+    font-size: var(--text-sm);
+  }
+
+  .inq-action-cell {
+    grid-column: 3 / 4;
+    justify-content: flex-end;
+  }
+
+  .inq-remove-btn {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 8px;
+    justify-content: center;
+  }
+}
+
 

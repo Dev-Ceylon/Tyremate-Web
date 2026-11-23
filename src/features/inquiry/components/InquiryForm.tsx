@@ -158,8 +158,8 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
         />
       )}
 
-      <div className="table-scroll tm-table-scroll login-form-full-span">
-        <table className="product-table">
+      <div className="table-scroll tm-table-scroll inq-items-scroll login-form-full-span">
+        <table className="product-table inq-items-table">
           <thead>
             <tr>
               <th>{isBattery ? "Battery (Brand / Model - Capacity Voltage)" : "Tyre (Brand / Size - Pattern)"}</th>
@@ -179,8 +179,11 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
               const toOrder = stock === null ? null : Math.max(line.Qty - stock, 0)
 
               return (
-                <tr key={line.RowId}>
-                  <td>
+                <tr key={line.RowId} className="inq-item-row">
+                  <td className="inq-cell inq-product-cell">
+                    <span className="inq-cell-label">
+                      {isBattery ? "Battery Product" : "Tyre Product"}
+                    </span>
                     {isBattery ? (
                       <select
                         className="text-input inq-line-select"
@@ -213,9 +216,10 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       </select>
                     )}
                   </td>
-                  <td>
+                  <td className="inq-cell inq-price-cell">
+                    <span className="inq-cell-label">Price ($)</span>
                     <input
-                      className="text-input inq-num-input"
+                      className="text-input inq-price-input"
                       type="text"
                       inputMode="decimal"
                       value={line.Price}
@@ -223,7 +227,8 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       disabled={state.submitting}
                     />
                   </td>
-                  <td>
+                  <td className="inq-cell inq-discount-cell">
+                    <span className="inq-cell-label">Disc %</span>
                     <input
                       className="text-input inq-num-input"
                       type="text"
@@ -233,7 +238,8 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       disabled={state.submitting}
                     />
                   </td>
-                  <td>
+                  <td className="inq-cell inq-qty-cell">
+                    <span className="inq-cell-label">Qty</span>
                     <input
                       className="text-input inq-qty-input"
                       type="text"
@@ -243,19 +249,26 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       disabled={state.submitting}
                     />
                   </td>
-                  <td className="text-right">{stock === null ? "-" : stock}</td>
-                  <td className="text-right">
-                    {toOrder === null ? (
-                      "-"
-                    ) : (
-                      <StatusBadge label={toOrder.toString()} tone={toOrder <= 0 ? "completed" : "pending"} />
-                    )}
+                  <td className="inq-cell inq-stock-cell text-right">
+                    <span className="inq-cell-label">On Hand</span>
+                    <span className="inq-cell-value">{stock === null ? "-" : stock}</span>
                   </td>
-                  <td>
+                  <td className="inq-cell inq-to-order-cell text-right">
+                    <span className="inq-cell-label">To Order</span>
+                    <span className="inq-cell-value">
+                      {toOrder === null ? (
+                        "-"
+                      ) : (
+                        <StatusBadge label={toOrder.toString()} tone={toOrder <= 0 ? "completed" : "pending"} />
+                      )}
+                    </span>
+                  </td>
+                  <td className="inq-cell inq-action-cell">
                     <button
                       type="button"
-                      className="secondary-action table-action"
+                      className="secondary-action table-action inq-remove-btn"
                       onClick={() => actions.onRemoveLine(line.RowId)}
+                      disabled={state.submitting || state.lines.length <= 1}
                     >
                       Remove
                     </button>
