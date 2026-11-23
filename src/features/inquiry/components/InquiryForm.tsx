@@ -58,42 +58,49 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
 
   return (
     <form className="login-form" onSubmit={actions.onSubmit}>
-      {/* Category selector */}
-      <div className="login-form-full-span">
-        <label className="field-label">Inquiry Category</label>
-        <div className="category-toggle-group">
-          <button
-            type="button"
-            className={`category-toggle-btn ${!isBattery ? "active" : ""}`}
-            onClick={() => actions.onChangeCategory("tyre")}
-            disabled={state.submitting}
-          >
-            <TyreIcon />
-            <span>Tyres</span>
-          </button>
-          <button
-            type="button"
-            className={`category-toggle-btn ${isBattery ? "active" : ""}`}
-            onClick={() => actions.onChangeCategory("battery")}
-            disabled={state.submitting}
-          >
-            <BatteryIcon />
-            <span>Batteries</span>
-          </button>
+      <div className="login-form-full-span po-top-bar">
+        <div className="inq-date-field">
+          <label className="field-label inq-date-label">
+            <span className="po-date-label">Reminder Date</span>
+            <input
+              className="text-input inq-date-input"
+              type="date"
+              value={state.formData.Date}
+              onChange={(e) => actions.onChangeDate(e.target.value)}
+              disabled={state.submitting}
+              required
+            />
+          </label>
+        </div>
+
+        <div className="po-category-group">
+          <span className="po-category-label">Category:</span>
+          <div className="po-category-segment" role="radiogroup" aria-label="Inquiry Category">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!isBattery}
+              className={`po-category-pill ${!isBattery ? "po-category-pill-active" : ""}`}
+              onClick={() => actions.onChangeCategory("tyre")}
+              disabled={state.submitting}
+            >
+              <TyreIcon />
+              <span>Tyres</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={isBattery}
+              className={`po-category-pill ${isBattery ? "po-category-pill-active" : ""}`}
+              onClick={() => actions.onChangeCategory("battery")}
+              disabled={state.submitting}
+            >
+              <BatteryIcon />
+              <span>Batteries</span>
+            </button>
+          </div>
         </div>
       </div>
-
-      <label className="field-label">
-        Reminder Date
-        <input
-          className="text-input"
-          type="date"
-          value={state.formData.Date}
-          onChange={(e) => actions.onChangeDate(e.target.value)}
-          disabled={state.submitting}
-          required
-        />
-      </label>
 
       <div className="login-form-full-span">
         <div className="filter-tabs customer-mode-tabs">
