@@ -96,14 +96,25 @@ export function OrderSummaryCard({ order, showCompleteSalesOrder, deliveryProgre
             )}
           </span>
         </div>
-        {(order.Payments?.length ?? 0) > 0 && (
-          <div className="detail-card-row">
-            <span className="detail-card-key">Payment Type</span>
-            <span className="detail-card-val">
-              <StatusBadge label="Advance Deposit Paid" tone="approved" />
-            </span>
-          </div>
-        )}
+        {(order.Payments?.length ?? 0) > 0 && (() => {
+          const payments = order.Payments ?? []
+          const hasAdvance = payments.some((p) => p.IsAdvance)
+          const hasNonAdvance = payments.some((p) => !p.IsAdvance)
+          const label =
+            hasAdvance && !hasNonAdvance
+              ? "Advance Deposit Paid"
+              : hasAdvance && hasNonAdvance
+                ? "Advance & Direct Payments"
+                : "Direct / Invoice Payment"
+          return (
+            <div className="detail-card-row">
+              <span className="detail-card-key">Payment Type</span>
+              <span className="detail-card-val">
+                <StatusBadge label={label} tone="approved" />
+              </span>
+            </div>
+          )
+        })()}
         {deliveryProgress && (
           <div className="detail-card-row">
             <span className="detail-card-key">Delivery Status</span>

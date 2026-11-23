@@ -835,6 +835,7 @@ exports.recordPaymentForInvoice = (invoiceId, payload = {}, ctx) => {
           soPaymentRepo.createSOPayment({
             SoID: soId,
             PaymentID: payment.PaymentID,
+            IsAdvance: 0,
           })
         }
       }

@@ -44,7 +44,7 @@ export function buildSOPaymentReceiptPrintData(order: SoDetailedRecord, payment:
     changeReturned: payment.BalanceAmount === undefined ? "" : formatMoney(payment.BalanceAmount),
     tenderNote: isCheque
       ? "Cheque received subject to bank clearance. This receipt confirms receipt of the cheque, not cleared funds."
-      : !invoiceReferences
+      : payment.IsAdvance
         ? "Advance payment received against Sales Order. Thank you."
         : "Payment received. Thank you.",
   }

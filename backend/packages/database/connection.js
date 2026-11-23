@@ -228,6 +228,16 @@ try {
     }
   }
 
+  const soPaymentsExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SOPayments'").get()
+  if (soPaymentsExists) {
+    const soPaymentsColumns = new Set(
+      db.prepare("PRAGMA table_info(SOPayments)").all().map((col) => col.name),
+    )
+    if (!soPaymentsColumns.has("IsAdvance")) {
+      db.exec("ALTER TABLE SOPayments ADD COLUMN IsAdvance INTEGER NOT NULL DEFAULT 0")
+    }
+  }
+
   const soDeliveryLineExists = db
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SODeliveryLine'")
     .get()

@@ -118,6 +118,7 @@ export default function SalesOrderDetailsPage() {
     handleIssueGatePass,
   } = useSalesOrderDetailsActions({
     order,
+    deliveries,
     makePayment,
     completeChequePayment,
     refreshOrder: refresh,
@@ -234,7 +235,7 @@ export default function SalesOrderDetailsPage() {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         onConfirm={handleMakePayment}
-        confirmLabel="Confirm SO"
+        confirmLabel={(deliveries?.length ?? 0) === 0 ? "Confirm Advance Payment" : "Record Payment"}
         submitting={isSubmittingPayment}
         form={paymentForm}
       />

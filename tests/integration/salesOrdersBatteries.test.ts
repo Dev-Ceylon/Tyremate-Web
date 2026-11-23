@@ -548,4 +548,138 @@ describe("Sales Orders, Delivery & Invoicing for Batteries", () => {
     expect(batteryInvoice.Lines[0].LineType).toBe("battery")
     expect(batteryInvoice.Lines[0].BatteryID).toBe(battery.Id)
   })
+
+  it("distinguishes advance payments from invoice settlement payments on sales orders", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-ADV-01",
+      BranchName: "Advance Payment Branch",
+    })
+
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const defaultType = locationTypes.find(
+      (lt: any) => lt.LocationTypeCode?.toLowerCase() === "df",
+    ) || locationTypes[0]
+
+    const batteryLocation = await backend.invoke("batteryLocations:create", {
+      LocationCode: "LOC-ADV-01",
+      LocationName: "Advance Bay",
+      BranchId: branch.Id,
+      LocationTypeId: defaultType.Id,
+      Capacity: 100,
+    })
+
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-ADV-01",
+      Name: "Advance Fleet Services",
+      Phone: "+94770002222",
+      Address: "50 Galle Road, Colombo 3",
+    })
+
+    const battery = await backend.invoke("batteries:create", {
+      Brand: "Panasonic",
+      Model: "Tough 12V 70Ah",
+      Voltage: "12V",
+      Capacity: "70Ah",
+      ActualSellingPrice: 40000,
+      MRP_WithVAT: 40000,
+      DiscountOffered: 0,
+    })
+
+    // Step 1: Create an SO with NO items taken now (all 2 ordered).
+    // Customer pays LKR 30,000 as an ADVANCE deposit upfront!
+    const advanceSoResult = await backend.invoke("so:createWithAutoPO", {
+      Date: "2026-11-23",
+      Category: "battery",
+      CustomerID: customer.CustomerID,
+      IsAdminApproved: 1,
+      IsCompleted: 0,
+      Payment: {
+        CashPayment: {
+          PaymentTypeCode: "csh",
+          AmountReceived: 30000,
+          BalanceToReturn: 0,
+        },
+      },
+      Lines: [
+        {
+          BatteryID: battery.Id,
+          Price: 40000,
+          MRP_WithVAT: 40000,
+          Discount: 0,
+          Qty: 2,
+          NeedToOrderQty: 2,
+          TakeNowQty: 0,
+          Allocations: [
+            {
+              StorageManagerID: null,
+              StorageManagerBatchID: null,
+              Qty: 2,
+              TakeNowQty: 0,
+            },
+          ],
+        },
+      ],
+    })
+
+    const soId = advanceSoResult.so.SoID
+    const soWithAdvance = await backend.invoke("so:getById", soId)
+    expect(soWithAdvance.Payments.length).toBe(1)
+    const advancePayment = soWithAdvance.Payments[0]
+
+    // Verify this is classified as an ADVANCE payment
+    expect(advancePayment.IsAdvance).toBe(true)
+    expect(advancePayment.Amount).toBe(30000)
+    expect(advancePayment.Invoices).toBeUndefined()
+
+    // Step 2: Generate Invoice from the Sales Order.
+    // The advance payment of 30,000 should automatically be linked to this 80,000 invoice!
+    const invoice = await backend.invoke("invoice:generateFromSO", soId)
+    expect(invoice.Total).toBe(80000)
+    expect(invoice.AmountPaid).toBe(30000)
+    expect(invoice.BalanceDue).toBe(50000)
+
+    // The SO payment now reflects that the advance was applied to the invoice, but remains an advance payment!
+    const soAfterInvoice = await backend.invoke("so:getById", soId)
+    expect(soAfterInvoice.Payments.length).toBe(1)
+    expect(soAfterInvoice.Payments[0].IsAdvance).toBe(true)
+    expect(soAfterInvoice.Payments[0].Invoices.length).toBe(1)
+    expect(soAfterInvoice.Payments[0].Invoices[0].InvoiceID).toBe(invoice.InvoiceID)
+
+    // Step 3: Pay the remaining 50,000 balance against the invoice directly
+    const directInvoicePayment = await backend.invoke(
+      "invoice:recordPayment",
+      invoice.InvoiceID,
+      {
+        Payment: {
+          CashPayment: {
+            PaymentTypeCode: "csh",
+            AmountReceived: 50000,
+            BalanceToReturn: 0,
+          },
+        },
+      },
+    )
+    expect(directInvoicePayment.Status).toBe("paid")
+    expect(directInvoicePayment.BalanceDue).toBe(0)
+
+    // Step 4: Verify SO Details payments array
+    // There are now 2 payments:
+    // - Payment 1 (the initial deposit): IsAdvance === true
+    // - Payment 2 (the invoice settlement): IsAdvance === false!
+    const soFullyPaid = await backend.invoke("so:getById", soId)
+    expect(soFullyPaid.Payments.length).toBe(2)
+
+    const p1 = soFullyPaid.Payments.find((p: any) => p.Amount === 30000)
+    const p2 = soFullyPaid.Payments.find((p: any) => p.Amount === 50000)
+
+    expect(p1).toBeDefined()
+    expect(p1.IsAdvance).toBe(true)
+
+    expect(p2).toBeDefined()
+    expect(p2.IsAdvance).toBe(false)
+  })
 })

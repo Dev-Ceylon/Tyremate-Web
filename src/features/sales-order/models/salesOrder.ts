@@ -1,6 +1,7 @@
 import type { PoDetailedRecord, PoRecord, PoTyreRecord } from "../../purchase-order/models/purchaseOrder"
 import type { SoLinkedInquiryRecord } from "../../inquiry/models/inquirySo"
 import type { SoDeliveryRecord } from "./delivery"
+export type { SoDeliveryRecord } from "./delivery"
 import type { SOCategory } from "../../../shared/constants/soCategoryConstants"
 
 export type SoPayload = {
@@ -62,6 +63,7 @@ export type SoPaymentRecord = {
   PaymentTypeCode: string
   PaymentTypeName: string
   Amount: number
+  IsAdvance?: boolean
   ReferenceNumber?: string
   PaymentDate?: string
   BankName?: string
@@ -301,11 +303,13 @@ export type SalesOrderPaymentInput = {
     AccountName?: string
     Branch?: string
   } | null
+  IsAdvance?: boolean
 }
 
 export type CreateSalesOrderPayload = {
   Date: string
   Category?: SOCategory
+  IsAdvance?: boolean
   InquiryID?: number
   CustomerID?: number | null
   CustomerName?: string

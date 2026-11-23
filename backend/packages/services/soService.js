@@ -457,14 +457,15 @@ const toSalesOrderCreatePayload = (payload = {}) => {
  * Internal helper used within create transactions. Returns the created
  * payments so callers can settle linked invoices in the same transaction.
  */
-const processSOPayment = (soId, paymentData) => {
+const processSOPayment = (soId, paymentData, isAdvance = 0) => {
   if (!paymentData) return []
 
   return paymentProcessingService.createPaymentsForPaymentData(paymentData, (payment) => {
     // Link the Sales Order to the generic Payment via SOPayments
     soPaymentRepo.createSOPayment({
       SoID: soId,
-      PaymentID: payment.PaymentID
+      PaymentID: payment.PaymentID,
+      IsAdvance: isAdvance ? 1 : 0,
     })
   })
 }
@@ -572,15 +573,23 @@ exports.getSOById = (soId) => {
     let paymentTypeName = null
     let paymentAmount = 0
 
+    const invoiceLinks = invoicePaymentLinkRepo.getLinksByPaymentId(genericPaymentId) || []
+    let isAdvance = Boolean(soPayment.IsAdvance)
+    if (!isAdvance && (soPayment.IsAdvance === undefined || soPayment.IsAdvance === null)) {
+      if (invoiceLinks.length === 0) {
+        isAdvance = true
+      }
+    }
+
     // Initialize payment item structure
     const paymentItem = {
       PaymentID: genericPaymentId,
       PaymentTypeCode: null,
       PaymentTypeName: null,
       Amount: 0,
+      IsAdvance: isAdvance,
       CreatedAt: paymentRepo.getPaymentById(genericPaymentId)?.CreatedDate ?? null,
     }
-    const invoiceLinks = invoicePaymentLinkRepo.getLinksByPaymentId(genericPaymentId)
     if (invoiceLinks.length > 0) {
       paymentItem.Invoices = invoiceLinks.map((link) => ({
         InvoiceID: link.InvoiceID,
@@ -1461,7 +1470,13 @@ exports.createSOWithAutoPO = (payload, ctx) => {
       inquirySoService.linkSoToInquiries(so.SoID, inquiryIds, ctx)
     }
 
-    processSOPayment(so.SoID, data.Payment)
+    const isAdvancePayment = payload?.IsAdvance !== undefined
+      ? Boolean(payload.IsAdvance)
+      : (payload?.Payment?.IsAdvance !== undefined
+          ? Boolean(payload.Payment.IsAdvance)
+          : !data.Lines.some((line) => (line.TakeNowQty ?? 0) > 0))
+
+    processSOPayment(so.SoID, data.Payment, isAdvancePayment ? 1 : 0)
 
     // Lines the customer is collecting at creation time become the SO's first
     // delivery record (no payment here). Later hand-overs are separate events.
@@ -2124,8 +2139,17 @@ exports.makeAPaymentForSo = (soId, paymentPayload, ctx) => {
       throw new Error("Payment payload is required.");
     }
 
+    const isAdvance = paymentPayload?.IsAdvance !== undefined
+      ? (paymentPayload.IsAdvance ? 1 : 0)
+      : (paymentPayload?.Payment?.IsAdvance !== undefined
+          ? (paymentPayload.Payment.IsAdvance ? 1 : 0)
+          : (() => {
+              const deliveries = soDeliveryRepo.getDeliveriesBySoId(normalizedSoId) || []
+              return deliveries.length === 0 ? 1 : 0
+            })())
+
     // Process the new payment (creates generic Payment, SOPayment link, and specific detail)
-    processSOPayment(normalizedSoId, normalizedPayment);
+    processSOPayment(normalizedSoId, normalizedPayment, isAdvance);
 
     // Synchronize invoice settlements with newly added payments for this SO
     invoiceSettlementService.syncInvoiceSettlementsForSO(normalizedSoId);

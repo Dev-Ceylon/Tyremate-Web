@@ -29,6 +29,7 @@ export function PaymentDetailCard({
   const receiptItems = useMemo(() => receiptItemsFromPayment(payment), [payment])
   const paymentId = payment.PaymentID ?? null
   const invoices = payment.Invoices ?? []
+  const isAdvance = Boolean(payment.IsAdvance)
   const shouldCompleteCheque =
     payment.PaymentTypeCode === PAYMENT_TYPE_CODES.CHEQUE && !payment.Collected
 
@@ -37,7 +38,15 @@ export function PaymentDetailCard({
       <div className="table-panel-header">
         <p className="section-label">{payment.PaymentTypeName}</p>
         <StatusBadge
-          label={invoices.length > 0 ? "Advance Applied" : "Advance Deposit"}
+          label={
+            isAdvance
+              ? invoices.length > 0
+                ? "Advance Applied"
+                : "Advance Deposit"
+              : invoices.length > 0
+                ? "Invoice Payment"
+                : "Direct Payment"
+          }
           tone="approved"
         />
       </div>
@@ -45,9 +54,13 @@ export function PaymentDetailCard({
         <div className="detail-card-row">
           <span className="detail-card-key">Payment Role</span>
           <span className="detail-card-val font-bold">
-            {invoices.length > 0
-              ? "Customer Advance (Applied to Invoice)"
-              : "Customer Advance Payment"}
+            {isAdvance
+              ? invoices.length > 0
+                ? "Customer Advance (Applied to Invoice)"
+                : "Customer Advance Payment"
+              : invoices.length > 0
+                ? "Invoice Settlement Payment"
+                : "Direct Order Payment"}
           </span>
         </div>
         {invoices.length > 0 ? (
@@ -68,7 +81,7 @@ export function PaymentDetailCard({
           <div className="detail-card-row">
             <span className="detail-card-key">Invoiced Status</span>
             <span className="detail-card-val secondary-text">
-              Advance Deposit (Unbilled)
+              {isAdvance ? "Advance Deposit (Unbilled)" : "Direct Payment (Unbilled)"}
             </span>
           </div>
         )}
