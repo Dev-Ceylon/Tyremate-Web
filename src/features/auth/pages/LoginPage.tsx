@@ -83,7 +83,7 @@ export default function LoginPage() {
             Login
           </button>
 
-          <p className="tm-note" style={{ marginTop: "0.75rem" }}>
+          <p className="tm-note tm-login-note">
             Database: {describeDatabase(backendStatus)} ·{" "}
             <Link href="/setup">Database settings</Link>
           </p>

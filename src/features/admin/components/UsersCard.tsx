@@ -1,5 +1,6 @@
 "use client"
 import { useCallback, useEffect, useId, useState } from "react"
+import { useAuthContext } from "../../auth/hooks/AuthProvider"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
 import { adminApi, type AdminRole, type AdminUser } from "../services/adminClient"
@@ -12,6 +13,10 @@ type Editing = { mode: "create" } | { mode: "edit"; user: AdminUser } | { mode: 
 
 export function UsersCard() {
   const ids = useId()
+  const { user: currentUser } = useAuthContext()
+  const isCurrentUserSuperAdmin = Boolean(
+    currentUser?.roles?.some((r) => Number(r.roleId) === 0),
+  )
   const { showToast } = useToast()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [roles, setRoles] = useState<AdminRole[]>([])
@@ -93,7 +98,7 @@ export function UsersCard() {
 
   return (
     <section className="panel tm-card" aria-labelledby={`${ids}-title`}>
-      <div className="tm-inline" style={{ justifyContent: "space-between" }}>
+      <div className="tm-inline-between">
         <div>
           <p className="eyebrow">Access</p>
           <h2 id={`${ids}-title`}>Users &amp; roles</h2>
@@ -123,31 +128,53 @@ export function UsersCard() {
                 <td colSpan={5}>Loading…</td>
               </tr>
             ) : (
-              users.map((user) => (
-                <tr key={user.id}>
-                  <td className="font-semibold">{user.username}</td>
-                  <td>{user.displayName ?? "—"}</td>
-                  <td>{user.roles.map((r) => r.roleName).join(", ") || "—"}</td>
-                  <td>
-                    <span className={`tm-status ${user.isActive ? "tm-status-ok" : "tm-status-error"}`}>
-                      {user.isActive ? "Active" : "Disabled"}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="tm-inline" style={{ justifyContent: "flex-end" }}>
-                      <button type="button" className="secondary-action" onClick={() => open({ mode: "edit", user })}>
-                        Edit
-                      </button>
-                      <button type="button" className="secondary-action" onClick={() => open({ mode: "password", user })}>
-                        Reset password
-                      </button>
-                      <button type="button" className="secondary-action" onClick={() => void toggleActive(user)}>
-                        {user.isActive ? "Disable" : "Enable"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              users.map((user) => {
+                const isTargetSuperAdmin = user.roles.some((r) => Number(r.roleId) === 0)
+                const canModify = isCurrentUserSuperAdmin || !isTargetSuperAdmin
+                return (
+                  <tr key={user.id}>
+                    <td className="font-semibold">{user.username}</td>
+                    <td>{user.displayName ?? "—"}</td>
+                    <td>{user.roles.map((r) => r.roleName).join(", ") || "—"}</td>
+                    <td>
+                      <span className={`tm-status ${user.isActive ? "tm-status-ok" : "tm-status-error"}`}>
+                        {user.isActive ? "Active" : "Disabled"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="tm-inline-end">
+                        <button
+                          type="button"
+                          className="secondary-action"
+                          disabled={!canModify}
+                          title={!canModify ? "Only Super Admin can edit Super Admin accounts" : undefined}
+                          onClick={() => open({ mode: "edit", user })}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-action"
+                          disabled={!canModify}
+                          title={!canModify ? "Only Super Admin can reset Super Admin passwords" : undefined}
+                          onClick={() => open({ mode: "password", user })}
+                        >
+                          Reset password
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-action"
+                          disabled={!canModify}
+                          title={!canModify ? "Only Super Admin can disable Super Admin accounts" : undefined}
+                          onClick={() => void toggleActive(user)}
+                        >
+                          {user.isActive ? "Disable" : "Enable"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
@@ -179,15 +206,25 @@ export function UsersCard() {
               </div>
               <fieldset className="tm-form-row">
                 <legend className="field-label">Roles</legend>
-                {roles.map((role) => (
-                  <label key={role.roleId} className="tm-inline">
-                    <input type="checkbox" checked={roleIds.includes(role.roleId)} onChange={() => toggleRole(role.roleId)} />
-                    <span>
-                      {role.roleName}
-                      {role.description ? <small className="secondary-text"> — {role.description}</small> : null}
-                    </span>
-                  </label>
-                ))}
+                {roles.map((role) => {
+                  const isRoleSuperAdmin = Number(role.roleId) === 0
+                  const isRoleDisabled = isRoleSuperAdmin && !isCurrentUserSuperAdmin
+                  return (
+                    <label key={role.roleId} className="tm-inline">
+                      <input
+                        type="checkbox"
+                        checked={roleIds.includes(role.roleId)}
+                        disabled={isRoleDisabled}
+                        onChange={() => toggleRole(role.roleId)}
+                      />
+                      <span>
+                        {role.roleName}
+                        {role.description ? <small className="secondary-text"> — {role.description}</small> : null}
+                        {isRoleDisabled ? <small className="secondary-text"> (Super Admin only)</small> : null}
+                      </span>
+                    </label>
+                  )
+                })}
               </fieldset>
             </>
           ) : null}

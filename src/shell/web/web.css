@@ -37,6 +37,9 @@
 .tm-banner a { font-weight: 600; }
 
 .tm-admin { display: flex; flex-direction: column; gap: var(--space-6); }
+.tm-setup-shell { max-width: 64rem; margin: 0 auto; }
+.tm-setup-header { gap: 1rem; }
+.tm-login-note { margin-top: 0.75rem; }
 .tm-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); }
 .tm-tab {
   border: 1px solid transparent; background: transparent; color: var(--color-text-muted);
@@ -54,6 +57,8 @@
 .tm-form { display: grid; gap: var(--space-3); }
 .tm-form-row { display: grid; gap: var(--space-2); }
 .tm-inline { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.tm-inline-between { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; justify-content: space-between; }
+.tm-inline-end { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; justify-content: flex-end; }
 .tm-choice { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 .tm-choice label {
   flex: 1 1 14rem; display: flex; gap: var(--space-3); align-items: flex-start; cursor: pointer;

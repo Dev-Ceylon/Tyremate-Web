@@ -123,7 +123,7 @@ export default function AppLayout() {
                 hasPermission("inventory.view") && { label: "Batteries", to: "/master-data/batteries" },
                 hasPermission("inventory.view") && { label: "Consumables", to: "/master-data/consumables" },
                 hasPermission("inventory.manage") && { label: "Storage Locations", to: "/master-data/storage-locations" },
-                hasPermission("settings.manage") && { label: "Bank Details", to: "/master-data/bank-details" },
+                (hasPermission("settings.manage") || hasPermission("user.manage")) && { label: "Bank Details", to: "/master-data/bank-details" },
               ].filter(Boolean) as any[]}
             />
           </PermissionGate>

@@ -1,7 +1,9 @@
 "use client"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { Navigate } from "@/lib/router"
 import { getBackendStatus, startBackend } from "../../../../web/bridge/backendClient"
+import { loadSession } from "../../../../web/bridge/config"
 import { ToastProvider } from "../../../shared/ui/toast/ToastProvider"
 import { ConfirmProvider } from "../../../shared/ui/confirm/ConfirmProvider"
 import { useConfirm } from "../../../shared/ui/confirm/ConfirmProvider"
@@ -14,16 +16,28 @@ import { databaseMaintenance } from "../services/adminClient"
  * Pre-login database setup. Reachable from the login screen and whenever the
  * configured database cannot be opened, so a broken configuration can always
  * be fixed. Destructive/administrative operations live in the admin panel.
+ * Authenticated users without settings.manage (e.g. Admin/owner, staff) are
+ * redirected to prevent unauthorized technical database modifications.
  */
 function SetupContent() {
   const status = useBackendStatus()
   const confirm = useConfirm()
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
+  const session = loadSession() as { permissions?: string[] } | null
+  const isAuthenticated = Boolean(session && Array.isArray(session.permissions))
+  const canManageSettings = Boolean(
+    session?.permissions?.includes("settings.manage") || session?.permissions?.includes("god")
+  )
+
   // Connect with the saved settings straight away so the real status is shown.
   useEffect(() => {
     if (getBackendStatus().state === "idle") void startBackend().catch(() => {})
   }, [])
+
+  if (isAuthenticated && !canManageSettings) {
+    return <Navigate to="/" replace />
+  }
 
   const resetLocal = async () => {
     const ok = await confirm({
@@ -43,9 +57,9 @@ function SetupContent() {
   }
 
   return (
-    <main className="app-shell tm-admin" style={{ maxWidth: "64rem", margin: "0 auto" }}>
+    <main className="app-shell tm-admin tm-setup-shell">
       <section className="page-header panel">
-        <div className="tm-inline" style={{ gap: "1rem" }}>
+        <div className="tm-inline tm-setup-header">
           <BrandLogo size={52} />
           <div>
             <p className="eyebrow">TyreMate setup</p>
