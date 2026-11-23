@@ -3,7 +3,6 @@ import { useInquiryDetails } from "../hooks/useInquiryDetails"
 import { WALKIN_CUSTOMER_FIELDS } from "../../../shared/walkinCustomer/models/walkinCustomer"
 import { StatusBadge } from "../../../shared/ui/StatusBadge"
 import { LinkedSalesOrdersCard } from "../components/LinkedSalesOrdersCard"
-import { LinkedPurchaseOrdersCard } from "../components/LinkedPurchaseOrdersCard"
 
 export default function InquiryDetailsPage() {
   const navigate = useNavigate()
@@ -194,7 +193,6 @@ export default function InquiryDetailsPage() {
       </section>
 
       <LinkedSalesOrdersCard inquiryId={inquiry.InquiryID} />
-      <LinkedPurchaseOrdersCard pos={inquiry.LinkedPOs} />
     </main>
   )
 }
