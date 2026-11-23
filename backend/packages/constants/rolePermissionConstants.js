@@ -86,9 +86,6 @@ const ROLE_PERMISSIONS = {
     'inquiry.create',
     'inquiry.edit',
     'inquiry.delete',
-    'customers.view',
-    'customers.manage',
-    'inventory.view',
   ],
 }
 

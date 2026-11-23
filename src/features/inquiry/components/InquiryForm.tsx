@@ -7,6 +7,7 @@ import { WalkinCustomerFields } from "../../../shared/walkinCustomer/ui/WalkinCu
 import { formatTyreLabel } from "../../../shared/tyre/models/tyreDisplay"
 import { StatusBadge } from "../../../shared/ui/StatusBadge"
 import { TyreIcon, BatteryIcon } from "../../../shared/ui/icons"
+import PermissionGate from "../../../shared/components/PermissionGate"
 import type {
   WalkinCustomerFieldErrors,
   WalkinCustomerForm,
@@ -144,9 +145,11 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
           </label>
 
           <div className="header-actions form-inline-action">
-            <button type="button" className="secondary-action" onClick={actions.onOpenCreateCustomer}>
-              + New Customer
-            </button>
+            <PermissionGate permission="customers.manage">
+              <button type="button" className="secondary-action" onClick={actions.onOpenCreateCustomer}>
+                + New Customer
+              </button>
+            </PermissionGate>
           </div>
         </>
       ) : (
@@ -283,18 +286,22 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
       <div className="header-actions login-form-full-span">
         {isBattery ? (
           <>
-            <button type="button" className="secondary-action" onClick={actions.onOpenCreateBattery}>
-              + New Battery
-            </button>
+            <PermissionGate permission="inventory.manage">
+              <button type="button" className="secondary-action" onClick={actions.onOpenCreateBattery}>
+                + New Battery
+              </button>
+            </PermissionGate>
             <button type="button" className="secondary-action" onClick={actions.onAddLine}>
               Add Battery Line
             </button>
           </>
         ) : (
           <>
-            <button type="button" className="secondary-action" onClick={actions.onOpenCreateTyre}>
-              + New Tyre
-            </button>
+            <PermissionGate permission="inventory.manage">
+              <button type="button" className="secondary-action" onClick={actions.onOpenCreateTyre}>
+                + New Tyre
+              </button>
+            </PermissionGate>
             <button type="button" className="secondary-action" onClick={actions.onAddLine}>
               Add Tyre Line
             </button>

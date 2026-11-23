@@ -11,6 +11,7 @@ import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import { InquiryForm } from "../components/InquiryForm"
 import { useInquiryForm } from "../hooks/useInquiryForm"
 import type { InquiryCategory } from "../models/inquiry"
+import PermissionGate from "../../../shared/components/PermissionGate"
 
 export default function InquiryCreatePage() {
   const navigate = useNavigate()
@@ -112,30 +113,34 @@ export default function InquiryCreatePage() {
         />
       </section>
 
-      <CreateCustomerDialog
-        isOpen={isCreateCustomerOpen}
-        onClose={() => setIsCreateCustomerOpen(false)}
-        onCreated={async (c: CustomerRecord) => {
-          await reloadCustomers()
-          selectCustomer(c.CustomerID)
-        }}
-      />
-      <CreateTyreDialog
-        isOpen={isCreateTyreOpen}
-        onClose={() => setIsCreateTyreOpen(false)}
-        onCreated={async (t: TyreRecord) => {
-          await reloadTyres()
-          selectTyreForInquiry(t.Id)
-        }}
-      />
-      <CreateBatteryDialog
-        isOpen={isCreateBatteryOpen}
-        onClose={() => setIsCreateBatteryOpen(false)}
-        onCreated={async (b: BatteryRecord) => {
-          await reloadBatteries()
-          selectBatteryForInquiry(b.Id)
-        }}
-      />
+      <PermissionGate permission="customers.manage">
+        <CreateCustomerDialog
+          isOpen={isCreateCustomerOpen}
+          onClose={() => setIsCreateCustomerOpen(false)}
+          onCreated={async (c: CustomerRecord) => {
+            await reloadCustomers()
+            selectCustomer(c.CustomerID)
+          }}
+        />
+      </PermissionGate>
+      <PermissionGate permission="inventory.manage">
+        <CreateTyreDialog
+          isOpen={isCreateTyreOpen}
+          onClose={() => setIsCreateTyreOpen(false)}
+          onCreated={async (t: TyreRecord) => {
+            await reloadTyres()
+            selectTyreForInquiry(t.Id)
+          }}
+        />
+        <CreateBatteryDialog
+          isOpen={isCreateBatteryOpen}
+          onClose={() => setIsCreateBatteryOpen(false)}
+          onCreated={async (b: BatteryRecord) => {
+            await reloadBatteries()
+            selectBatteryForInquiry(b.Id)
+          }}
+        />
+      </PermissionGate>
     </main>
   )
 }

@@ -40,6 +40,7 @@ export function useAuth() {
   const login = async (username: string, password: string) => {
     const u = await authService.login(username, password)
     setUser(u)
+    return u
   }
 
   const logout = async () => {

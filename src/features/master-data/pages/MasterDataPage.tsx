@@ -1,6 +1,13 @@
-import { Link } from "@/lib/router"
+import { Link, Navigate } from "@/lib/router"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 
 export default function MasterDataPage() {
+  const { hasAnyPermission } = useAuthorization()
+
+  if (!hasAnyPermission("inventory.manage", "suppliers.view", "customers.manage")) {
+    return <Navigate to="/inquiries" replace />
+  }
+
   return (
     <main className="app-shell">
       <section className="page-header panel">

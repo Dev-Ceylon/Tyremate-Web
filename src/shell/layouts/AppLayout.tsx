@@ -15,7 +15,7 @@ import { installTableCellWrapping } from "../web/tableCells"
 
 export default function AppLayout() {
   const { logout, user } = useAuthContext()
-  const { hasPermission } = useAuthorization()
+  const { hasPermission, hasAnyPermission } = useAuthorization()
   const { pendingCount, loading } = useReminderContext()
   const {
     closeNotifications,
@@ -80,104 +80,109 @@ export default function AppLayout() {
           <NavLink className="ghost-link" to="/">
             Home
           </NavLink>
-          <NavDropdown
-            label="Customer Sales"
-            items={[
-              { label: "Customer Master", to: "/master-data/customers" },
-              ...(hasPermission("inquiry.view") ? [{ label: "Inquiries", to: "/inquiries" }] : []),
-              { label: "SO", to: "/sales-orders" },
-              { label: "Sales Returns", to: "/sales-returns" },
-              { label: "Policy Violations", to: "/violations" },
-              { label: "DAG", to: "/dag" },
-              { label: "Used Tyre Sales", to: "/used-tyres" },
-              { label: "Sales Reports", to: "/reports/sales" },
-            ]}
-          />
-          <NavDropdown
-            label="Supplier Procurement"
-            items={[
-              { label: "Supplier Master", to: "/master-data/suppliers" },
-              { label: "Purchase Order Reports", to: "/reports/purchase-orders" },
-            ]}
-          />
-          <NavLink className="ghost-link" to="/master-data">
-            Master Data
-          </NavLink>
-          <NavDropdown
-            label="Master Record"
-            items={[
-              { label: "Suppliers", to: "/master-data/suppliers" },
-              { label: "Contractors", to: "/master-data/contractors" },
-              { label: "Customers", to: "/master-data/customers" },
-              { label: "Branches", to: "/master-data/branches" },
-              { label: "Tyres", to: "/master-data/tyres" },
-              { label: "Batteries", to: "/master-data/batteries" },
-              { label: "Consumables", to: "/master-data/consumables" },
-              { label: "Storage Locations", to: "/master-data/storage-locations" },
-              { label: "Bank Details", to: "/master-data/bank-details" },
-            ]}
-          />
-          {/* <NavLink className="ghost-link" to="/products">
-            Products
-          </NavLink> */}
-          {/* <NavLink className="ghost-link" to="/master-data/suppliers">
-            Suppliers
-          </NavLink> */}
-          {/* <NavLink className="ghost-link" to="/master-data/contractors">
-            Contractors
-          </NavLink> */}
-          {/* <NavLink className="ghost-link" to="/master-data/customers">
-            Customers
-          </NavLink> */}
-          {/* <NavLink className="ghost-link" to="/master-data/branches">
-            Branches
-          </NavLink> */}
-          {/* <NavLink className="ghost-link" to="/master-data/tyres">
-            Tyres
-          </NavLink> */}
-          {/* <NavLink className="ghost-link" to="/master-data/bank-details">
-            Bank Details
-          </NavLink> */}
-          <NavLink className="ghost-link" to="/purchase-orders">
-            Purchase Orders
-          </NavLink>
-          <NavLink className="ghost-link" to="/goods-receipts">
-            Pending to GRN
-          </NavLink>
-          <NavLink
-            className="ghost-link reminder-link"
-            to="/reminders"
-          >
-            Reminders
-            {!loading && pendingCount > 0 && (
-              <span className="reminder-badge">
-                {pendingCount}
-              </span>
-            )}
-          </NavLink>
-          <NavDropdown
-            label="GatePass"
-            items={[
-              { label: "Gate Pass", to: "/gatepass" },
-              { label: "DAG Gate Pass", to: "/gatepass/dag" },
-            ]}
-          />
-          <NavLink className="ghost-link" to="/stock-snapshot">
-            Stock Snapshot
-          </NavLink>
-          <NavLink className="ghost-link" to="/opex">
-            Opex
-          </NavLink>
-          <NavDropdown
-            label="Other"
-            items={[
-              { label: "Other Service", to: "/other-service" },
-              { label: "Other Payment", to: "/other-payment" },
-            ]}
-          />
-          <NavLink className="ghost-link" to="/invoices">
-            Invoices
-          </NavLink>
+          {hasPermission("inquiry.view") && !hasAnyPermission("so.view", "dag.view", "violations.view") ? (
+            <NavLink className="ghost-link" to="/inquiries">
+              Inquiries
+            </NavLink>
+          ) : (
+            <NavDropdown
+              label="Customer Sales"
+              items={[
+                hasPermission("customers.view") && { label: "Customer Master", to: "/master-data/customers" },
+                hasPermission("inquiry.view") && { label: "Inquiries", to: "/inquiries" },
+                hasPermission("so.view") && { label: "SO", to: "/sales-orders" },
+                hasPermission("so.view") && { label: "Sales Returns", to: "/sales-returns" },
+                hasPermission("violations.view") && { label: "Policy Violations", to: "/violations" },
+                hasPermission("dag.view") && { label: "DAG", to: "/dag" },
+                hasPermission("so.view") && { label: "Used Tyre Sales", to: "/used-tyres" },
+                hasPermission("reports.view") && { label: "Sales Reports", to: "/reports/sales" },
+              ].filter(Boolean) as any[]}
+            />
+          )}
+          <PermissionGate anyPermission={["suppliers.view", "reports.view"]}>
+            <NavDropdown
+              label="Supplier Procurement"
+              items={[
+                hasPermission("suppliers.view") && { label: "Supplier Master", to: "/master-data/suppliers" },
+                hasPermission("reports.view") && { label: "Purchase Order Reports", to: "/reports/purchase-orders" },
+              ].filter(Boolean) as any[]}
+            />
+          </PermissionGate>
+          <PermissionGate anyPermission={["inventory.manage", "suppliers.view", "customers.manage"]}>
+            <NavLink className="ghost-link" to="/master-data">
+              Master Data
+            </NavLink>
+            <NavDropdown
+              label="Master Record"
+              items={[
+                hasPermission("suppliers.view") && { label: "Suppliers", to: "/master-data/suppliers" },
+                hasPermission("suppliers.manage") && { label: "Contractors", to: "/master-data/contractors" },
+                hasPermission("customers.view") && { label: "Customers", to: "/master-data/customers" },
+                hasPermission("inventory.manage") && { label: "Branches", to: "/master-data/branches" },
+                hasPermission("inventory.view") && { label: "Tyres", to: "/master-data/tyres" },
+                hasPermission("inventory.view") && { label: "Batteries", to: "/master-data/batteries" },
+                hasPermission("inventory.view") && { label: "Consumables", to: "/master-data/consumables" },
+                hasPermission("inventory.manage") && { label: "Storage Locations", to: "/master-data/storage-locations" },
+                hasPermission("settings.manage") && { label: "Bank Details", to: "/master-data/bank-details" },
+              ].filter(Boolean) as any[]}
+            />
+          </PermissionGate>
+          <PermissionGate permission="po.view">
+            <NavLink className="ghost-link" to="/purchase-orders">
+              Purchase Orders
+            </NavLink>
+          </PermissionGate>
+          <PermissionGate permission="po.view">
+            <NavLink className="ghost-link" to="/goods-receipts">
+              Pending to GRN
+            </NavLink>
+          </PermissionGate>
+          <PermissionGate anyPermission={["so.view", "po.view"]}>
+            <NavLink
+              className="ghost-link reminder-link"
+              to="/reminders"
+            >
+              Reminders
+              {!loading && pendingCount > 0 && (
+                <span className="reminder-badge">
+                  {pendingCount}
+                </span>
+              )}
+            </NavLink>
+          </PermissionGate>
+          <PermissionGate anyPermission={["so.view", "dag.view"]}>
+            <NavDropdown
+              label="GatePass"
+              items={[
+                hasPermission("so.view") && { label: "Gate Pass", to: "/gatepass" },
+                hasPermission("dag.view") && { label: "DAG Gate Pass", to: "/gatepass/dag" },
+              ].filter(Boolean) as any[]}
+            />
+          </PermissionGate>
+          <PermissionGate permission="inventory.manage">
+            <NavLink className="ghost-link" to="/stock-snapshot">
+              Stock Snapshot
+            </NavLink>
+          </PermissionGate>
+          <PermissionGate anyPermission={["reports.view", "settings.manage"]}>
+            <NavLink className="ghost-link" to="/opex">
+              Opex
+            </NavLink>
+          </PermissionGate>
+          <PermissionGate permission="other.view">
+            <NavDropdown
+              label="Other"
+              items={[
+                { label: "Other Service", to: "/other-service" },
+                { label: "Other Payment", to: "/other-payment" },
+              ]}
+            />
+          </PermissionGate>
+          <PermissionGate permission="invoice.view">
+            <NavLink className="ghost-link" to="/invoices">
+              Invoices
+            </NavLink>
+          </PermissionGate>
           <PermissionGate anyPermission={["settings.manage", "user.manage"]}>
             <NavLink className="ghost-link" to="/admin">
               Admin

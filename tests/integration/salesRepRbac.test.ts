@@ -22,27 +22,30 @@ describe("SalesRep Role and Inquiry RBAC", () => {
     const salesRepRole = loginResult.roles.find((r: any) => r.roleName === "SalesRep")
     expect(salesRepRole.roleId).toBe(4)
 
-    // Check permissions
+    // Check permissions - strictly inquiry only
     expect(loginResult.permissions).toContain("inquiry.view")
     expect(loginResult.permissions).toContain("inquiry.create")
     expect(loginResult.permissions).toContain("inquiry.edit")
     expect(loginResult.permissions).toContain("inquiry.delete")
-    expect(loginResult.permissions).toContain("customers.view")
-    expect(loginResult.permissions).toContain("customers.manage")
-    expect(loginResult.permissions).toContain("inventory.view")
 
-    // Ensure salesrep does NOT have admin or management permissions
+    // Ensure salesrep does NOT have other module permissions
     expect(loginResult.permissions).not.toContain("god")
+    expect(loginResult.permissions).not.toContain("so.view")
+    expect(loginResult.permissions).not.toContain("so.create")
+    expect(loginResult.permissions).not.toContain("po.view")
     expect(loginResult.permissions).not.toContain("po.create")
+    expect(loginResult.permissions).not.toContain("invoice.view")
+    expect(loginResult.permissions).not.toContain("dag.view")
+    expect(loginResult.permissions).not.toContain("reports.view")
     expect(loginResult.permissions).not.toContain("user.manage")
     expect(loginResult.permissions).not.toContain("settings.manage")
   })
 
-  it("allows SalesRep to perform all inquiry operations and customer interactions", async () => {
+  it("allows SalesRep to perform all inquiry operations while denying Master Data creation", async () => {
     const driver = await createSqlJsDriver()
     const backend = await bootBackend(driver)
 
-    // Seed master data as admin first so products exist
+    // Seed master data as admin first so products and customers exist
     await backend.login("admin", "1234")
     const tyre = await backend.invoke("tyres:create", {
       Brand: "Michelin",
@@ -51,10 +54,6 @@ describe("SalesRep Role and Inquiry RBAC", () => {
     })
     expect(tyre.Id).toBeDefined()
 
-    // Switch session to salesrep
-    await backend.login("salesrep", "1234")
-
-    // 1. SalesRep can create customer
     const customer = await backend.invoke("customers:create", {
       CustomerCode: "CUST-SR-01",
       Name: "Apex Logistics",
@@ -63,7 +62,25 @@ describe("SalesRep Role and Inquiry RBAC", () => {
     })
     expect(customer.CustomerID).toBeDefined()
 
-    // 2. SalesRep can create an inquiry
+    // Switch session to salesrep
+    await backend.login("salesrep", "1234")
+
+    // 1. SalesRep CANNOT create or modify Master Data (customers, tyres)
+    await expect(
+      backend.invoke("customers:create", {
+        CustomerCode: "CUST-UNAUTH",
+        Name: "Unauthorized Customer",
+      }),
+    ).rejects.toThrow(/do not have permission.*\(customers\.manage\)/)
+
+    await expect(
+      backend.invoke("tyres:create", {
+        Brand: "Unauthorized Tyre",
+        Size: "195/65R15",
+      }),
+    ).rejects.toThrow(/do not have permission.*\(inventory\.manage\)/)
+
+    // 2. SalesRep CAN create an inquiry with existing customer & tyre
     const inquiry = await backend.invoke("inquiries:create", {
       Date: "2026-11-23",
       Category: "tyre",

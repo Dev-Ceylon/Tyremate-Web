@@ -20,11 +20,11 @@ registerIpcHandler("batteries:getLowStockCount", {}, () =>
   batteryService.getLowStockCount()
 )
 
-registerServiceHandler("batteries:create", {}, batteryService, "createBattery")
+registerServiceHandler("batteries:create", { permission: "inventory.manage" }, batteryService, "createBattery")
 
-registerServiceHandler("batteries:update", {}, batteryService, "updateBattery")
+registerServiceHandler("batteries:update", { permission: "inventory.manage" }, batteryService, "updateBattery")
 
-registerServiceHandler("batteries:delete", {}, batteryService, "deleteBattery")
+registerServiceHandler("batteries:delete", { permission: "inventory.manage" }, batteryService, "deleteBattery")
 
 registerIpcHandler("batterySuppliers:getSuppliersByBatteryId", {}, (_event, batteryId) =>
   batterySupplierRepo.getSuppliersByBatteryId(batteryId)

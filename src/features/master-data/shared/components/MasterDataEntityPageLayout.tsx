@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
-import { Link, useLocation } from "@/lib/router"
+import { Link, Navigate, useLocation } from "@/lib/router"
+import { useAuthorization } from "@/shared/hooks/auth/useAuthorization"
 
 type MasterDataEntityPageLayoutProps = {
   title: string
@@ -23,9 +24,24 @@ export default function MasterDataEntityPageLayout({
   children,
 }: MasterDataEntityPageLayoutProps) {
   const location = useLocation()
+  const { hasAnyPermission } = useAuthorization()
   const isCreateRoute = location.pathname.endsWith("/new")
   const isEditRoute = location.pathname.endsWith("/edit")
   const isFormRoute = isCreateRoute || isEditRoute
+
+  const canAccessMasterData = hasAnyPermission(
+    "inventory.manage",
+    "inventory.view",
+    "suppliers.view",
+    "suppliers.manage",
+    "customers.view",
+    "customers.manage",
+    "settings.manage",
+  )
+
+  if (!canAccessMasterData) {
+    return <Navigate to="/inquiries" replace />
+  }
 
   const description = isCreateRoute
     ? createDescription
@@ -51,9 +67,11 @@ export default function MasterDataEntityPageLayout({
               {backLabel}
             </Link>
           ) : (
-            <Link className="primary-action" to="new">
-              {insertLabel}
-            </Link>
+            hasAnyPermission("inventory.manage", "suppliers.manage", "customers.manage", "settings.manage") && (
+              <Link className="primary-action" to="new">
+                {insertLabel}
+              </Link>
+            )
           )}
         </div>
       </section>

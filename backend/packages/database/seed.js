@@ -89,14 +89,31 @@ const seedRolesAndPermissions = (txDb) => {
     INSERT OR IGNORE INTO rolePermissions (roleId, permissionId)
     VALUES (?, ?)
   `)
+  const deleteRolePermission = txDb.prepare(`
+    DELETE FROM rolePermissions
+    WHERE roleId = ? AND permissionId = ?
+  `)
 
   Object.entries(ROLE_PERMISSIONS).forEach(([roleId, keys]) => {
+    const numericRoleId = Number(roleId)
     const rolePermissionKeys = keys === '*' ? PERMISSIONS_SEED.map(([key]) => key) : keys
-    rolePermissionKeys.forEach((key) => {
-      const permissionId = permissionIdByKey[key]
-      if (permissionId != null) {
-        insertRolePermission.run(Number(roleId), permissionId)
+    const targetPermissionIds = new Set(
+      rolePermissionKeys.map((key) => permissionIdByKey[key]).filter((id) => id != null)
+    )
+
+    // Remove permissions that are no longer assigned to this role
+    const currentPermissions = txDb
+      .prepare("SELECT permissionId FROM rolePermissions WHERE roleId = ?")
+      .all(numericRoleId)
+    currentPermissions.forEach(({ permissionId }) => {
+      if (!targetPermissionIds.has(permissionId)) {
+        deleteRolePermission.run(numericRoleId, permissionId)
       }
+    })
+
+    // Insert permissions assigned to this role
+    targetPermissionIds.forEach((permissionId) => {
+      insertRolePermission.run(numericRoleId, permissionId)
     })
   })
 }

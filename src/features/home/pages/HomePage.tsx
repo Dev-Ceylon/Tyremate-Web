@@ -1,5 +1,6 @@
-import { Link } from "@/lib/router"
+import { Link, Navigate } from "@/lib/router"
 import { useAuthContext } from "../../auth/hooks/AuthProvider"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 import { useProducts } from "../../products/hooks/useProducts"
 import { useTodaySales } from "../hooks/useTodaySales"
 import { usePendingPurchaseOrders } from "../hooks/usePendingPurchaseOrders"
@@ -9,10 +10,15 @@ import PermissionGate from "../../../shared/components/PermissionGate"
 
 export default function HomePage() {
   const { user, logout } = useAuthContext()
+  const { hasPermission } = useAuthorization()
   const { products } = useProducts()
   const { summary } = useTodaySales()
   const { count: pendingPOCount } = usePendingPurchaseOrders()
   const { count: lowStockCount } = useLowStock()
+
+  if (hasPermission("inquiry.view") && !hasPermission("so.view") && !hasPermission("po.view")) {
+    return <Navigate to="/inquiries" replace />
+  }
 
   const totalProducts = products.length
   const averagePrice =

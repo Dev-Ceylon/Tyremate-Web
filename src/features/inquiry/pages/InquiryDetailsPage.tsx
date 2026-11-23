@@ -200,7 +200,9 @@ export default function InquiryDetailsPage() {
         </div>
       </section>
 
-      <LinkedSalesOrdersCard inquiryId={inquiry.InquiryID} />
+      <PermissionGate permission="so.view">
+        <LinkedSalesOrdersCard inquiryId={inquiry.InquiryID} />
+      </PermissionGate>
     </main>
   )
 }

@@ -95,7 +95,7 @@ function seedVersion() {
     require("../../../packages/constants/salesReturnConstants"),
   ]
   const seedData = constants.map((mod) =>
-    Object.fromEntries(Object.entries(mod).filter(([key]) => /SEED/.test(key))),
+    Object.fromEntries(Object.entries(mod).filter(([key]) => /SEED|ROLE_PERMISSIONS/.test(key))),
   )
   return `${SCHEMA_HASH}:${hashText(JSON.stringify(seedData))}`
 }
