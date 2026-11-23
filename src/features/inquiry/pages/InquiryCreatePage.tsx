@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react"
-import { useNavigate, useSearchParams } from "@/lib/router"
+import { Navigate, useNavigate, useSearchParams } from "@/lib/router"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 import { CreateCustomerDialog } from "../../master-data/customers/components/CreateCustomerDialog"
 import type { CustomerRecord } from "../../master-data/customers/models/customer"
 import { CreateTyreDialog } from "../../master-data/tyres/components/CreateTyreDialog"
@@ -13,6 +14,7 @@ import type { InquiryCategory } from "../models/inquiry"
 
 export default function InquiryCreatePage() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuthorization()
   const [searchParams] = useSearchParams()
   const categoryParam = (searchParams.get("category") || "tyre").toLowerCase() as InquiryCategory
   const initialCategory: InquiryCategory = categoryParam === "battery" ? "battery" : "tyre"
@@ -21,6 +23,10 @@ export default function InquiryCreatePage() {
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false)
   const [isCreateTyreOpen, setIsCreateTyreOpen] = useState(false)
   const [isCreateBatteryOpen, setIsCreateBatteryOpen] = useState(false)
+
+  if (!hasPermission("inquiry.create")) {
+    return <Navigate to="/inquiries" replace />
+  }
 
   const handleSuccess = useCallback(() => {
     showToast({

@@ -102,7 +102,7 @@ const seedRolesAndPermissions = (txDb) => {
 }
 
 /**
- * Ensures the default admin (role 1) and super admin (role 0) users exist.
+ * Ensures the default admin (role 1), super admin (role 0), and salesrep (role 4) users exist.
  * Password hashing is async, so this runs outside the synchronous transaction.
  */
 const seedUsers = async () => {
@@ -127,6 +127,7 @@ const seedUsers = async () => {
 
   const adminUserId = await ensureUser("admin", null)
   const superAdminUserId = await ensureUser("superadmin", "Super Admin")
+  const salesRepUserId = await ensureUser("salesrep", "Sales Representative")
 
   const insertUserRole = db.prepare(`
     INSERT OR IGNORE INTO userRoles (userId, roleId)
@@ -134,6 +135,7 @@ const seedUsers = async () => {
   `)
   insertUserRole.run(adminUserId, 1)
   insertUserRole.run(superAdminUserId, 0)
+  insertUserRole.run(salesRepUserId, 4)
 }
 
 const runSeed = async () => {

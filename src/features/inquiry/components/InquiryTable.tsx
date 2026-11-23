@@ -1,4 +1,5 @@
 import { useNavigate } from "@/lib/router"
+import PermissionGate from "../../../shared/components/PermissionGate"
 import type { InquiryRecord } from "../models/inquiry"
 
 type InquiryTableProps = {
@@ -86,14 +87,16 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
                     >
                       View
                     </button>
-                    <button
-                      type="button"
-                      className="secondary-action table-action"
-                      onClick={() => onDelete(inquiry.InquiryID)}
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? "Deleting..." : "Delete"}
-                    </button>
+                    <PermissionGate permission="inquiry.delete">
+                      <button
+                        type="button"
+                        className="secondary-action table-action"
+                        onClick={() => onDelete(inquiry.InquiryID)}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </button>
+                    </PermissionGate>
                   </div>
                 </td>
               </tr>

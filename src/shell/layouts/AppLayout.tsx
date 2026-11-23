@@ -8,12 +8,14 @@ import { PrinterModal } from "../../features/printer/components/PrinterModal"
 import { NavDropdown } from "../../shared/ui/navDropdown/NavDropdown"
 import { Icons } from "../../shared/ui/icons/icon"
 import PermissionGate from "../../shared/components/PermissionGate"
+import { useAuthorization } from "../../shared/hooks/auth/useAuthorization"
 import { DefaultPasswordBanner } from "../web/DefaultPasswordBanner"
 import { BrandLogo } from "../web/BrandLogo"
 import { installTableCellWrapping } from "../web/tableCells"
 
 export default function AppLayout() {
   const { logout, user } = useAuthContext()
+  const { hasPermission } = useAuthorization()
   const { pendingCount, loading } = useReminderContext()
   const {
     closeNotifications,
@@ -82,7 +84,7 @@ export default function AppLayout() {
             label="Customer Sales"
             items={[
               { label: "Customer Master", to: "/master-data/customers" },
-              { label: "Inquiries", to: "/inquiries" },
+              ...(hasPermission("inquiry.view") ? [{ label: "Inquiries", to: "/inquiries" }] : []),
               { label: "SO", to: "/sales-orders" },
               { label: "Sales Returns", to: "/sales-returns" },
               { label: "Policy Violations", to: "/violations" },

@@ -1,22 +1,22 @@
 const inquiryService = require("../../../packages/services/inquiryService")
 const { registerIpcHandler } = require("./errorMiddleware")
 
-registerIpcHandler("inquiries:getAll", {}, () => inquiryService.getInquiries())
+registerIpcHandler("inquiries:getAll", { permission: "inquiry.view" }, () => inquiryService.getInquiries())
 
-registerIpcHandler("inquiries:getById", {}, (_event, inquiryId) => inquiryService.getInquiryById(inquiryId))
+registerIpcHandler("inquiries:getById", { permission: "inquiry.view" }, (_event, inquiryId) => inquiryService.getInquiryById(inquiryId))
 
-registerIpcHandler("inquiries:create", {}, (_event, payload) => inquiryService.createInquiry(payload))
+registerIpcHandler("inquiries:create", { permission: "inquiry.create" }, (_event, payload) => inquiryService.createInquiry(payload))
 
-registerIpcHandler("inquiries:update", {}, (_event, inquiryId, payload) => inquiryService.updateInquiry(inquiryId, payload))
+registerIpcHandler("inquiries:update", { permission: "inquiry.edit" }, (_event, inquiryId, payload) => inquiryService.updateInquiry(inquiryId, payload))
 
-registerIpcHandler("inquiries:delete", {}, (_event, inquiryId) => inquiryService.deleteInquiry(inquiryId))
+registerIpcHandler("inquiries:delete", { permission: "inquiry.delete" }, (_event, inquiryId) => inquiryService.deleteInquiry(inquiryId))
 
-registerIpcHandler("inquiries:updateStatus", {}, (_event, inquiryId, status) => inquiryService.updateInquiryStatus(inquiryId, status))
+registerIpcHandler("inquiries:updateStatus", { permission: "inquiry.edit" }, (_event, inquiryId, status) => inquiryService.updateInquiryStatus(inquiryId, status))
 
-registerIpcHandler("inquiryReminders:add", {}, (_event, inquiryId, payload) => inquiryService.addReminder(inquiryId, payload))
+registerIpcHandler("inquiryReminders:add", { permission: "inquiry.edit" }, (_event, inquiryId, payload) => inquiryService.addReminder(inquiryId, payload))
 
-registerIpcHandler("inquiryReminders:update", {}, (_event, reminderId, payload) => inquiryService.updateReminder(reminderId, payload))
+registerIpcHandler("inquiryReminders:update", { permission: "inquiry.edit" }, (_event, reminderId, payload) => inquiryService.updateReminder(reminderId, payload))
 
-registerIpcHandler("inquiryReminders:markDone", {}, (_event, reminderId, isDone) => inquiryService.markReminderDone(reminderId, isDone))
+registerIpcHandler("inquiryReminders:markDone", { permission: "inquiry.edit" }, (_event, reminderId, isDone) => inquiryService.markReminderDone(reminderId, isDone))
 
-registerIpcHandler("inquiryReminders:delete", {}, (_event, reminderId) => inquiryService.deleteReminder(reminderId))
+registerIpcHandler("inquiryReminders:delete", { permission: "inquiry.delete" }, (_event, reminderId) => inquiryService.deleteReminder(reminderId))

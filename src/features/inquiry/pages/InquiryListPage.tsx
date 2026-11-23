@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "@/lib/router"
+import { Navigate, useNavigate } from "@/lib/router"
 import { useInquiryList } from "../hooks/useInquiryList"
 import { InquiryTable } from "../components/InquiryTable"
 import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
+import PermissionGate from "../../../shared/components/PermissionGate"
 import type { InquiryCategory } from "../models/inquiry"
 
 export type InquiryConversionFilter = "all" | "converted" | "unconverted"
@@ -10,6 +12,7 @@ export type InquiryStatusFilter = "all" | "approved" | "draft"
 
 export default function InquiryListPage() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuthorization()
   const { inquiries, loading, error, deletingId, handleDelete } = useInquiryList()
 
   const [categoryFilter, setCategoryFilter] = useState<"all" | InquiryCategory>("all")
@@ -125,6 +128,10 @@ export default function InquiryListPage() {
     setSearchQuery("")
   }
 
+  if (!hasPermission("inquiry.view")) {
+    return <Navigate to="/" replace />
+  }
+
   return (
     <main className="app-shell">
       <section className="page-header panel">
@@ -134,9 +141,11 @@ export default function InquiryListPage() {
           <p className="hero-text">View and manage customer inquiries, track approval status, and convert to sales orders.</p>
         </div>
         <div className="header-actions">
-          <button className="primary-action" onClick={() => navigate("/inquiries/new")}>
-            Create New Inquiry
-          </button>
+          <PermissionGate permission="inquiry.create">
+            <button className="primary-action" onClick={() => navigate("/inquiries/new")}>
+              Create New Inquiry
+            </button>
+          </PermissionGate>
         </div>
       </section>
 

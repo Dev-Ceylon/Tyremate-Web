@@ -1,13 +1,17 @@
-import { useNavigate } from "@/lib/router"
+import { Navigate, useNavigate } from "@/lib/router"
 import { useInquiryDetails } from "../hooks/useInquiryDetails"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
+import PermissionGate from "../../../shared/components/PermissionGate"
 import { WALKIN_CUSTOMER_FIELDS } from "../../../shared/walkinCustomer/models/walkinCustomer"
 import { StatusBadge } from "../../../shared/ui/StatusBadge"
 import { LinkedSalesOrdersCard } from "../components/LinkedSalesOrdersCard"
 
 export default function InquiryDetailsPage() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuthorization()
   const { inquiry, loading, error } = useInquiryDetails()
 
+  if (!hasPermission("inquiry.view")) return <Navigate to="/inquiries" replace />
   if (loading) return <main className="app-shell"><p className="hero-text">Loading inquiry details...</p></main>
   if (error || !inquiry) return <main className="app-shell"><p className="hero-text error-text">{error || "Inquiry not found"}</p></main>
 
@@ -31,19 +35,23 @@ export default function InquiryDetailsPage() {
           <p className="hero-text">Detailed breakdown of customer requirements and specification tracking.</p>
         </div>
         <div className="header-actions">
-          <button
-            className="primary-action"
-            onClick={() => navigate(`/sales-orders/new?inquiryId=${inquiry.InquiryID}`)}
-          >
-            Create Sales Order
-          </button>
-          <button
-            className="secondary-action"
-            onClick={() => navigate(`/purchase-orders/new?inquiryId=${inquiry.InquiryID}`)}
-            title={totalToOrder > 0 ? `Order ${totalToOrder} needed units` : "Create a Purchase Order from this inquiry"}
-          >
-            Create Purchase Order
-          </button>
+          <PermissionGate permission="so.create">
+            <button
+              className="primary-action"
+              onClick={() => navigate(`/sales-orders/new?inquiryId=${inquiry.InquiryID}`)}
+            >
+              Create Sales Order
+            </button>
+          </PermissionGate>
+          <PermissionGate permission="po.create">
+            <button
+              className="secondary-action"
+              onClick={() => navigate(`/purchase-orders/new?inquiryId=${inquiry.InquiryID}`)}
+              title={totalToOrder > 0 ? `Order ${totalToOrder} needed units` : "Create a Purchase Order from this inquiry"}
+            >
+              Create Purchase Order
+            </button>
+          </PermissionGate>
           <button className="secondary-action" onClick={() => navigate("/inquiries")}>
             Back to List
           </button>

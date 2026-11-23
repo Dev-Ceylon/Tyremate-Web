@@ -1,6 +1,14 @@
-import { Link } from "@/lib/router"
+import { Link, Navigate } from "@/lib/router"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
+import PermissionGate from "../../../shared/components/PermissionGate"
 
 export default function InquiryHomePage() {
+  const { hasPermission } = useAuthorization()
+
+  if (!hasPermission("inquiry.view")) {
+    return <Navigate to="/" replace />
+  }
+
   return (
     <main className="app-shell">
       <section className="page-header panel">
@@ -14,18 +22,20 @@ export default function InquiryHomePage() {
       </section>
 
       <section className="content-grid">
-        <article className="info-panel panel panel-strong">
-          <p className="section-label">Create</p>
-          <h2>New Inquiry</h2>
-          <p>
-            Generate a new customer inquiry. Capture tyre specifications, target pricing, and quantities for review.
-          </p>
-          <div className="header-actions">
-            <Link className="primary-action" to="/inquiries/new">
-              Create New Inquiry
-            </Link>
-          </div>
-        </article>
+        <PermissionGate permission="inquiry.create">
+          <article className="info-panel panel panel-strong">
+            <p className="section-label">Create</p>
+            <h2>New Inquiry</h2>
+            <p>
+              Generate a new customer inquiry. Capture tyre specifications, target pricing, and quantities for review.
+            </p>
+            <div className="header-actions">
+              <Link className="primary-action" to="/inquiries/new">
+                Create New Inquiry
+              </Link>
+            </div>
+          </article>
+        </PermissionGate>
 
         <article className="info-panel panel panel-strong">
           <p className="section-label">History</p>
