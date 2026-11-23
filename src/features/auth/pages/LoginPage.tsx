@@ -19,16 +19,13 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const loggedUser = await login(username, password)
+      await login(username, password)
       showToast({
         variant: "success",
         title: "Login successful",
         message: `Welcome back${username ? `, ${username}` : ""}.`,
       })
-      const isSalesRep =
-        loggedUser?.roles?.some((r) => r.roleName === "SalesRep") ||
-        (loggedUser?.permissions?.includes("inquiry.view") && !loggedUser?.permissions?.includes("so.view"))
-      navigate(isSalesRep ? "/inquiries" : "/")
+      navigate("/")
     } catch (err: any) {
       showToast({
         variant: "error",
