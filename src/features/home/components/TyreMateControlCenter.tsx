@@ -4,6 +4,7 @@ import { useProducts } from "../../products/hooks/useProducts"
 import { useTodaySales } from "../hooks/useTodaySales"
 import { usePendingPurchaseOrders } from "../hooks/usePendingPurchaseOrders"
 import { useLowStock } from "../hooks/useLowStock"
+import { usePendingViolations } from "../hooks/usePendingViolations"
 import SalesTrendChart from "./SalesTrendChart"
 
 type TyreMateControlCenterProps = {
@@ -15,6 +16,7 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
   const { summary } = useTodaySales()
   const { count: pendingPOCount } = usePendingPurchaseOrders()
   const { count: lowStockCount } = useLowStock()
+  const { count: pendingViolationsCount } = usePendingViolations()
 
   const totalProducts = products.length
   const averagePrice =
@@ -44,14 +46,29 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
               Open Products
             </Link>
           </PermissionGate>
-          <PermissionGate permission="inventory.manage">
-            <Link className="secondary-action" to="/storage-manager">
-              Open Storage Manager
-            </Link>
-          </PermissionGate>
           <PermissionGate permission="so.view">
             <Link className="secondary-action" to="/sales-orders/overview">
               Sales Orders
+            </Link>
+          </PermissionGate>
+          <PermissionGate permission="invoice.view">
+            <Link className="secondary-action" to="/invoices">
+              Invoices
+            </Link>
+          </PermissionGate>
+          <PermissionGate permission="so.view">
+            <Link className="secondary-action" to="/gatepass">
+              Gate Pass
+            </Link>
+          </PermissionGate>
+          <PermissionGate permission="dag.view">
+            <Link className="secondary-action" to="/dag">
+              DAG Retreading
+            </Link>
+          </PermissionGate>
+          <PermissionGate permission="inventory.manage">
+            <Link className="secondary-action" to="/storage-manager">
+              Open Storage Manager
             </Link>
           </PermissionGate>
           <PermissionGate permission="reports.view">
@@ -99,7 +116,15 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
           <article className="metric-card panel">
             <span className="metric-label">Low / out-of-stock</span>
             <strong>{lowStockCount}</strong>
-            <p>Tyres and consumables at or below their stock level.</p>
+            <p>Tyres, batteries and consumables at or below low stock level.</p>
+          </article>
+        </PermissionGate>
+
+        <PermissionGate permission="violations.view">
+          <article className="metric-card panel">
+            <span className="metric-label">Policy violations pending</span>
+            <strong>{pendingViolationsCount}</strong>
+            <p>Sales orders awaiting discount or credit approval.</p>
           </article>
         </PermissionGate>
 

@@ -762,6 +762,7 @@ declare global {
         getBySoId: (soId: number) => Promise<any[]>
         getByTyreId: (soTyreId: number) => Promise<any[]>
         getAll: (filters?: any) => Promise<any[]>
+        getPending: () => Promise<any[]>
         getById: (violationId: number) => Promise<any>
         approve: (violationId: number, payload: any) => Promise<any>
         reject: (violationId: number, rejectReason: string) => Promise<any>

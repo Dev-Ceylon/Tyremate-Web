@@ -710,6 +710,7 @@ const api = {
     getBySoId: (soId) => ipcRenderer.invoke("violations:getBySoId", soId),
     getByTyreId: (soTyreId) => ipcRenderer.invoke("violations:getByTyreId", soTyreId),
     getAll: (filters) => ipcRenderer.invoke("violations:getAll", filters),
+    getPending: () => ipcRenderer.invoke("violations:getPending"),
     getById: (violationId) => ipcRenderer.invoke("violations:getById", violationId),
     approve: (violationId, payload) => ipcRenderer.invoke("violations:approve", violationId, payload),
     reject: (violationId, rejectReason) => ipcRenderer.invoke("violations:reject", violationId, { rejectReason }),

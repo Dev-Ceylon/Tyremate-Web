@@ -17,6 +17,10 @@ export const violationClient = {
     return window.api.violations.getAll(filters);
   },
 
+  getPending(): Promise<any[]> {
+    return window.api.violations.getPending();
+  },
+
   getById(violationId: number): Promise<any> {
     return window.api.violations.getById(violationId);
   },
