@@ -3,10 +3,10 @@ import PermissionGate from "../../../shared/components/PermissionGate"
 import { useInquiryList } from "../../inquiry/hooks/useInquiryList"
 
 type SalesRepWorkspaceProps = {
-  onSignOut: () => void
+  onSignOut?: () => void
 }
 
-export function SalesRepWorkspace({ onSignOut }: SalesRepWorkspaceProps) {
+export function SalesRepWorkspace(_props: SalesRepWorkspaceProps = {}) {
   const { inquiries, loading } = useInquiryList()
 
   const totalInquiries = inquiries.length
@@ -34,9 +34,6 @@ export function SalesRepWorkspace({ onSignOut }: SalesRepWorkspaceProps) {
           <Link className="secondary-action" to="/inquiries">
             View Inquiries
           </Link>
-          <button className="ghost-link" onClick={onSignOut} type="button">
-            Sign Out
-          </button>
         </div>
       </section>
 

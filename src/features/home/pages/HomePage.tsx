@@ -45,7 +45,7 @@ export default function HomePage() {
           </section>
         </>
       ) : (
-        <SalesRepWorkspace onSignOut={logout} />
+        <SalesRepWorkspace />
       )}
     </main>
   )
