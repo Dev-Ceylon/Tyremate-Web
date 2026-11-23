@@ -138,7 +138,7 @@ export default function InquiryReminderDetailsPage() {
                   <h2>Items Requested</h2>
                 </div>
               </div>
-              <div className="tm-table-scroll">
+              <div className="table-scroll tm-table-scroll">
                 <table className="product-table">
                   <thead>
                     <tr>

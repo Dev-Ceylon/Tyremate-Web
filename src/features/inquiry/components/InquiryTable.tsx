@@ -15,7 +15,7 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
   }
 
   return (
-    <div className="tm-table-scroll">
+    <div className="table-scroll tm-table-scroll">
       <table className="product-table">
         <thead>
           <tr>

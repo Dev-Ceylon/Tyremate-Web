@@ -6384,3 +6384,142 @@
   max-width: 200px;
   display: inline-block;
 }
+
+/* ============================================================================
+   INQUIRY RESPONSIVE & MOBILE ADAPTATIONS
+   ============================================================================ */
+
+/* Horizontal scroll containment for tables across Electron & Web */
+.tm-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Inquiry form line item input sizing inside scrolling tables */
+.inq-line-select {
+  min-width: 220px;
+}
+
+.inq-num-input {
+  min-width: 80px;
+  width: 90px;
+}
+
+.inq-qty-input {
+  min-width: 65px;
+  width: 75px;
+}
+
+/* Responsive Inquiry Detail rows */
+@media (max-width: 640px) {
+  .detail-card-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 12px;
+  }
+
+  .detail-card-val {
+    text-align: left;
+    width: 100%;
+    word-break: break-word;
+  }
+}
+
+/* Responsive Filter Controls */
+@media (max-width: 768px) {
+  .table-filter-controls {
+    gap: var(--space-3);
+    align-items: stretch;
+  }
+
+  .table-filter-field {
+    flex: 1 1 calc(50% - var(--space-3));
+    min-width: 140px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .table-filter-field .text-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search-input-wrapper {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .table-filter-controls .secondary-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-filter-field {
+    flex: 1 1 100%;
+  }
+}
+
+/* Responsive Inquiry Form top bar, category pills, & customer fields */
+@media (max-width: 640px) {
+  .po-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .inq-date-field {
+    width: 100%;
+  }
+
+  .table-panel .login-form .inq-date-label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .inq-date-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .po-category-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .po-category-segment {
+    width: 100%;
+    display: flex;
+  }
+
+  .po-category-pill {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .walkin-customer-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-mode-tabs {
+    width: 100%;
+  }
+
+  .customer-mode-tabs .filter-tab {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}
+

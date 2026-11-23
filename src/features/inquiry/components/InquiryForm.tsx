@@ -158,7 +158,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
         />
       )}
 
-      <div className="table-scroll login-form-full-span">
+      <div className="table-scroll tm-table-scroll login-form-full-span">
         <table className="product-table">
           <thead>
             <tr>
@@ -183,7 +183,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                   <td>
                     {isBattery ? (
                       <select
-                        className="text-input"
+                        className="text-input inq-line-select"
                         value={line.BatteryID ?? ""}
                         onChange={(e) => actions.onChangeLineBattery(line.RowId, e.target.value ? Number(e.target.value) : "")}
                         disabled={state.submitting}
@@ -198,7 +198,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       </select>
                     ) : (
                       <select
-                        className="text-input"
+                        className="text-input inq-line-select"
                         value={line.TyreID ?? ""}
                         onChange={(e) => actions.onChangeLineTyre(line.RowId, e.target.value ? Number(e.target.value) : "")}
                         disabled={state.submitting}
@@ -215,7 +215,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                   </td>
                   <td>
                     <input
-                      className="text-input"
+                      className="text-input inq-num-input"
                       type="text"
                       inputMode="decimal"
                       value={line.Price}
@@ -225,7 +225,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                   </td>
                   <td>
                     <input
-                      className="text-input"
+                      className="text-input inq-num-input"
                       type="text"
                       inputMode="decimal"
                       value={line.Discount}
@@ -235,7 +235,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                   </td>
                   <td>
                     <input
-                      className="text-input"
+                      className="text-input inq-qty-input"
                       type="text"
                       inputMode="numeric"
                       value={line.Qty}

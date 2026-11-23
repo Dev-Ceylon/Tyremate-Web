@@ -142,7 +142,7 @@ export default function InquiryDetailsPage() {
             </span>
           </div>
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll tm-table-scroll">
           <table className="product-table">
             <thead>
               <tr>
