@@ -70,6 +70,7 @@ const toCustomerSummary = (inquiry, walkinCustomer) =>
 exports.getInquiries = () => {
   return inquiryRepo.getAllInquiries().map((inquiry) => ({
     ...inquiry,
+    Category: inquiry.Category || "tyre",
     Customer: toCustomerSummary(
       inquiry,
       inquiryWalkinLinkRepo.getWalkinCustomerForInquiry(inquiry.InquiryID)
@@ -82,21 +83,44 @@ exports.getInquiryById = (id) => {
   const inquiry = inquiryRepo.getInquiryById(normalizedId);
   if (!inquiry) throw new Error("Inquiry not found");
 
-  const tyres = inquiryRepo.getInquiryTyresByInquiryId(normalizedId);
+  const category = (inquiry.Category || "tyre").toLowerCase();
+  const isBattery = category === "battery";
+
+  let tyresWithOrders = [];
+  let batteriesWithOrders = [];
+
+  if (isBattery) {
+    const batteries = inquiryRepo.getInquiryBatteriesByInquiryId(normalizedId);
+    batteriesWithOrders = batteries.map((battery) => {
+      const available = Number(battery.AvailableQuantity ?? 0);
+      const qty = Number(battery.Qty ?? 0);
+      return {
+        ...battery,
+        AvailableQuantity: available,
+        NeedToOrderQty: qty <= available ? 0 : qty - available,
+      };
+    });
+  } else {
+    const tyres = inquiryRepo.getInquiryTyresByInquiryId(normalizedId);
+    tyresWithOrders = tyres.map((tyre) => {
+      const available = Number(tyre.AvailableQuantity ?? 0);
+      const qty = Number(tyre.Qty ?? 0);
+      return {
+        ...tyre,
+        AvailableQuantity: available,
+        NeedToOrderQty: qty <= available ? 0 : qty - available,
+      };
+    });
+  }
+
   const walkinCustomer = inquiryWalkinLinkRepo.getWalkinCustomerForInquiry(normalizedId);
   const reminders = reminderRepo.getInquiryRemindersByInquiryId(normalizedId);
-  const tyresWithOrders = tyres.map((tyre) => {
-    const available = Number(tyre.AvailableQuantity ?? 0);
-    const qty = Number(tyre.Qty ?? 0);
-    return {
-      ...tyre,
-      AvailableQuantity: available,
-      NeedToOrderQty: qty <= available ? 0 : qty - available,
-    };
-  });
+
   return {
     ...inquiry,
+    Category: category,
     tyres: tyresWithOrders,
+    batteries: batteriesWithOrders,
     Customer: toCustomerSummary(inquiry, walkinCustomer),
     RequestedDate: reminders.length > 0 ? reminders[0].ReminderDate : null,
     LinkedPOs: inquiryPoService.getLinkedPosByInquiryId(normalizedId),
@@ -110,17 +134,37 @@ exports.getInquiryDetailsByReminderId = (reminderId) => {
 
   if (!inquiry) throw new Error("Inquiry not found for the given reminder");
 
-  const tyres = inquiryRepo.getInquiryTyresByInquiryId(inquiry.InquiryID);
+  const category = (inquiry.Category || "tyre").toLowerCase();
+  const isBattery = category === "battery";
+
+  let tyresWithOrders = [];
+  let batteriesWithOrders = [];
+
+  if (isBattery) {
+    const batteries = inquiryRepo.getInquiryBatteriesByInquiryId(inquiry.InquiryID);
+    batteriesWithOrders = batteries.map((battery) => {
+      const available = Number(battery.AvailableQuantity ?? 0);
+      const qty = Number(battery.Qty ?? 0);
+      return {
+        ...battery,
+        AvailableQuantity: available,
+        NeedToOrderQty: qty <= available ? 0 : qty - available,
+      };
+    });
+  } else {
+    const tyres = inquiryRepo.getInquiryTyresByInquiryId(inquiry.InquiryID);
+    tyresWithOrders = tyres.map((tyre) => {
+      const available = Number(tyre.AvailableQuantity ?? 0);
+      const qty = Number(tyre.Qty ?? 0);
+      return {
+        ...tyre,
+        AvailableQuantity: available,
+        NeedToOrderQty: qty <= available ? 0 : qty - available,
+      };
+    });
+  }
+
   const walkinCustomer = inquiryWalkinLinkRepo.getWalkinCustomerForInquiry(inquiry.InquiryID);
-  const tyresWithOrders = tyres.map((tyre) => {
-    const available = Number(tyre.AvailableQuantity ?? 0);
-    const qty = Number(tyre.Qty ?? 0);
-    return {
-      ...tyre,
-      AvailableQuantity: available,
-      NeedToOrderQty: qty <= available ? 0 : qty - available,
-    };
-  });
 
   // Walk-in inquiries have no CustomerM row, so contact lookups are skipped.
   const contacts = inquiry.CustomerID
@@ -132,7 +176,9 @@ exports.getInquiryDetailsByReminderId = (reminderId) => {
 
   return {
     ...inquiry,
+    Category: category,
     tyres: tyresWithOrders,
+    batteries: batteriesWithOrders,
     contacts,
     emails,
     Customer: toCustomerSummary(inquiry, walkinCustomer),
@@ -143,10 +189,16 @@ exports.createInquiry = (payload) => {
   let inquiryId;
   const customerId = normalizeOptionalCustomerId(payload.CustomerID);
   const walkinData = customerId ? null : toWalkinCustomerPayload(payload.WalkinCustomer);
+  const category = (
+    payload.Category ||
+    (Array.isArray(payload.batteries) && payload.batteries.length > 0 ? "battery" : "tyre")
+  ).toLowerCase();
+  const isBattery = category === "battery";
 
   const createTransaction = db.transaction(() => {
     const inquiryData = {
       Date: new Date().toISOString().slice(0, 10),
+      Category: category,
       CustomerID: customerId,
       Notes: payload.Notes || "",
       IsAdminApproved: 0,
@@ -177,17 +229,32 @@ exports.createInquiry = (payload) => {
       });
     }
 
-    if (payload.tyres && Array.isArray(payload.tyres)) {
-      payload.tyres.forEach((tyre) => {
-        inquiryRepo.createInquiryTyre({
-          InquiryID: inquiryId,
-          TyreID: normalizeId(tyre.TyreID, "TyreID"),
-          Price: Number(tyre.Price) || 0,
-          Discount: Number(tyre.Discount) || 0,
-          Qty: Number(tyre.Qty) || 1,
-          IsAdminApproved: 0
+    if (isBattery) {
+      if (payload.batteries && Array.isArray(payload.batteries)) {
+        payload.batteries.forEach((bat) => {
+          inquiryRepo.createInquiryBattery({
+            InquiryID: inquiryId,
+            BatteryID: normalizeId(bat.BatteryID, "BatteryID"),
+            Price: Number(bat.Price) || 0,
+            Discount: Number(bat.Discount) || 0,
+            Qty: Number(bat.Qty) || 1,
+            IsAdminApproved: 0
+          });
         });
-      });
+      }
+    } else {
+      if (payload.tyres && Array.isArray(payload.tyres)) {
+        payload.tyres.forEach((tyre) => {
+          inquiryRepo.createInquiryTyre({
+            InquiryID: inquiryId,
+            TyreID: normalizeId(tyre.TyreID, "TyreID"),
+            Price: Number(tyre.Price) || 0,
+            Discount: Number(tyre.Discount) || 0,
+            Qty: Number(tyre.Qty) || 1,
+            IsAdminApproved: 0
+          });
+        });
+      }
     }
   });
 
@@ -216,9 +283,16 @@ exports.updateInquiry = (id, payload) => {
       : existing.CustomerID;
   const isWalkin = customerId === null;
   const walkinData = isWalkin ? toWalkinCustomerPayload(payload.WalkinCustomer) : null;
+  const category = (
+    payload.Category ||
+    existing.Category ||
+    (Array.isArray(payload.batteries) && payload.batteries.length > 0 ? "battery" : "tyre")
+  ).toLowerCase();
+  const isBattery = category === "battery";
 
   const updatedData = {
     Date: payload.Date || existing.Date,
+    Category: category,
     CustomerID: customerId,
     Notes: payload.Notes !== undefined ? payload.Notes : existing.Notes,
     IsAdminApproved: payload.IsAdminApproved !== undefined ? (payload.IsAdminApproved ? 1 : 0) : existing.IsAdminApproved,
@@ -229,9 +303,9 @@ exports.updateInquiry = (id, payload) => {
     inquiryRepo.updateInquiry(normalizedId, updatedData);
 
     if (isWalkin) {
-      const existing = inquiryWalkinLinkRepo.getWalkinCustomerForInquiry(normalizedId);
-      if (existing) {
-        walkinCustomerRepo.updateWalkinCustomer(existing.ID, walkinData);
+      const existingWalkin = inquiryWalkinLinkRepo.getWalkinCustomerForInquiry(normalizedId);
+      if (existingWalkin) {
+        walkinCustomerRepo.updateWalkinCustomer(existingWalkin.ID, walkinData);
       } else {
         const wc = walkinCustomerRepo.createWalkinCustomer(walkinData);
         inquiryWalkinLinkRepo.linkInquiryToWalkinCustomer(normalizedId, wc.ID);
@@ -240,18 +314,34 @@ exports.updateInquiry = (id, payload) => {
       inquiryWalkinLinkRepo.unlinkInquiryWalkin(normalizedId);
     }
 
-    if (payload.tyres && Array.isArray(payload.tyres)) {
-      inquiryRepo.deleteInquiryTyresByInquiryId(normalizedId);
-      payload.tyres.forEach((tyre) => {
-        inquiryRepo.createInquiryTyre({
-          InquiryID: normalizedId,
-          TyreID: normalizeId(tyre.TyreID, "TyreID"),
-          Price: Number(tyre.Price) || 0,
-          Discount: Number(tyre.Discount) || 0,
-          Qty: Number(tyre.Qty) || 1,
-          IsAdminApproved: updatedData.IsAdminApproved
+    if (isBattery) {
+      if (payload.batteries && Array.isArray(payload.batteries)) {
+        inquiryRepo.deleteInquiryBatteriesByInquiryId(normalizedId);
+        payload.batteries.forEach((bat) => {
+          inquiryRepo.createInquiryBattery({
+            InquiryID: normalizedId,
+            BatteryID: normalizeId(bat.BatteryID, "BatteryID"),
+            Price: Number(bat.Price) || 0,
+            Discount: Number(bat.Discount) || 0,
+            Qty: Number(bat.Qty) || 1,
+            IsAdminApproved: updatedData.IsAdminApproved
+          });
         });
-      });
+      }
+    } else {
+      if (payload.tyres && Array.isArray(payload.tyres)) {
+        inquiryRepo.deleteInquiryTyresByInquiryId(normalizedId);
+        payload.tyres.forEach((tyre) => {
+          inquiryRepo.createInquiryTyre({
+            InquiryID: normalizedId,
+            TyreID: normalizeId(tyre.TyreID, "TyreID"),
+            Price: Number(tyre.Price) || 0,
+            Discount: Number(tyre.Discount) || 0,
+            Qty: Number(tyre.Qty) || 1,
+            IsAdminApproved: updatedData.IsAdminApproved
+          });
+        });
+      }
     }
   });
 
@@ -266,6 +356,7 @@ exports.deleteInquiry = (id) => {
   const deleteTransaction = db.transaction(() => {
     inquiryWalkinLinkRepo.unlinkInquiryWalkin(normalizedId);
     inquiryRepo.deleteInquiryTyresByInquiryId(normalizedId);
+    inquiryRepo.deleteInquiryBatteriesByInquiryId(normalizedId);
     reminderRepo.deleteInquiryRemindersByInquiryId(normalizedId);
     const result = inquiryRepo.deleteInquiry(normalizedId);
     if (result.changes === 0) throw new Error("Inquiry not found");
@@ -285,6 +376,7 @@ exports.updateInquiryStatus = (id, status) => {
 
     if (approvalBit) {
       inquiryRepo.approveAllTyresForInquiry(normalizedId);
+      inquiryRepo.approveAllBatteriesForInquiry(normalizedId);
     }
   });
 

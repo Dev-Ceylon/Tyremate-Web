@@ -6,6 +6,24 @@
 -- Backfill Category column on SO (Sales Orders)
 ALTER TABLE SO ADD COLUMN Category TEXT NOT NULL DEFAULT 'tyre';
 
+-- Backfill Category column on Inquiry
+ALTER TABLE Inquiry ADD COLUMN Category TEXT NOT NULL DEFAULT 'tyre';
+
+-- Backfill InquiryBatteries table & indexes if missing on older DBs
+CREATE TABLE IF NOT EXISTS InquiryBatteries (
+  ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  InquiryID INTEGER NOT NULL,
+  BatteryID INTEGER NOT NULL,
+  Price REAL NOT NULL DEFAULT 0,
+  Discount REAL NOT NULL DEFAULT 0,
+  Qty INTEGER NOT NULL DEFAULT 1,
+  IsAdminApproved INTEGER NOT NULL DEFAULT 0 CHECK (IsAdminApproved IN (0, 1)),
+  FOREIGN KEY (InquiryID) REFERENCES Inquiry(InquiryID),
+  FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id)
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_batteries_inquiry ON InquiryBatteries (InquiryID);
+CREATE INDEX IF NOT EXISTS idx_inquiry_batteries_battery ON InquiryBatteries (BatteryID);
+
 -- Backfill IsAdvance column on SOPayments
 ALTER TABLE SOPayments ADD COLUMN IsAdvance INTEGER NOT NULL DEFAULT 0;
 

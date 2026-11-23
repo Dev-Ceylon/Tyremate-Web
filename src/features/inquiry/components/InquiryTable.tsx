@@ -21,6 +21,7 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
           <tr>
             <th>ID</th>
             <th>Date</th>
+            <th>Category</th>
             <th>Customer</th>
             <th>Notes</th>
             <th className="text-center">Status</th>
@@ -31,11 +32,17 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
         <tbody>
           {data.map((inquiry) => {
             const isDeleting = deletingId === inquiry.InquiryID
+            const isBattery = (inquiry.Category || "tyre").toLowerCase() === "battery"
           
             return (
               <tr key={inquiry.InquiryID}>
                 <td className="mono-text">#{inquiry.InquiryID}</td>
                 <td className="secondary-text">{inquiry.Date}</td>
+                <td>
+                  <span className={`status-badge ${isBattery ? "status-pending" : "status-approved"}`}>
+                    {isBattery ? "Batteries" : "Tyres"}
+                  </span>
+                </td>
                 <td>
                   <span className="font-medium">
                     {inquiry.Customer?.IsWalkinCustomer
@@ -49,7 +56,7 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
                 </td>
                 <td className="secondary-text">
                   {inquiry.Notes ? (
-                    <span className="text-truncate" style={{ maxWidth: "200px", display: "inline-block" }}>
+                    <span className="text-truncate inq-notes-truncate">
                       {inquiry.Notes}
                     </span>
                   ) : (

@@ -131,7 +131,7 @@ export function DeliveriesSection({
         {deliveries.length === 0 ? (
           <p className="secondary-text">
             {canRecord
-              ? "No deliveries recorded yet. Tyres are in stock and ready to collect above."
+              ? "No deliveries recorded yet. Items are in stock and ready to collect above."
               : "No deliveries recorded yet."}
           </p>
         ) : (
@@ -226,9 +226,9 @@ export function DeliveriesSection({
                       <table className="product-table">
                         <thead>
                           <tr>
-                            <th>Tyre (Brand / Size - Pattern)</th>
+                            <th>Item (Brand / Specifications)</th>
                             <th>Location</th>
-                            <th>DOT</th>
+                            <th>Batch / DOT</th>
                             <th className="text-right">Qty</th>
                           </tr>
                         </thead>
@@ -236,10 +236,12 @@ export function DeliveriesSection({
                           {delivery.Lines.map((line) => (
                             <tr key={line.ID}>
                               <td>
-                                {line.Brand || "NA"} / {line.Size || "NA"} - {line.Pattern || "NA"}
+                                {line.Size
+                                  ? `${line.Brand || "NA"} / ${line.Size || "NA"} - ${line.Pattern || "NA"}`
+                                  : `${line.Brand || "NA"} / ${line.Model || "NA"} (${line.Capacity || "NA"} ${line.Voltage || "NA"})`}
                               </td>
                               <td>{line.LocationName || "NA"}</td>
-                              <td>{line.DOT || "-"}</td>
+                              <td>{line.BatchCode || line.DOT || "-"}</td>
                               <td className="text-right font-bold">{line.Qty}</td>
                             </tr>
                           ))}

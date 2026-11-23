@@ -137,6 +137,9 @@ CREATE TABLE IF NOT EXISTS InquiryBatteries (
   FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_inquiry_batteries_inquiry ON InquiryBatteries (InquiryID);
+CREATE INDEX IF NOT EXISTS idx_inquiry_batteries_battery ON InquiryBatteries (BatteryID);
+
 -- ============================================================================
 -- 6. PURCHASE ORDERS: POBatteries & Allocations (mirrors POTyres)
 -- ============================================================================

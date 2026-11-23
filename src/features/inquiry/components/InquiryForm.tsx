@@ -1,9 +1,12 @@
 import type { CustomerRecord } from "../../master-data/customers/models/customer"
 import type { TyreRecord } from "../../master-data/tyres/models/tyre"
+import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import type { InquiryLineForm } from "../hooks/useInquiryForm"
+import type { InquiryCategory } from "../models/inquiry"
 import { WalkinCustomerFields } from "../../../shared/walkinCustomer/ui/WalkinCustomerFields"
 import { formatTyreLabel } from "../../../shared/tyre/models/tyreDisplay"
 import { StatusBadge } from "../../../shared/ui/StatusBadge"
+import { TyreIcon, BatteryIcon } from "../../../shared/ui/icons"
 import type {
   WalkinCustomerFieldErrors,
   WalkinCustomerForm,
@@ -13,6 +16,7 @@ type InquiryFormProps = {
   state: {
     formData: {
       Date: string
+      Category: InquiryCategory
       CustomerMode: "registered" | "walkin"
       CustomerID: number | ""
       WalkinCustomer: WalkinCustomerForm
@@ -21,20 +25,24 @@ type InquiryFormProps = {
     lines: InquiryLineForm[]
     customers: CustomerRecord[]
     tyres: TyreRecord[]
+    batteries: BatteryRecord[]
     submitting: boolean
     walkinCustomerErrors: WalkinCustomerFieldErrors
   }
   actions: {
     onChangeDate: (val: string) => void
+    onChangeCategory: (cat: InquiryCategory) => void
     onChangeCustomerMode: (mode: "registered" | "walkin") => void
     onChangeCustomer: (val: number | "") => void
     onChangeWalkinCustomer: (patch: Partial<WalkinCustomerForm>) => void
     onChangeNotes: (val: string) => void
     onOpenCreateCustomer: () => void
     onOpenCreateTyre: () => void
+    onOpenCreateBattery: () => void
     onAddLine: () => void
     onRemoveLine: (rowId: number) => void
     onChangeLineTyre: (rowId: number, val: number | "") => void
+    onChangeLineBattery: (rowId: number, val: number | "") => void
     onChangeLinePrice: (rowId: number, val: number) => void
     onChangeLineDiscount: (rowId: number, val: number) => void
     onChangeLineQty: (rowId: number, val: number) => void
@@ -44,10 +52,37 @@ type InquiryFormProps = {
 }
 
 export function InquiryForm({ state, actions }: InquiryFormProps) {
+  const isBattery = state.formData.Category === "battery"
   const availableByTyreId = new Map(state.tyres.map((t) => [t.Id, t.AvailableQuantity ?? 0]))
+  const availableByBatteryId = new Map(state.batteries.map((b) => [b.Id, b.AvailableQuantity ?? 0]))
 
   return (
     <form className="login-form" onSubmit={actions.onSubmit}>
+      {/* Category selector */}
+      <div className="login-form-full-span">
+        <label className="field-label">Inquiry Category</label>
+        <div className="category-toggle-group">
+          <button
+            type="button"
+            className={`category-toggle-btn ${!isBattery ? "active" : ""}`}
+            onClick={() => actions.onChangeCategory("tyre")}
+            disabled={state.submitting}
+          >
+            <TyreIcon />
+            <span>Tyres</span>
+          </button>
+          <button
+            type="button"
+            className={`category-toggle-btn ${isBattery ? "active" : ""}`}
+            onClick={() => actions.onChangeCategory("battery")}
+            disabled={state.submitting}
+          >
+            <BatteryIcon />
+            <span>Batteries</span>
+          </button>
+        </div>
+      </div>
+
       <label className="field-label">
         Reminder Date
         <input
@@ -120,7 +155,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
         <table className="product-table">
           <thead>
             <tr>
-              <th>Tyre</th>
+              <th>{isBattery ? "Battery (Brand / Model - Capacity Voltage)" : "Tyre (Brand / Size - Pattern)"}</th>
               <th>Price</th>
               <th>Discount (%)</th>
               <th>Qty</th>
@@ -131,32 +166,52 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
           </thead>
           <tbody>
             {state.lines.map((line) => {
-              const stock = line.TyreID === "" ? null : availableByTyreId.get(line.TyreID) ?? 0
+              const stock = isBattery
+                ? line.BatteryID === "" || !line.BatteryID ? null : availableByBatteryId.get(Number(line.BatteryID)) ?? 0
+                : line.TyreID === "" || !line.TyreID ? null : availableByTyreId.get(Number(line.TyreID)) ?? 0
               const toOrder = stock === null ? null : Math.max(line.Qty - stock, 0)
+
               return (
                 <tr key={line.RowId}>
                   <td>
-                    <select
-                      className="text-input"
-                      value={line.TyreID}
-                      onChange={(e) => actions.onChangeLineTyre(line.RowId, e.target.value ? Number(e.target.value) : "")}
-                      disabled={state.submitting}
-                      required
-                    >
-                      <option value="">Select tyre</option>
-                      {state.tyres.map((t) => (
-                        <option key={t.Id} value={t.Id}>
-                          {formatTyreLabel(t)}
-                        </option>
-                      ))}
-                    </select>
+                    {isBattery ? (
+                      <select
+                        className="text-input"
+                        value={line.BatteryID ?? ""}
+                        onChange={(e) => actions.onChangeLineBattery(line.RowId, e.target.value ? Number(e.target.value) : "")}
+                        disabled={state.submitting}
+                        required
+                      >
+                        <option value="">Select battery</option>
+                        {state.batteries.map((b) => (
+                          <option key={b.Id} value={b.Id}>
+                            {b.Brand || "NA"} {b.Model || "NA"} ({b.Capacity || "NA"} {b.Voltage || "NA"})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        className="text-input"
+                        value={line.TyreID ?? ""}
+                        onChange={(e) => actions.onChangeLineTyre(line.RowId, e.target.value ? Number(e.target.value) : "")}
+                        disabled={state.submitting}
+                        required
+                      >
+                        <option value="">Select tyre</option>
+                        {state.tyres.map((t) => (
+                          <option key={t.Id} value={t.Id}>
+                            {formatTyreLabel(t)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                   <td>
                     <input
                       className="text-input"
                       type="text"
                       inputMode="decimal"
-                      defaultValue={line.Price}
+                      value={line.Price}
                       onChange={(e) => actions.onChangeLinePrice(line.RowId, e.target.value === "" ? 0 : Number(e.target.value))}
                       disabled={state.submitting}
                     />
@@ -166,7 +221,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       className="text-input"
                       type="text"
                       inputMode="decimal"
-                      defaultValue={line.Discount}
+                      value={line.Discount}
                       onChange={(e) => actions.onChangeLineDiscount(line.RowId, e.target.value === "" ? 0 : Number(e.target.value))}
                       disabled={state.submitting}
                     />
@@ -176,7 +231,7 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       className="text-input"
                       type="text"
                       inputMode="numeric"
-                      defaultValue={line.Qty}
+                      value={line.Qty}
                       onChange={(e) => actions.onChangeLineQty(line.RowId, e.target.value === "" ? 0 : Number(e.target.value))}
                       disabled={state.submitting}
                     />
@@ -206,12 +261,25 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
       </div>
 
       <div className="header-actions login-form-full-span">
-        <button type="button" className="secondary-action" onClick={actions.onOpenCreateTyre}>
-          + New Tyre
-        </button>
-        <button type="button" className="secondary-action" onClick={actions.onAddLine}>
-          Add Tyre Line
-        </button>
+        {isBattery ? (
+          <>
+            <button type="button" className="secondary-action" onClick={actions.onOpenCreateBattery}>
+              + New Battery
+            </button>
+            <button type="button" className="secondary-action" onClick={actions.onAddLine}>
+              Add Battery Line
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="secondary-action" onClick={actions.onOpenCreateTyre}>
+              + New Tyre
+            </button>
+            <button type="button" className="secondary-action" onClick={actions.onAddLine}>
+              Add Tyre Line
+            </button>
+          </>
+        )}
       </div>
 
       <label className="field-label login-form-full-span">

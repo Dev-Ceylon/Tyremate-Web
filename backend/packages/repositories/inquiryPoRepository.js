@@ -30,11 +30,13 @@ exports.getLinkedPosByInquiryId = (inquiryId) => {
         p.Date,
         p.SoID,
         p.StatusID,
+        COALESCE(p.Category, 'tyre') AS Category,
         s.StatusCode,
         s.StatusName,
         p.IsAdminApproved,
         p.IsSupplierApproved,
-        (SELECT COUNT(*) FROM POTyres pt WHERE pt.POID = p.ID) AS LineCount
+        COALESCE((SELECT COUNT(*) FROM POTyres pt WHERE pt.POID = p.ID), 0) +
+        COALESCE((SELECT COUNT(*) FROM POBatteries pb WHERE pb.POID = p.ID), 0) AS LineCount
       FROM InquiryPO ip
       INNER JOIN PO p ON p.ID = ip.POID
       LEFT JOIN StatusM s ON s.Id = p.StatusID

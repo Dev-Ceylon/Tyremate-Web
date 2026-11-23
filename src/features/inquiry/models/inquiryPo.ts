@@ -3,6 +3,7 @@ export interface LinkedPoRecord {
   LinkedDate?: string | null
   Date?: string | null
   SoID?: number | null
+  Category?: string | null
   StatusID?: number | null
   StatusCode?: string | null
   StatusName?: string | null

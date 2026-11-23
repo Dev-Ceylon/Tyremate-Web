@@ -99,7 +99,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
   const [error, setError] = useState<string | null>(null)
 
   const applyInquiryPrefill = useCallback(
-    (inquiry: InquiryRecord, tyreRows: TyreRecord[]) => {
+    (inquiry: InquiryRecord, tyreRows: TyreRecord[], batteryRows: BatteryRecord[]) => {
       const customer = inquiry.Customer
 
       if (customer?.IsWalkinCustomer) {
@@ -127,37 +127,80 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
         }))
       }
 
-      if (Array.isArray(inquiry.tyres) && inquiry.tyres.length > 0) {
-        const baseRowId = Date.now()
+      const isBatteryInquiry = (inquiry.Category || "tyre").toLowerCase() === "battery"
+      setFormData((prev) => ({
+        ...prev,
+        Category: isBatteryInquiry ? "battery" : "tyre",
+      }))
 
-        const prefilled = inquiry.tyres.map((t, index) => {
-          const qty = Number(t.Qty) || 1
-          const tyre = tyreRows.find((row) => row.Id === t.TyreID)
-          const availableQty = getAvailableQuantity(tyre)
-          const needToOrderQty = calculateNeedToOrderQty(qty, availableQty)
-          const mrpWithVat = Number((tyre as any)?.MRP_WithVAT ?? 0) || 0
-          const maxDiscount =
-            tyre?.DiscountOffered !== null && tyre?.DiscountOffered !== undefined
-              ? Number(tyre.DiscountOffered)
-              : null
+      if (isBatteryInquiry) {
+        if (Array.isArray(inquiry.batteries) && inquiry.batteries.length > 0) {
+          const baseRowId = Date.now()
 
-          return {
-            RowId: baseRowId + index,
-            TyreID: t.TyreID,
-            Price: Number(t.Price ?? tyre?.ActualSellingPrice ?? 0) || 0,
-            MRP_WithVAT: mrpWithVat,
-            Discount: Number(t.Discount ?? 0) || 0,
-            MaxDiscount: maxDiscount,
-            Qty: qty,
-            Allocations: [{ StorageManagerID: null, StorageManagerBatchID: null, Qty: qty }],
-            AllocationsVersion: 0,
-            NeedToOrderQty: needToOrderQty,
-            TakeNowQty: Math.max(0, qty - needToOrderQty),
-            LineTotal: null,
-          }
-        })
+          const prefilled = inquiry.batteries.map((b, index) => {
+            const qty = Number(b.Qty) || 1
+            const battery = batteryRows.find((row) => row.Id === b.BatteryID)
+            const availableQty = getAvailableQuantity(battery)
+            const needToOrderQty = calculateNeedToOrderQty(qty, availableQty)
+            const mrpWithVat = Number((battery as any)?.MRP_WithVAT ?? 0) || 0
+            const maxDiscount =
+              (battery as any)?.DiscountOffered !== null && (battery as any)?.DiscountOffered !== undefined
+                ? Number((battery as any).DiscountOffered)
+                : null
 
-        setLines(prefilled)
+            return {
+              RowId: baseRowId + index,
+              TyreID: "" as const,
+              BatteryID: b.BatteryID,
+              Price: Number(b.Price ?? (battery as any)?.SellingPrice ?? (battery as any)?.Price ?? 0) || 0,
+              MRP_WithVAT: mrpWithVat,
+              Discount: Number(b.Discount ?? 0) || 0,
+              MaxDiscount: maxDiscount,
+              Qty: qty,
+              Allocations: [{ StorageManagerID: null, StorageManagerBatchID: null, Qty: qty }],
+              AllocationsVersion: 0,
+              NeedToOrderQty: needToOrderQty,
+              TakeNowQty: Math.max(0, qty - needToOrderQty),
+              LineTotal: null,
+            }
+          })
+
+          setLines(prefilled)
+        }
+      } else {
+        if (Array.isArray(inquiry.tyres) && inquiry.tyres.length > 0) {
+          const baseRowId = Date.now()
+
+          const prefilled = inquiry.tyres.map((t, index) => {
+            const qty = Number(t.Qty) || 1
+            const tyre = tyreRows.find((row) => row.Id === t.TyreID)
+            const availableQty = getAvailableQuantity(tyre)
+            const needToOrderQty = calculateNeedToOrderQty(qty, availableQty)
+            const mrpWithVat = Number((tyre as any)?.MRP_WithVAT ?? 0) || 0
+            const maxDiscount =
+              tyre?.DiscountOffered !== null && tyre?.DiscountOffered !== undefined
+                ? Number(tyre.DiscountOffered)
+                : null
+
+            return {
+              RowId: baseRowId + index,
+              TyreID: t.TyreID,
+              BatteryID: undefined,
+              Price: Number(t.Price ?? tyre?.ActualSellingPrice ?? 0) || 0,
+              MRP_WithVAT: mrpWithVat,
+              Discount: Number(t.Discount ?? 0) || 0,
+              MaxDiscount: maxDiscount,
+              Qty: qty,
+              Allocations: [{ StorageManagerID: null, StorageManagerBatchID: null, Qty: qty }],
+              AllocationsVersion: 0,
+              NeedToOrderQty: needToOrderQty,
+              TakeNowQty: Math.max(0, qty - needToOrderQty),
+              LineTotal: null,
+            }
+          })
+
+          setLines(prefilled)
+        }
       }
     },
     [],
@@ -180,7 +223,7 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       setBatteries(batteryRows)
 
       if (sourceInquiry) {
-        applyInquiryPrefill(sourceInquiry, tyreRows)
+        applyInquiryPrefill(sourceInquiry, tyreRows, batteryRows)
       }
     } catch (err) {
       const message =

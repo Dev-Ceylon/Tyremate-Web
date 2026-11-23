@@ -110,7 +110,25 @@ export function usePurchaseOrderForm({ poId, inquiryId, initialCategory = "tyre"
           }))
           setLines(mappedLines.length > 0 ? mappedLines : [{ id: uuidv4(), TyreID: 0, Price: 0, Discount: 0, Qty: 1, Suppliers: [] }])
         }
+      } else if (inquiryData && ((inquiryData.Category || "").toLowerCase() === "battery" || (Array.isArray(inquiryData.batteries) && inquiryData.batteries.length > 0))) {
+        setCategory("battery")
+        const rawBatteries = inquiryData.batteries || []
+        const mapped = rawBatteries
+          .filter((b) => {
+            const need = (b as any).NeedToOrderQty ?? b.Qty ?? 0
+            return need > 0 && b.BatteryID
+          })
+          .map((b) => ({
+            id: uuidv4(),
+            BatteryID: b.BatteryID,
+            Price: b.Price,
+            Discount: b.Discount,
+            Qty: (b as any).NeedToOrderQty ?? b.Qty ?? 0,
+            Suppliers: [],
+          }))
+        setLines(mapped.length > 0 ? mapped : [{ id: uuidv4(), BatteryID: 0, Price: 0, Discount: 0, Qty: 1, Suppliers: [] }])
       } else if (inquiryData && Array.isArray(inquiryData.tyres)) {
+        setCategory("tyre")
         const mapped = inquiryData.tyres
           .filter((t) => {
             const need = (t as any).NeedToOrderQty ?? t.Qty ?? 0

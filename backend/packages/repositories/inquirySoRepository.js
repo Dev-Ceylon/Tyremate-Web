@@ -28,21 +28,27 @@ exports.getLinkedSosByInquiryId = (inquiryId) => {
         iso.SOID AS SoID,
         iso.createdDate AS LinkedDate,
         s.Date,
+        COALESCE(s.Category, 'tyre') AS Category,
         s.CreatedDateTime,
         s.IsAdminApproved,
         s.IsCompleted,
         s.IsPaymentCompleted,
         COALESCE(c.Name, swc.CustomerName) AS CustomerName,
         c.CustomerCode,
-        COALESCE(SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalSale,
-        COALESCE(SUM(st.Price * st.Qty * (COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalDiscount
+        CASE WHEN LOWER(COALESCE(s.Category, 'tyre')) = 'battery'
+          THEN COALESCE((SELECT SUM(sb.Price * sb.Qty * (1 - COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+          ELSE COALESCE((SELECT SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+        END AS TotalSale,
+        CASE WHEN LOWER(COALESCE(s.Category, 'tyre')) = 'battery'
+          THEN COALESCE((SELECT SUM(sb.Price * sb.Qty * (COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+          ELSE COALESCE((SELECT SUM(st.Price * st.Qty * (COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+        END AS TotalDiscount
       FROM InquirySO iso
       INNER JOIN SO s ON s.SoID = iso.SOID
       LEFT JOIN SoCustomer sc ON sc.SoID = s.SoID
       LEFT JOIN CustomerM c ON c.CustomerID = sc.CustomerID
       LEFT JOIN SOWalkinLink swl ON swl.SoID = s.SoID
       LEFT JOIN WalkinCustomer swc ON swc.ID = swl.WalkinCustomerID
-      LEFT JOIN SoTyres st ON st.SoID = s.SoID
       WHERE iso.InquiryID = ?
       GROUP BY s.SoID
       ORDER BY iso.ID DESC

@@ -217,6 +217,17 @@ try {
     }
   }
 
+  // Live schema compatibility for Inquiries (Batteries):
+  const inquiryExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Inquiry'").get()
+  if (inquiryExists) {
+    const inquiryColumns = new Set(
+      db.prepare("PRAGMA table_info(Inquiry)").all().map((col) => col.name),
+    )
+    if (!inquiryColumns.has("Category")) {
+      db.exec("ALTER TABLE Inquiry ADD COLUMN Category TEXT DEFAULT 'tyre'")
+    }
+  }
+
   // Live schema compatibility for Sales Orders, Delivery, and Invoicing (Batteries):
   const soExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SO'").get()
   if (soExists) {
