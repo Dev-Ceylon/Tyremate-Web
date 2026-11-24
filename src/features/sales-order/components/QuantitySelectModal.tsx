@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { StorageAllocationInput } from "../models/salesOrder"
 import type { SOCategory } from "../../../shared/constants/soCategoryConstants"
 import {
@@ -175,7 +176,7 @@ export function QuantitySelectModal({
       >
       <div className="stock-allocation-modal">
         {loading ? (
-          <p className="secondary-text">Loading stock batches...</p>
+          <LoadingState message="Loading stock batches…" />
         ) : error ? (
           <p className="text-danger">{error}</p>
         ) : (

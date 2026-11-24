@@ -95,6 +95,9 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
   const [tyres, setTyres] = useState<TyreRecord[]>([])
   const [batteries, setBatteries] = useState<BatteryRecord[]>([])
   const [initializing, setInitializing] = useState(true)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [loadingTyres, setLoadingTyres] = useState(false)
+  const [loadingBatteries, setLoadingBatteries] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -208,6 +211,9 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
 
   const loadOptions = useCallback(async () => {
     setInitializing(true)
+    setLoadingCustomers(true)
+    setLoadingTyres(true)
+    setLoadingBatteries(true)
     setError(null)
 
     try {
@@ -232,10 +238,14 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       onError?.(message)
     } finally {
       setInitializing(false)
+      setLoadingCustomers(false)
+      setLoadingTyres(false)
+      setLoadingBatteries(false)
     }
   }, [onError, inquiryId, applyInquiryPrefill])
 
   const reloadCustomers = useCallback(async () => {
+    setLoadingCustomers(true)
     try {
       const customerRows = await salesOrderService.getCustomers()
       setCustomers(customerRows)
@@ -246,10 +256,13 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       setError(message)
       onError?.(message)
       return []
+    } finally {
+      setLoadingCustomers(false)
     }
   }, [onError])
 
   const reloadTyres = useCallback(async () => {
+    setLoadingTyres(true)
     try {
       const tyreRows = await salesOrderService.getTyres()
       setTyres(tyreRows)
@@ -260,10 +273,13 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       setError(message)
       onError?.(message)
       return []
+    } finally {
+      setLoadingTyres(false)
     }
   }, [onError])
 
   const reloadBatteries = useCallback(async () => {
+    setLoadingBatteries(true)
     try {
       const batteryRows = await salesOrderService.getBatteries()
       setBatteries(batteryRows)
@@ -274,6 +290,8 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
       setError(message)
       onError?.(message)
       return []
+    } finally {
+      setLoadingBatteries(false)
     }
   }, [onError])
 
@@ -729,6 +747,9 @@ export function useSalesOrderForm(options?: UseSalesOrderFormOptions) {
     tyres,
     batteries,
     initializing,
+    loadingCustomers,
+    loadingTyres,
+    loadingBatteries,
     submitting,
     error,
     totalAmount,

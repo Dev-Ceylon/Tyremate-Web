@@ -6,6 +6,7 @@ import { CreateTyreDialog } from "../../master-data/tyres/components/CreateTyreD
 import { CreateBatteryDialog } from "../../master-data/batteries/components/CreateBatteryDialog"
 import { usePurchaseOrderCreate } from "../hooks/usePurchaseOrderCreate"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { TyreRecord } from "../../master-data/tyres/models/tyre"
 import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import type { POCategory } from "@/shared/constants/poCategoryConstants"
@@ -66,7 +67,7 @@ export default function PurchaseOrderCreatePage() {
           </div>
         </div>
 
-        {formState.initializing ? <p className="hero-text">Loading options...</p> : null}
+        {formState.initializing ? <LoadingState message="Loading options…" /> : null}
         {formState.error ? <p className="hero-text">{formState.error}</p> : null}
 
         <PurchaseOrderForm

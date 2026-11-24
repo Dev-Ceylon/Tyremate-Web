@@ -66,11 +66,17 @@ export function useInquiryForm(options?: UseInquiryFormOptions) {
   const [tyres, setTyres] = useState<TyreRecord[]>([])
   const [batteries, setBatteries] = useState<BatteryRecord[]>([])
   const [initializing, setInitializing] = useState(true)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [loadingTyres, setLoadingTyres] = useState(false)
+  const [loadingBatteries, setLoadingBatteries] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const loadOptions = useCallback(async () => {
     setInitializing(true)
+    setLoadingCustomers(true)
+    setLoadingTyres(true)
+    setLoadingBatteries(true)
     setError(null)
     try {
       const [customerRows, tyreRows, batteryRows] = await Promise.all([
@@ -87,6 +93,9 @@ export function useInquiryForm(options?: UseInquiryFormOptions) {
       onError?.(msg)
     } finally {
       setInitializing(false)
+      setLoadingCustomers(false)
+      setLoadingTyres(false)
+      setLoadingBatteries(false)
     }
   }, [onError])
 
@@ -269,18 +278,33 @@ export function useInquiryForm(options?: UseInquiryFormOptions) {
   }, [formData, lines, validate, onSuccess, onError])
 
   const reloadCustomers = async () => {
-    const rows = await salesOrderService.getCustomers()
-    setCustomers(rows || [])
+    setLoadingCustomers(true)
+    try {
+      const rows = await salesOrderService.getCustomers()
+      setCustomers(rows || [])
+    } finally {
+      setLoadingCustomers(false)
+    }
   }
 
   const reloadTyres = async () => {
-    const rows = await salesOrderService.getTyres()
-    setTyres(rows || [])
+    setLoadingTyres(true)
+    try {
+      const rows = await salesOrderService.getTyres()
+      setTyres(rows || [])
+    } finally {
+      setLoadingTyres(false)
+    }
   }
 
   const reloadBatteries = async () => {
-    const rows = await salesOrderService.getBatteries()
-    setBatteries(rows || [])
+    setLoadingBatteries(true)
+    try {
+      const rows = await salesOrderService.getBatteries()
+      setBatteries(rows || [])
+    } finally {
+      setLoadingBatteries(false)
+    }
   }
 
   return {
@@ -290,6 +314,9 @@ export function useInquiryForm(options?: UseInquiryFormOptions) {
     tyres,
     batteries,
     initializing,
+    loadingCustomers,
+    loadingTyres,
+    loadingBatteries,
     submitting,
     error,
     walkinCustomerErrors,

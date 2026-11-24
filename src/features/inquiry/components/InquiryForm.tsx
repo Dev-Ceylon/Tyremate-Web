@@ -27,6 +27,10 @@ type InquiryFormProps = {
     customers: CustomerRecord[]
     tyres: TyreRecord[]
     batteries: BatteryRecord[]
+    initializing?: boolean
+    loadingCustomers?: boolean
+    loadingTyres?: boolean
+    loadingBatteries?: boolean
     submitting: boolean
     walkinCustomerErrors: WalkinCustomerFieldErrors
   }
@@ -54,6 +58,10 @@ type InquiryFormProps = {
 
 export function InquiryForm({ state, actions }: InquiryFormProps) {
   const isBattery = state.formData.Category === "battery"
+  const isCustomerLoading = Boolean(state.initializing || state.loadingCustomers)
+  const isItemLoading = isBattery
+    ? Boolean(state.initializing || state.loadingBatteries)
+    : Boolean(state.initializing || state.loadingTyres)
   const availableByTyreId = new Map(state.tyres.map((t) => [t.Id, t.AvailableQuantity ?? 0]))
   const availableByBatteryId = new Map(state.batteries.map((b) => [b.Id, b.AvailableQuantity ?? 0]))
 
@@ -128,20 +136,27 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
         <>
           <label className="field-label">
             Customer
-            <select
-              className="text-input"
-              value={state.formData.CustomerID}
-              onChange={(e) => actions.onChangeCustomer(e.target.value ? Number(e.target.value) : "")}
-              disabled={state.submitting}
-              required
-            >
-              <option value="">Select customer</option>
-              {state.customers.map((c) => (
-                <option key={c.CustomerID} value={c.CustomerID}>
-                  {c.CustomerCode} - {c.Name}
-                </option>
-              ))}
-            </select>
+            <div className={`tm-select-loading-wrap ${isCustomerLoading ? "is-loading" : ""}`}>
+              <select
+                className="text-input"
+                value={state.formData.CustomerID}
+                onChange={(e) => actions.onChangeCustomer(e.target.value ? Number(e.target.value) : "")}
+                disabled={state.submitting || isCustomerLoading}
+                required
+              >
+                <option value="">{isCustomerLoading ? "Loading customers…" : "Select customer"}</option>
+                {state.customers.map((c) => (
+                  <option key={c.CustomerID} value={c.CustomerID}>
+                    {c.CustomerCode} - {c.Name}
+                  </option>
+                ))}
+              </select>
+              {isCustomerLoading && (
+                <span className="tm-select-spinner" aria-hidden="true" title="Loading customers…">
+                  <span className="tm-spinner tm-spinner-xs" />
+                </span>
+              )}
+            </div>
           </label>
 
           <div className="header-actions form-inline-action">
@@ -188,35 +203,49 @@ export function InquiryForm({ state, actions }: InquiryFormProps) {
                       {isBattery ? "Battery Product" : "Tyre Product"}
                     </span>
                     {isBattery ? (
-                      <select
-                        className="text-input inq-line-select"
-                        value={line.BatteryID ?? ""}
-                        onChange={(e) => actions.onChangeLineBattery(line.RowId, e.target.value ? Number(e.target.value) : "")}
-                        disabled={state.submitting}
-                        required
-                      >
-                        <option value="">Select battery</option>
-                        {state.batteries.map((b) => (
-                          <option key={b.Id} value={b.Id}>
-                            {b.Brand || "NA"} {b.Model || "NA"} ({b.Capacity || "NA"} {b.Voltage || "NA"})
-                          </option>
-                        ))}
-                      </select>
+                      <div className={`tm-select-loading-wrap ${isItemLoading ? "is-loading" : ""}`}>
+                        <select
+                          className="text-input inq-line-select"
+                          value={line.BatteryID ?? ""}
+                          onChange={(e) => actions.onChangeLineBattery(line.RowId, e.target.value ? Number(e.target.value) : "")}
+                          disabled={state.submitting || isItemLoading}
+                          required
+                        >
+                          <option value="">{isItemLoading ? "Loading batteries…" : "Select battery"}</option>
+                          {state.batteries.map((b) => (
+                            <option key={b.Id} value={b.Id}>
+                              {b.Brand || "NA"} {b.Model || "NA"} ({b.Capacity || "NA"} {b.Voltage || "NA"})
+                            </option>
+                          ))}
+                        </select>
+                        {isItemLoading && (
+                          <span className="tm-select-spinner" aria-hidden="true" title="Loading batteries…">
+                            <span className="tm-spinner tm-spinner-xs" />
+                          </span>
+                        )}
+                      </div>
                     ) : (
-                      <select
-                        className="text-input inq-line-select"
-                        value={line.TyreID ?? ""}
-                        onChange={(e) => actions.onChangeLineTyre(line.RowId, e.target.value ? Number(e.target.value) : "")}
-                        disabled={state.submitting}
-                        required
-                      >
-                        <option value="">Select tyre</option>
-                        {state.tyres.map((t) => (
-                          <option key={t.Id} value={t.Id}>
-                            {formatTyreLabel(t)}
-                          </option>
-                        ))}
-                      </select>
+                      <div className={`tm-select-loading-wrap ${isItemLoading ? "is-loading" : ""}`}>
+                        <select
+                          className="text-input inq-line-select"
+                          value={line.TyreID ?? ""}
+                          onChange={(e) => actions.onChangeLineTyre(line.RowId, e.target.value ? Number(e.target.value) : "")}
+                          disabled={state.submitting || isItemLoading}
+                          required
+                        >
+                          <option value="">{isItemLoading ? "Loading tyres…" : "Select tyre"}</option>
+                          {state.tyres.map((t) => (
+                            <option key={t.Id} value={t.Id}>
+                              {formatTyreLabel(t)}
+                            </option>
+                          ))}
+                        </select>
+                        {isItemLoading && (
+                          <span className="tm-select-spinner" aria-hidden="true" title="Loading tyres…">
+                            <span className="tm-spinner tm-spinner-xs" />
+                          </span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="inq-cell inq-price-cell">

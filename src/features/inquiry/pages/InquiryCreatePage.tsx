@@ -10,6 +10,7 @@ import { CreateBatteryDialog } from "../../master-data/batteries/components/Crea
 import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import { InquiryForm } from "../components/InquiryForm"
 import { useInquiryForm } from "../hooks/useInquiryForm"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { InquiryCategory } from "../models/inquiry"
 import PermissionGate from "../../../shared/components/PermissionGate"
 
@@ -53,6 +54,9 @@ export default function InquiryCreatePage() {
     tyres,
     batteries,
     initializing,
+    loadingCustomers,
+    loadingTyres,
+    loadingBatteries,
     submitting,
     error,
     updateField,
@@ -85,11 +89,23 @@ export default function InquiryCreatePage() {
       </section>
 
       <section className="table-panel panel panel-strong">
-        {initializing ? <p className="hero-text">Loading options...</p> : null}
+        {initializing ? <LoadingState message="Loading options…" /> : null}
         {error && !submitting ? <p className="hero-text error-text">{error}</p> : null}
 
         <InquiryForm
-          state={{ formData, lines, customers, tyres, batteries, submitting, walkinCustomerErrors }}
+          state={{
+            formData,
+            lines,
+            customers,
+            tyres,
+            batteries,
+            initializing,
+            loadingCustomers,
+            loadingTyres,
+            loadingBatteries,
+            submitting,
+            walkinCustomerErrors,
+          }}
           actions={{
             onChangeDate: (v) => updateField("Date", v),
             onChangeCategory: changeCategory,

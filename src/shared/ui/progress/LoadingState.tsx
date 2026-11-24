@@ -3,8 +3,8 @@ import type { ReactNode } from "react"
 export interface LoadingStateProps {
   /** Optional message displayed below (or next to) the spinner. */
   message?: string
-  /** Size of the spinner: "sm" (18px), "md" (32px), or "lg" (44px). Defaults to "md". */
-  size?: "sm" | "md" | "lg"
+  /** Size of the spinner: "xs" (14px), "sm" (18px), "md" (32px), or "lg" (44px). Defaults to "md". */
+  size?: "xs" | "sm" | "md" | "lg"
   /** Whether to render an inline flex row rather than a centered block container. */
   inline?: boolean
   /** Additional container CSS class names. */

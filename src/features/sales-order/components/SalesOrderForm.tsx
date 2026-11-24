@@ -32,6 +32,10 @@ type SalesOrderFormProps = {
     customers: CustomerRecord[]
     tyres: TyreRecord[]
     batteries?: BatteryRecord[]
+    initializing?: boolean
+    loadingCustomers?: boolean
+    loadingTyres?: boolean
+    loadingBatteries?: boolean
     totalAmount: number
     takingAmount: number
     submitting: boolean
@@ -66,6 +70,10 @@ export function SalesOrderForm(props: SalesOrderFormProps) {
   const { state, actions } = props
   const category = state.formData.Category || "tyre"
   const isBattery = category === "battery"
+  const isCustomerLoading = Boolean(state.initializing || state.loadingCustomers)
+  const isItemLoading = isBattery
+    ? Boolean(state.initializing || state.loadingBatteries)
+    : Boolean(state.initializing || state.loadingTyres)
   const toNumber = (value: string) => value === "" ? 0 : Number(value)
   const toOptionalNumber = (value: string): number | "" => (value ? Number(value) : "")
 
@@ -249,16 +257,23 @@ export function SalesOrderForm(props: SalesOrderFormProps) {
         <>
           <label className="field-label">
             Customer
-            <select
-              className="text-input"
-              value={state.formData.CustomerID}
-              onChange={(event) => handleCustomerChange(event.target.value)}
-              disabled={state.submitting}
-              required
-            >
-              <option value="">Select customer</option>
-              {renderCustomerOptions()}
-            </select>
+            <div className={`tm-select-loading-wrap ${isCustomerLoading ? "is-loading" : ""}`}>
+              <select
+                className="text-input"
+                value={state.formData.CustomerID}
+                onChange={(event) => handleCustomerChange(event.target.value)}
+                disabled={state.submitting || isCustomerLoading}
+                required
+              >
+                <option value="">{isCustomerLoading ? "Loading customers…" : "Select customer"}</option>
+                {renderCustomerOptions()}
+              </select>
+              {isCustomerLoading && (
+                <span className="tm-select-spinner" aria-hidden="true" title="Loading customers…">
+                  <span className="tm-spinner tm-spinner-xs" />
+                </span>
+              )}
+            </div>
           </label>
 
           <div className="header-actions form-inline-action">
@@ -327,16 +342,23 @@ export function SalesOrderForm(props: SalesOrderFormProps) {
               return (
                 <tr key={line.RowId}>
                   <td>
-                    <select
-                      className="text-input"
-                      value={selectedValue}
-                      onChange={(event) => handleItemChange(line.RowId, event.target.value)}
-                      disabled={state.submitting}
-                      required
-                    >
-                      <option value="">Select {isBattery ? "battery" : "tyre"}</option>
-                      {renderItemOptions()}
-                    </select>
+                    <div className={`tm-select-loading-wrap ${isItemLoading ? "is-loading" : ""}`}>
+                      <select
+                        className="text-input"
+                        value={selectedValue}
+                        onChange={(event) => handleItemChange(line.RowId, event.target.value)}
+                        disabled={state.submitting || isItemLoading}
+                        required
+                      >
+                        <option value="">{isItemLoading ? `Loading ${isBattery ? "batteries" : "tyres"}…` : `Select ${isBattery ? "battery" : "tyre"}`}</option>
+                        {renderItemOptions()}
+                      </select>
+                      {isItemLoading && (
+                        <span className="tm-select-spinner" aria-hidden="true" title={`Loading ${isBattery ? "batteries" : "tyres"}…`}>
+                          <span className="tm-spinner tm-spinner-xs" />
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className="table-count">

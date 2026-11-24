@@ -7,6 +7,7 @@ import type { TyreRecord } from "../../master-data/tyres/models/tyre"
 import { CreateBatteryDialog } from "../../master-data/batteries/components/CreateBatteryDialog"
 import type { BatteryRecord } from "../../master-data/batteries/models/battery"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
+import { LoadingState } from "../../../shared/ui/progress"
 import { SalesOrderForm } from "../components/SalesOrderForm"
 import { QuantitySelectModal } from "../components/QuantitySelectModal"
 import { PaymentModalController } from "../../../shared/payment/ui/PaymentModalController"
@@ -42,6 +43,9 @@ export default function SalesOrderCreatePage() {
     tyres,
     batteries,
     initializing,
+    loadingCustomers,
+    loadingTyres,
+    loadingBatteries,
     submitting,
     error,
     totalAmount,
@@ -164,7 +168,7 @@ export default function SalesOrderCreatePage() {
           </div>
         </div>
 
-        {initializing ? <p className="hero-text">Loading options...</p> : null}
+        {initializing ? <LoadingState message="Loading options…" /> : null}
         {error ? <p className="hero-text">{error}</p> : null}
 
         <SalesOrderForm
@@ -174,6 +178,10 @@ export default function SalesOrderCreatePage() {
             customers,
             tyres,
             batteries,
+            initializing,
+            loadingCustomers,
+            loadingTyres,
+            loadingBatteries,
             totalAmount,
             takingAmount,
             submitting: submitting || initializing,

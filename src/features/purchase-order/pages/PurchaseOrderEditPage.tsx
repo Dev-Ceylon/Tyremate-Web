@@ -4,6 +4,7 @@ import { PurchaseOrderForm } from "../components/PurchaseOrderForm"
 import { SupplierSelectionModal } from "../components/SupplierSelectionModal"
 import { usePurchaseOrderForm } from "../hooks/usePurchaseOrderForm"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function PurchaseOrderEditPage() {
   const navigate = useNavigate()
@@ -73,7 +74,7 @@ export default function PurchaseOrderEditPage() {
           </div>
         </div>
 
-        {initializing ? <p className="hero-text">Loading order details...</p> : null}
+        {initializing ? <LoadingState message="Loading order details…" /> : null}
         {error ? <p className="hero-text error-text">{error}</p> : null}
 
         <PurchaseOrderForm

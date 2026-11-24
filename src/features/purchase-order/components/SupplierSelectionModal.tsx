@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { TyreSupplierApiRecord } from "../../tyre-suppliers/models/tyreSupplier"
 import type { PurchaseOrderLineSupplier } from "../hooks/usePurchaseOrderForm"
 import { v4 as uuidv4 } from "uuid"
@@ -189,7 +190,7 @@ export function SupplierSelectionModal({
 
         <div className="supplier-list-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
           {loading ? (
-            <p className="supplier-list-loading">Fetching available suppliers...</p>
+            <LoadingState message="Fetching available suppliers…" />
           ) : error ? (
             <p className="supplier-list-error">{error}</p>
           ) : suppliers.length === 0 ? (

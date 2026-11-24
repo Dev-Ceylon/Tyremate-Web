@@ -45,6 +45,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   isEditMode = false,
 }) => {
   const category = state.category || "tyre"
+  const isItemLoading = Boolean(state.initializing)
 
   const totals = useMemo(() => {
     const subtotal = state.lines.reduce((sum, line) => sum + (line.Price || 0) * (line.Qty || 0), 0)
@@ -158,49 +159,63 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
                   <tr>
                     <td>
                       {category === "battery" ? (
-                        <select
-                          className="text-input"
-                          value={line.BatteryID || ""}
-                          onChange={(e) => {
-                            const bId = Number(e.target.value)
-                            actions.onUpdateLine(line.id, "BatteryID", bId)
-                            const selBattery = (state.batteries || []).find((b) => b.Id === bId)
-                            if (selBattery) {
-                              actions.onUpdateLine(line.id, "Price", selBattery.ActualSellingPrice || selBattery.PurchasedPrice || 0)
-                            }
-                          }}
-                          disabled={state.submitting}
-                          required
-                        >
-                          <option value="">Select battery</option>
-                          {(state.batteries || []).map((b) => (
-                            <option key={b.Id} value={b.Id}>
-                              {b.Brand} {b.Model ? `- ${b.Model}` : ""} {b.Capacity ? `(${b.Capacity}` : ""}{b.Voltage ? ` ${b.Voltage})` : b.Capacity ? ")" : ""}
-                            </option>
-                          ))}
-                        </select>
+                        <div className={`tm-select-loading-wrap ${isItemLoading ? "is-loading" : ""}`}>
+                          <select
+                            className="text-input"
+                            value={line.BatteryID || ""}
+                            onChange={(e) => {
+                              const bId = Number(e.target.value)
+                              actions.onUpdateLine(line.id, "BatteryID", bId)
+                              const selBattery = (state.batteries || []).find((b) => b.Id === bId)
+                              if (selBattery) {
+                                actions.onUpdateLine(line.id, "Price", selBattery.ActualSellingPrice || selBattery.PurchasedPrice || 0)
+                              }
+                            }}
+                            disabled={state.submitting || isItemLoading}
+                            required
+                          >
+                            <option value="">{isItemLoading ? "Loading batteries…" : "Select battery"}</option>
+                            {(state.batteries || []).map((b) => (
+                              <option key={b.Id} value={b.Id}>
+                                {b.Brand} {b.Model ? `- ${b.Model}` : ""} {b.Capacity ? `(${b.Capacity}` : ""}{b.Voltage ? ` ${b.Voltage})` : b.Capacity ? ")" : ""}
+                              </option>
+                            ))}
+                          </select>
+                          {isItemLoading && (
+                            <span className="tm-select-spinner" aria-hidden="true" title="Loading batteries…">
+                              <span className="tm-spinner tm-spinner-xs" />
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <select
-                          className="text-input"
-                          value={line.TyreID || ""}
-                          onChange={(e) => {
-                            const tId = Number(e.target.value)
-                            actions.onUpdateLine(line.id, "TyreID", tId)
-                            const selTyre = state.tyres.find((t) => t.Id === tId)
-                            if (selTyre) {
-                              actions.onUpdateLine(line.id, "Price", selTyre.ActualSellingPrice || 0)
-                            }
-                          }}
-                          disabled={state.submitting}
-                          required
-                        >
-                          <option value="">Select tyre</option>
-                          {state.tyres.map((t) => (
-                            <option key={t.Id} value={t.Id}>
-                              {t.Brand} / {t.Size} / {t.Pattern}
-                            </option>
-                          ))}
-                        </select>
+                        <div className={`tm-select-loading-wrap ${isItemLoading ? "is-loading" : ""}`}>
+                          <select
+                            className="text-input"
+                            value={line.TyreID || ""}
+                            onChange={(e) => {
+                              const tId = Number(e.target.value)
+                              actions.onUpdateLine(line.id, "TyreID", tId)
+                              const selTyre = state.tyres.find((t) => t.Id === tId)
+                              if (selTyre) {
+                                actions.onUpdateLine(line.id, "Price", selTyre.ActualSellingPrice || 0)
+                              }
+                            }}
+                            disabled={state.submitting || isItemLoading}
+                            required
+                          >
+                            <option value="">{isItemLoading ? "Loading tyres…" : "Select tyre"}</option>
+                            {state.tyres.map((t) => (
+                              <option key={t.Id} value={t.Id}>
+                                {t.Brand} / {t.Size} / {t.Pattern}
+                              </option>
+                            ))}
+                          </select>
+                          {isItemLoading && (
+                            <span className="tm-select-spinner" aria-hidden="true" title="Loading tyres…">
+                              <span className="tm-spinner tm-spinner-xs" />
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td>
