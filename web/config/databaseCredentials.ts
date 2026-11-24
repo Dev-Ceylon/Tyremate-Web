@@ -25,23 +25,36 @@ export const IS_DATABASE_CONFIG_LOCKED = true
 // 1. DEVELOPMENT DATABASE CONFIGURATION (used during `npm run dev`)
 // ----------------------------------------------------------------------------
 export const DEV_DATABASE_CONFIG = {
-  // Put your development Turso / libSQL database URL here:
-  url: process.env.NEXT_PUBLIC_DEV_DB_URL || "",
-  // Put your development Turso / libSQL Auth Token here:
-  authToken: process.env.NEXT_PUBLIC_DEV_DB_TOKEN || "",
+  // Put your development Turso / libSQL database URL here or in .env.local:
+  url:
+    process.env.NEXT_PUBLIC_DEV_DB_URL ||
+    process.env.NEXT_PUBLIC_TM_DB_URL ||
+    process.env.TURSO_DB_URL ||
+    "",
+  // Put your development Turso / libSQL Auth Token here or in .env.local:
+  authToken:
+    process.env.NEXT_PUBLIC_DEV_DB_TOKEN ||
+    process.env.NEXT_PUBLIC_TM_DB_TOKEN ||
+    process.env.TURSO_AUTH_TOKEN ||
+    "",
 }
 
 // ----------------------------------------------------------------------------
 // 2. PRODUCTION DATABASE CONFIGURATION (used during `npm run build` / production)
 // ----------------------------------------------------------------------------
 export const PROD_DATABASE_CONFIG = {
-  // Put your production Turso / libSQL database URL here:
+  // Put your production Turso / libSQL database URL here or via GitHub Secrets:
   url:
     process.env.NEXT_PUBLIC_PROD_DB_URL ||
     process.env.NEXT_PUBLIC_TM_DB_URL ||
+    process.env.TURSO_DB_URL ||
     "",
-  // Put your production Turso / libSQL Auth Token here:
-  authToken: process.env.NEXT_PUBLIC_PROD_DB_TOKEN || "",
+  // Put your production Turso / libSQL Auth Token here or via GitHub Secrets:
+  authToken:
+    process.env.NEXT_PUBLIC_PROD_DB_TOKEN ||
+    process.env.NEXT_PUBLIC_TM_DB_TOKEN ||
+    process.env.TURSO_AUTH_TOKEN ||
+    "",
 }
 
 /**
