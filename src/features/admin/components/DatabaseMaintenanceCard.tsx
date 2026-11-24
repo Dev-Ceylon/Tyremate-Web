@@ -238,10 +238,15 @@ export function DatabaseMaintenanceCard() {
               <button
                 type="button"
                 className={isDev ? "primary-action" : "secondary-action"}
+                aria-label="Load sample master data"
                 onClick={sampleData}
                 disabled={busy !== null}
               >
-                {busy === "Sample data" ? "Loading sample data…" : includeStock ? "Load Master Data & Stock" : "Load Master Data"}
+                {busy === "Sample data"
+                  ? "Loading sample data…"
+                  : includeStock
+                    ? "Load sample master data & stock"
+                    : "Load sample master data"}
               </button>
             </div>
           </div>
