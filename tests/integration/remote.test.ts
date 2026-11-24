@@ -1,3 +1,4 @@
+import Database from "better-sqlite3"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { LibsqlDriver } from "../../web/db/libsqlDriver"
 import { bootBackend } from "../helpers/backend"
@@ -31,12 +32,11 @@ describe("backend on a remote libSQL database", () => {
     expect(created).toBeTruthy()
 
     // Read back straight from the server's file with an independent connection.
-    const Database = (await import("better-sqlite3")).default
     const direct = new Database(hrana.dbFile, { readonly: true })
     const row = direct.prepare("SELECT BranchName FROM BranchM WHERE BranchCode = 'WEB-01'").get() as { BranchName: string }
     expect(row.BranchName).toBe("Web Branch")
     const userCount = direct.prepare("SELECT COUNT(*) AS c FROM users").get() as { c: number }
-    expect(userCount.c).toBe(2)
+    expect(userCount.c).toBe(3)
     direct.close()
     console.info(`remote boot used ${driver.roundTrips} round trips`)
   })

@@ -23,7 +23,7 @@ describe("Admin vs SuperAdmin Role and Permissions RBAC", () => {
     const adminLogin = await backend.login("admin", "1234")
     expect(adminLogin.username).toBe("admin")
     expect(adminLogin.roles.some((r: any) => r.roleId === 1)).toBe(true)
-    // Admin has user management and operational permissions
+    // Admin has user management, operational permissions, and administrative settings parity
     expect(adminLogin.permissions).toContain("user.manage")
     expect(adminLogin.permissions).toContain("user.view")
     expect(adminLogin.permissions).toContain("inquiry.view")
@@ -32,34 +32,40 @@ describe("Admin vs SuperAdmin Role and Permissions RBAC", () => {
     expect(adminLogin.permissions).toContain("inventory.manage")
     expect(adminLogin.permissions).toContain("customers.manage")
     expect(adminLogin.permissions).toContain("suppliers.manage")
-
-    // Admin explicitly DOES NOT have technical DB / settings permissions
-    expect(adminLogin.permissions).not.toContain("settings.manage")
-    expect(adminLogin.permissions).not.toContain("god")
+    expect(adminLogin.permissions).toContain("settings.manage")
+    expect(adminLogin.permissions).toContain("god")
   })
 
-  it("denies Admin access to developer database settings and schema operations", async () => {
+  it("denies non-admin staff access to developer database settings and schema operations", async () => {
     const driver = await createSqlJsDriver()
     const backend = await bootBackend(driver)
 
     await backend.login("admin", "1234")
+    await backend.invoke("admin:createUser", {
+      username: "staff_cashier_rbac",
+      displayName: "Front Desk Cashier",
+      password: "password123",
+      roleIds: [3],
+    })
 
-    // Admin attempting schema status should be rejected
+    await backend.login("staff_cashier_rbac", "password123")
+
+    // Non-admin staff attempting schema status should be rejected
     await expect(backend.invoke("admin:getSchemaStatus")).rejects.toThrow(
       /do not have permission.*\(settings\.manage\)/,
     )
 
-    // Admin attempting table counts should be rejected
+    // Non-admin staff attempting table counts should be rejected
     await expect(backend.invoke("admin:getTableCounts")).rejects.toThrow(
       /do not have permission.*\(settings\.manage\)/,
     )
 
-    // Admin attempting sample seed should be rejected
+    // Non-admin staff attempting sample seed should be rejected
     await expect(backend.invoke("admin:seedSampleData")).rejects.toThrow(
       /do not have permission.*\(settings\.manage\)/,
     )
 
-    // Admin attempting Cloudinary configuration should be rejected
+    // Non-admin staff attempting Cloudinary configuration should be rejected
     await expect(
       backend.invoke("admin:setCloudinaryConfig", {
         cloudName: "my-cloud",

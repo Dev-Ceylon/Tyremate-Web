@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Uploads the static assets (brand images, user-manual screenshots) to
  * Cloudinary. Runs in CI before the static build; idempotent (existing assets

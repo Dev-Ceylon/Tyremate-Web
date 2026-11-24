@@ -58,20 +58,7 @@ const PERMISSIONS_SEED = [
 // Permission keys granted to each role. '*' grants every seeded permission.
 const ROLE_PERMISSIONS = {
   0: '*',
-  1: [
-    'inquiry.view', 'inquiry.create', 'inquiry.edit', 'inquiry.delete',
-    'po.view', 'po.create', 'po.edit', 'po.delete', 'po.approve',
-    'so.view', 'so.create', 'so.edit', 'so.delete', 'so.approve',
-    'dag.view', 'dag.create', 'dag.edit', 'dag.delete', 'dag.approve',
-    'other.view', 'other.create', 'other.edit', 'other.delete',
-    'invoice.view', 'invoice.create', 'invoice.edit', 'invoice.print',
-    'inventory.view', 'inventory.manage',
-    'customers.view', 'customers.manage',
-    'suppliers.view', 'suppliers.manage',
-    'reports.view',
-    'user.view', 'user.manage',
-    'violations.view', 'violations.create', 'violations.approve',
-  ],
+  1: '*',
   2: [
     'inquiry.view', 'inquiry.create', 'inquiry.edit', 'inquiry.delete',
     'po.view', 'po.create', 'po.edit',

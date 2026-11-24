@@ -26,18 +26,16 @@ function SetupContent() {
   const environmentName = isProductionEnvironment() ? "Production" : "Development"
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
-  const session = loadSession() as { permissions?: string[] } | null
+  const session = loadSession() as { permissions?: string[]; roles?: { roleId: number }[] } | null
   const isAuthenticated = Boolean(session && Array.isArray(session.permissions))
-  const canManageSettings = Boolean(
-    session?.permissions?.includes("settings.manage") || session?.permissions?.includes("god")
-  )
+  const isSuperAdmin = Boolean(session?.roles?.some((r) => Number(r.roleId) === 0))
 
   // Connect with the saved settings straight away so the real status is shown.
   useEffect(() => {
     if (getBackendStatus().state === "idle") void startBackend().catch(() => {})
   }, [])
 
-  if (isAuthenticated && !canManageSettings) {
+  if (isAuthenticated && !isSuperAdmin) {
     return <Navigate to="/" replace />
   }
 
