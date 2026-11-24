@@ -1,4 +1,4 @@
-﻿import { inquirySoClient } from "./inquirySoClient"
+import { inquirySoClient } from "./inquirySoClient"
 import type { LinkedSoRecord, SoLinkedInquiryRecord } from "../models/inquirySo"
 
 export const inquirySoService = {

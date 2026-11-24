@@ -1,4 +1,4 @@
-﻿const db = require("../database/connection")
+const db = require("../database/connection")
 
 exports.linkInquiryToSo = ({ InquiryID, SOID, CreatedBy }) => {
   return db

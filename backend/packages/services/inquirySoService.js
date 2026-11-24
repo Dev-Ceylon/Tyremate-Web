@@ -1,4 +1,4 @@
-﻿const db = require("../database/connection")
+const db = require("../database/connection")
 const inquirySoRepo = require("../repositories/inquirySoRepository")
 const inquiryRepo = require("../repositories/inquiryRepository")
 const soRepo = require("../repositories/soRepository")

@@ -1,4 +1,4 @@
-﻿const db = require("../database/connection");
+const db = require("../database/connection");
 const inquiryRepo = require("../repositories/inquiryRepository");
 const walkinCustomerRepo = require("../repositories/walkinCustomerRepository");
 const inquiryWalkinLinkRepo = require("../repositories/inquiryWalkinLinkRepository");

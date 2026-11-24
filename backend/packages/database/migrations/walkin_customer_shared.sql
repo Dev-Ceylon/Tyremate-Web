@@ -1,4 +1,4 @@
-﻿-- Shared walk-in customer master table
+-- Shared walk-in customer master table
 CREATE TABLE IF NOT EXISTS WalkinCustomer (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,
   CustomerName TEXT NOT NULL,

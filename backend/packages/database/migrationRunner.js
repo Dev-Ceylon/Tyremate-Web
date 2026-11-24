@@ -40,8 +40,9 @@ const applyPendingMigrations = (db, migrations) => {
     .forEach(({ name, sql }) => {
       if (alreadyApplied.has(name)) return
       try {
+        const cleanSql = (sql || "").replace(/^\uFEFF/, "")
         const applyMigration = db.transaction(() => {
-          db.exec(sql)
+          db.exec(cleanSql)
           markMigrationApplied.run(name)
         })
         applyMigration()
@@ -78,7 +79,7 @@ const runRepeatableMigrations = (db, migrations) => {
   const results = []
 
   migrations.forEach(({ name, sql: raw }) => {
-    const sql = (raw || "").trim()
+    const sql = (raw || "").replace(/^\uFEFF/, "").trim()
     if (!sql) return
     const contentHash = hashText(sql)
     const done = db
