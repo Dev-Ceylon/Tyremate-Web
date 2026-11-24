@@ -47,8 +47,8 @@ jobs:
           path: playwright-report
           retention-days: 7
 
-  deploy:
-    name: Build and deploy
+  build:
+    name: Build static site
     needs: test
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -56,9 +56,6 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -98,8 +95,23 @@ jobs:
         run: |
           echo "::error title=GitHub Pages is not enabled::Open Settings -> Pages -> Build and deployment -> Source and choose 'GitHub Actions', then re-run this job. Private repositories need a paid GitHub plan for Pages. Alternatively add a PAGES_ADMIN_TOKEN secret so this workflow can enable Pages itself."
           exit 1
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: out
-      - id: deployment
+          path: ./out
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
