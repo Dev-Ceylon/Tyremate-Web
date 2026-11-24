@@ -28,14 +28,16 @@ function SetupContent() {
 
   const session = loadSession() as { permissions?: string[]; roles?: { roleId: number }[] } | null
   const isAuthenticated = Boolean(session && Array.isArray(session.permissions))
-  const isSuperAdmin = Boolean(session?.roles?.some((r) => Number(r.roleId) === 0))
+  const canManageSettings = Boolean(
+    session?.permissions?.includes("settings.manage") || session?.permissions?.includes("god")
+  )
 
   // Connect with the saved settings straight away so the real status is shown.
   useEffect(() => {
     if (getBackendStatus().state === "idle") void startBackend().catch(() => {})
   }, [])
 
-  if (isAuthenticated && !isSuperAdmin) {
+  if (isAuthenticated && !canManageSettings) {
     return <Navigate to="/" replace />
   }
 
