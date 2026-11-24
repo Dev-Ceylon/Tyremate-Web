@@ -67,9 +67,12 @@ export function isProductionEnvironment(): boolean {
 
 /**
  * Returns whether database configuration editing is temporarily locked to code.
+ * Locked only when code credentials are provided and locking is enabled.
  */
 export function isDatabaseConfigLocked(): boolean {
-  return IS_DATABASE_CONFIG_LOCKED
+  if (!IS_DATABASE_CONFIG_LOCKED) return false
+  const active = getActiveCodeDatabaseConfig()
+  return active.driver === "libsql" && Boolean(active.url && active.url.trim().length > 0)
 }
 
 /**

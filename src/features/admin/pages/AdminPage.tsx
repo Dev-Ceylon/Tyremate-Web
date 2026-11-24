@@ -24,9 +24,7 @@ export default function AdminPage() {
   const isSuperAdmin = Boolean(user?.roles?.some((r) => Number(r.roleId) === 0))
   const isSettingsManager = hasPermission("settings.manage")
   const [searchParams, setSearchParams] = useSearchParams()
-  const visible = TABS.filter(
-    (t) => hasPermission(t.permission) && (t.id !== "database" || isSuperAdmin),
-  )
+  const visible = TABS.filter((t) => hasPermission(t.permission))
   const requested = searchParams.get("tab") as TabId | null
   const [active, setActive] = useState<TabId | undefined>(
     visible.find((t) => t.id === requested)?.id ?? visible[0]?.id,

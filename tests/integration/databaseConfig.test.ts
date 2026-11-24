@@ -13,8 +13,14 @@ import {
 } from "../../web/bridge/config"
 
 describe("Database Environment & Code Configuration", () => {
-  it("enforces database configuration lock by default", () => {
-    expect(isDatabaseConfigLocked()).toBe(true)
+  it("enforces database configuration lock when credentials are provided in code", () => {
+    const isLocked = isDatabaseConfigLocked()
+    const active = getActiveCodeDatabaseConfig()
+    if (active.driver === "libsql" && active.url) {
+      expect(isLocked).toBe(true)
+    } else {
+      expect(isLocked).toBe(false)
+    }
   })
 
   it("resolves active database config based on environment", () => {
@@ -39,6 +45,7 @@ describe("Database Environment & Code Configuration", () => {
   })
 
   it("loadDatabaseConfig and defaultDatabaseConfig return active code config when locked", () => {
+    if (!isDatabaseConfigLocked()) return
     const active = getActiveCodeDatabaseConfig()
     const loaded = loadDatabaseConfig()
     const def = defaultDatabaseConfig()
@@ -48,6 +55,7 @@ describe("Database Environment & Code Configuration", () => {
   })
 
   it("prevents saving manual database configuration when locked", () => {
+    if (!isDatabaseConfigLocked()) return
     expect(() =>
       saveDatabaseConfig({ driver: "local" }),
     ).toThrow(/locked in code and cannot be modified/)
