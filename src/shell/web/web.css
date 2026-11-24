@@ -34,6 +34,14 @@
   border-radius: var(--radius-md); border: 1px solid rgba(180, 83, 9, 0.35);
   background: rgba(180, 83, 9, 0.08); color: var(--color-warning); font-size: var(--text-sm);
 }
+.tm-banner-info {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--color-primary-strong);
+}
+.tm-banner-note { margin-top: 0.25rem; }
+.tm-flex-input { flex: 1 1 18rem; }
+.tm-locked-text { color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 500; }
 .tm-banner a { font-weight: 600; }
 
 .tm-admin { display: flex; flex-direction: column; gap: var(--space-6); }

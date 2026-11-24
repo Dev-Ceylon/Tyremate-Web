@@ -1,12 +1,20 @@
 import type { DatabaseConfig } from "../shared/protocol"
+import {
+  isDatabaseConfigLocked,
+  getActiveCodeDatabaseConfig,
+  isProductionEnvironment,
+} from "../config/databaseCredentials"
+
+export { isDatabaseConfigLocked, getActiveCodeDatabaseConfig, isProductionEnvironment }
 
 /**
  * Database connection settings for THIS browser. They must live outside the
  * database (chicken and egg), so they are kept in localStorage and can be
  * shared to other devices with a connection code from the admin panel.
  *
- * Build-time defaults (NEXT_PUBLIC_TM_DB_URL) let a deployment pre-select a
- * remote database URL; the auth token is never baked into the static bundle.
+ * When code configuration is locked (IS_DATABASE_CONFIG_LOCKED = true),
+ * credentials from web/config/databaseCredentials.ts are enforced for development
+ * and production, and manual setup is temporarily disabled.
  */
 const STORAGE_KEY = "tyremate.dbConfig"
 const SESSION_KEY = "tyremate.session"
@@ -29,6 +37,9 @@ function writeStorage(key: string, value: string | null) {
 }
 
 export function defaultDatabaseConfig(): DatabaseConfig {
+  if (isDatabaseConfigLocked()) {
+    return getActiveCodeDatabaseConfig()
+  }
   const url = process.env.NEXT_PUBLIC_TM_DB_URL
   return url ? { driver: "libsql", url } : { driver: "local" }
 }
@@ -52,6 +63,9 @@ export function validateDatabaseConfig(value: unknown): DatabaseConfig {
 }
 
 export function loadDatabaseConfig(): DatabaseConfig {
+  if (isDatabaseConfigLocked()) {
+    return getActiveCodeDatabaseConfig()
+  }
   const raw = readStorage(STORAGE_KEY)
   if (!raw) return defaultDatabaseConfig()
   try {
@@ -62,6 +76,9 @@ export function loadDatabaseConfig(): DatabaseConfig {
 }
 
 export function saveDatabaseConfig(config: DatabaseConfig) {
+  if (isDatabaseConfigLocked()) {
+    throw new Error("Database configuration is locked in code and cannot be modified from setup.")
+  }
   writeStorage(STORAGE_KEY, JSON.stringify(validateDatabaseConfig(config)))
 }
 

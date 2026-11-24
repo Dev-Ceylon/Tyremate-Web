@@ -3,7 +3,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Navigate } from "@/lib/router"
 import { getBackendStatus, startBackend } from "../../../../web/bridge/backendClient"
-import { loadSession } from "../../../../web/bridge/config"
+import { isDatabaseConfigLocked, isProductionEnvironment, loadSession } from "../../../../web/bridge/config"
 import { ToastProvider } from "../../../shared/ui/toast/ToastProvider"
 import { ConfirmProvider } from "../../../shared/ui/confirm/ConfirmProvider"
 import { useConfirm } from "../../../shared/ui/confirm/ConfirmProvider"
@@ -22,6 +22,8 @@ import { databaseMaintenance } from "../services/adminClient"
 function SetupContent() {
   const status = useBackendStatus()
   const confirm = useConfirm()
+  const isLocked = isDatabaseConfigLocked()
+  const environmentName = isProductionEnvironment() ? "Production" : "Development"
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
   const session = loadSession() as { permissions?: string[] } | null
@@ -62,9 +64,13 @@ function SetupContent() {
         <div className="tm-inline tm-setup-header">
           <BrandLogo size={52} />
           <div>
-            <p className="eyebrow">TyreMate setup</p>
+            <p className="eyebrow">TyreMate setup · {environmentName}</p>
             <h1>Database settings</h1>
-            <p className="hero-text">Connect this browser to your TyreMate database.</p>
+            <p className="hero-text">
+              {isLocked
+                ? `Preconfigured for ${environmentName.toLowerCase()} database. Manual setup is temporarily disabled.`
+                : "Connect this browser to your TyreMate database."}
+            </p>
           </div>
         </div>
         <div className="header-actions">
@@ -76,7 +82,7 @@ function SetupContent() {
 
       <DatabaseConnectionCard />
 
-      {status.state !== "idle" && status.config.driver === "local" ? (
+      {!isLocked && status.state !== "idle" && status.config.driver === "local" ? (
         <section className="panel tm-card">
           <div className="tm-danger-zone">
             <h3>Start over</h3>
