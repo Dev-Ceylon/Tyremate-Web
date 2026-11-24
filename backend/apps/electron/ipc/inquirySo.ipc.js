@@ -1,4 +1,4 @@
-﻿const inquirySoService = require("../../../packages/services/inquirySoService")
+const inquirySoService = require("../../../packages/services/inquirySoService")
 const { registerServiceHandler } = require("./errorMiddleware")
 
 registerServiceHandler(

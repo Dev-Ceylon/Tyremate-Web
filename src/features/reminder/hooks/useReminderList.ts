@@ -3,6 +3,7 @@ import { useNavigate } from "@/lib/router"
 import { REMINDER_TYPE_CODES } from "../../../shared/constants/reminderTypeConstants"
 import type {
   ReminderRecord,
+  ReminderWithBatteryDetails,
   ReminderWithTyreExpiryDetails,
 } from "../models/reminder"
 import { reminderService } from "../services/reminderService"
@@ -24,6 +25,11 @@ export function useReminderList() {
   const [tyreExpiryDetails, setTyreExpiryDetails] = useState<ReminderWithTyreExpiryDetails | null>(null)
   const [tyreExpiryModalOpen, setTyreExpiryModalOpen] = useState(false)
   const [tyreExpiryLoading, setTyreExpiryLoading] = useState(false)
+  const [batteryReminder, setBatteryReminder] = useState<ReminderRecord | null>(null)
+  const [batteryDetails, setBatteryDetails] = useState<ReminderWithBatteryDetails | null>(null)
+  const [batteryModalOpen, setBatteryModalOpen] = useState(false)
+  const [batteryLoading, setBatteryLoading] = useState(false)
+  const [batteryCompleting, setBatteryCompleting] = useState(false)
 
   const filteredReminders = useMemo(
     () => (activeType === "all" ? reminders : reminders.filter((r) => r.ReminderTypeCode === activeType)),
@@ -82,6 +88,55 @@ export function useReminderList() {
     navigate("/storage-manager/tyres")
   }, [closeTyreExpiryModal, navigate, tyreExpiryDetails])
 
+  const closeBatteryModal = useCallback(() => {
+    setBatteryModalOpen(false)
+    setBatteryReminder(null)
+    setBatteryDetails(null)
+  }, [])
+
+  const openBatteryModal = useCallback(async (reminder: ReminderRecord) => {
+    setBatteryLoading(true)
+    setBatteryReminder(reminder)
+    setBatteryModalOpen(true)
+
+    try {
+      const details = await reminderService.getBatteryReminderDetails(reminder.ID)
+      setBatteryDetails(details)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to load battery reminder details")
+    } finally {
+      setBatteryLoading(false)
+    }
+  }, [])
+
+  const gotoBatteryStock = useCallback(() => {
+    const locationId = batteryDetails?.batteryDetails?.LocationID
+    const branchId = batteryDetails?.batteryDetails?.BranchId
+
+    closeBatteryModal()
+
+    if (locationId && branchId) {
+      navigate(`/storage-manager/batteries/locations/${locationId}/branches/${branchId}`)
+      return
+    }
+
+    navigate("/storage-manager/batteries")
+  }, [batteryDetails, closeBatteryModal, navigate])
+
+  const handleMarkBatteryCompleted = useCallback(async () => {
+    if (!batteryReminder) return
+    setBatteryCompleting(true)
+    try {
+      await reminderService.markReminderCompleted(batteryReminder.ID, true)
+      setReminders((prev) => prev.filter((r) => r.ID !== batteryReminder.ID))
+      closeBatteryModal()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to mark reminder completed")
+    } finally {
+      setBatteryCompleting(false)
+    }
+  }, [batteryReminder, closeBatteryModal])
+
   const handleDelete = useCallback(async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this reminder?")) return
 
@@ -101,6 +156,15 @@ export function useReminderList() {
     const isCheque = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.CHEQUE_FOLLOW_UP
     const isSoFollowUp = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.SO_FOLLOW_UP
     const isTyreExpiry = reminder.ReminderTypeCode === REMINDER_TYPE_CODES.TYRE_EXPIRY
+    const isBatteryReminder =
+      reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_EXPIRY ||
+      reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_RECHARGE ||
+      reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_WARRANTY
+
+    if (isBatteryReminder) {
+      await openBatteryModal(reminder)
+      return
+    }
 
     if (isTyreExpiry) {
       await openTyreExpiryModal(reminder)
@@ -134,7 +198,12 @@ export function useReminderList() {
     }
 
     navigate(`/reminders/${reminder.ID}`)
-  }, [navigate, openSalesOrderByChequeReminderId, openTyreExpiryModal])
+  }, [
+    navigate,
+    openBatteryModal,
+    openSalesOrderByChequeReminderId,
+    openTyreExpiryModal,
+  ])
 
   return {
     reminders,
@@ -155,5 +224,13 @@ export function useReminderList() {
     tyreExpiryLoading,
     closeTyreExpiryModal,
     gotoStock,
+    batteryReminder,
+    batteryDetails,
+    batteryModalOpen,
+    batteryLoading,
+    batteryCompleting,
+    closeBatteryModal,
+    gotoBatteryStock,
+    handleMarkBatteryCompleted,
   }
 }

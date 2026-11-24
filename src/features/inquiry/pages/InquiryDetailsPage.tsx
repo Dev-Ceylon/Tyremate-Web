@@ -1,18 +1,27 @@
-import { useNavigate } from "@/lib/router"
+import { Navigate, useNavigate } from "@/lib/router"
 import { useInquiryDetails } from "../hooks/useInquiryDetails"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
+import PermissionGate from "../../../shared/components/PermissionGate"
 import { WALKIN_CUSTOMER_FIELDS } from "../../../shared/walkinCustomer/models/walkinCustomer"
 import { StatusBadge } from "../../../shared/ui/StatusBadge"
+import { LoadingState } from "../../../shared/ui/progress"
 import { LinkedSalesOrdersCard } from "../components/LinkedSalesOrdersCard"
 
 export default function InquiryDetailsPage() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuthorization()
   const { inquiry, loading, error } = useInquiryDetails()
 
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading inquiry details...</p></main>
+  if (!hasPermission("inquiry.view")) return <Navigate to="/inquiries" replace />
+  if (loading) return <main className="app-shell"><LoadingState message="Loading inquiry details…" /></main>
   if (error || !inquiry) return <main className="app-shell"><p className="hero-text error-text">{error || "Inquiry not found"}</p></main>
 
-  const totalQty = inquiry.tyres?.reduce((sum, t) => sum + (t.Qty || 0), 0) ?? 0
-  const totalValue = inquiry.tyres?.reduce((sum, t) => sum + (t.Price * t.Qty * (1 - t.Discount / 100)), 0) ?? 0
+  const isBattery = (inquiry.Category || "tyre").toLowerCase() === "battery"
+  const rawItems = isBattery ? (inquiry.batteries ?? []) : (inquiry.tyres ?? [])
+  const totalQty = rawItems.reduce((sum, item: any) => sum + (item.Qty || 0), 0)
+  const totalValue = rawItems.reduce((sum, item: any) => sum + (item.Price * item.Qty * (1 - item.Discount / 100)), 0)
+  const totalToOrder = rawItems.reduce((sum, item: any) => sum + (item.NeedToOrderQty ?? 0), 0)
+
   // Narrowed once into a const so the walk-in variant survives inside the map callback.
   const walkinCustomer = inquiry.Customer?.IsWalkinCustomer ? inquiry.Customer : null
   const registeredCustomer =
@@ -27,9 +36,23 @@ export default function InquiryDetailsPage() {
           <p className="hero-text">Detailed breakdown of customer requirements and specification tracking.</p>
         </div>
         <div className="header-actions">
-          <button className="primary-action" onClick={() => navigate(`/sales-orders/new?inquiryId=${inquiry.InquiryID}`)}>
-            Create Sales Order
-          </button>
+          <PermissionGate permission="so.create">
+            <button
+              className="primary-action"
+              onClick={() => navigate(`/sales-orders/new?inquiryId=${inquiry.InquiryID}`)}
+            >
+              Create Sales Order
+            </button>
+          </PermissionGate>
+          <PermissionGate permission="po.create">
+            <button
+              className="secondary-action"
+              onClick={() => navigate(`/purchase-orders/new?inquiryId=${inquiry.InquiryID}`)}
+              title={totalToOrder > 0 ? `Order ${totalToOrder} needed units` : "Create a Purchase Order from this inquiry"}
+            >
+              Create Purchase Order
+            </button>
+          </PermissionGate>
           <button className="secondary-action" onClick={() => navigate("/inquiries")}>
             Back to List
           </button>
@@ -40,6 +63,14 @@ export default function InquiryDetailsPage() {
         <div className="info-panel panel panel-strong">
           <p className="section-label">Inquiry Summary</p>
           <div className="detail-card-grid">
+            <div className="detail-card-row">
+              <span className="detail-card-key">Category</span>
+              <span className="detail-card-val">
+                <span className={`status-badge ${isBattery ? "status-pending" : "status-approved"}`}>
+                  {isBattery ? "Batteries" : "Tyres"}
+                </span>
+              </span>
+            </div>
             {walkinCustomer ? (
               <>
                 <div className="detail-card-row">
@@ -110,18 +141,22 @@ export default function InquiryDetailsPage() {
 
       <section className="table-panel panel panel-strong mt-6">
         <div className="table-panel-header">
-          <h2>Tyre Specifications</h2>
+          <h2>{isBattery ? "Battery Specifications" : "Tyre Specifications"}</h2>
           <div className="header-actions">
-            <span className="stat-badge">{totalQty} tyre{totalQty !== 1 ? "s" : ""}</span>
-            <span className="stat-badge">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="stat-badge">
+              {totalQty} {isBattery ? `batter${totalQty !== 1 ? "ies" : "y"}` : `tyre${totalQty !== 1 ? "s" : ""}`}
+            </span>
+            <span className="stat-badge">
+              ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll tm-table-scroll">
           <table className="product-table">
             <thead>
               <tr>
-                <th>Tyre</th>
-                <th>Size - Pattern</th>
+                <th>{isBattery ? "Battery (Brand)" : "Tyre (Brand)"}</th>
+                <th>{isBattery ? "Model (Capacity / Voltage)" : "Size - Pattern"}</th>
                 <th className="text-right">Unit Price</th>
                 <th className="text-right">Disc %</th>
                 <th className="text-right">Qty</th>
@@ -131,21 +166,23 @@ export default function InquiryDetailsPage() {
               </tr>
             </thead>
             <tbody>
-              {inquiry.tyres?.map((tyre) => {
-                const lineTotal = tyre.Price * tyre.Qty * (1 - tyre.Discount / 100)
-                const available = tyre.AvailableQuantity ?? 0
-                const toOrder = tyre.NeedToOrderQty ?? 0
+              {rawItems.map((item: any) => {
+                const lineTotal = item.Price * item.Qty * (1 - item.Discount / 100)
+                const available = item.AvailableQuantity ?? 0
+                const toOrder = item.NeedToOrderQty ?? 0
+                const specText = isBattery
+                  ? `${item.Model || "N/A"} (${item.Capacity || "N/A"} ${item.Voltage || "N/A"})`
+                  : `${item.Size || "N/A"} - ${item.Pattern || "N/A"}`
+
                 return (
-                  <tr key={tyre.ID}>
-                    <td className="text-muted">{tyre.Brand || "NA"}</td>
+                  <tr key={item.ID}>
+                    <td className="text-muted">{item.Brand || "NA"}</td>
                     <td>
-                      <span className="font-medium">
-                        {tyre.Size || "N/A"} - {tyre.Pattern || "N/A"}
-                      </span>
+                      <span className="font-medium">{specText}</span>
                     </td>
-                    <td className="text-right">${tyre.Price.toLocaleString()}</td>
-                    <td className="text-right">{tyre.Discount}%</td>
-                    <td className="text-right font-bold">{tyre.Qty}</td>
+                    <td className="text-right">${item.Price.toLocaleString()}</td>
+                    <td className="text-right">{item.Discount}%</td>
+                    <td className="text-right font-bold">{item.Qty}</td>
                     <td className="text-right">{available}</td>
                     <td className="text-right">
                       <StatusBadge
@@ -153,7 +190,9 @@ export default function InquiryDetailsPage() {
                         tone={toOrder <= 0 ? "completed" : "pending"}
                       />
                     </td>
-                    <td className="text-right font-medium">${lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right font-medium">
+                      ${lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
                   </tr>
                 )
               })}
@@ -162,7 +201,9 @@ export default function InquiryDetailsPage() {
         </div>
       </section>
 
-      <LinkedSalesOrdersCard inquiryId={inquiry.InquiryID} />
+      <PermissionGate permission="so.view">
+        <LinkedSalesOrdersCard inquiryId={inquiry.InquiryID} />
+      </PermissionGate>
     </main>
   )
 }

@@ -5,12 +5,16 @@ const poRepo = require("../repositories/poRepository")
 const poTyresRepo = require("../repositories/poTyresRepository")
 const soTyresRepo = require("../repositories/soTyresRepository")
 const poTyresSuppliersRepo = require("../repositories/poTyresSuppliersRepository")
+const poBatterySuppliersRepo = require("../repositories/poBatterySuppliersRepository")
 const poTyreAllocationsRepo = require("../repositories/poTyreAllocationsRepository")
+const poBatteryAllocationsRepo = require("../repositories/poBatteryAllocationsRepository")
+const poBatteriesRepo = require("../repositories/poBatteriesRepository")
 const storageManagerService = require("./storageManagerService")
+const batteryStorageManagerService = require("./batteryStorageManagerService")
 const poTyresService = require("./poTyresService")
 const poService = require("./poService")
 const poAuditLogService = require("./poAuditLogService")
-const { STATUS_CODES } = require("../constants/statusConstants")
+const { STATUS_CODES, getStatusIdByCode } = require("../constants/statusConstants")
 const { AUDIT_ACTIONS } = require("../constants/auditActionConstants")
 
 const normalizeId = (value, name) => {
@@ -49,23 +53,25 @@ const normalizeReceiptDate = (value) => {
   return date
 }
 
-const normalizeBatches = (batches) => {
+const normalizeBatches = (batches, isBattery = false) => {
   if (!Array.isArray(batches) || batches.length === 0) {
-    throw new Error("Enter at least one DOT batch for this receipt")
+    throw new Error(`Enter at least one ${isBattery ? "batch" : "DOT batch"} for this receipt`)
   }
 
   return batches.map((batch, index) => {
     const receivedQty = normalizeQty(batch.ReceivedQty, `Batches[${index}].ReceivedQty`, false)
     const acceptedQty = normalizeQty(batch.AcceptedQty, `Batches[${index}].AcceptedQty`)
-    const dot = batch.DOT === undefined || batch.DOT === null ? null : String(batch.DOT).trim() || null
+    const rawDot = batch.DOT ?? batch.BatchCode
+    const dot = rawDot === undefined || rawDot === null ? null : String(rawDot).trim() || null
     if (acceptedQty > receivedQty) {
       throw new Error(`Batches[${index}].AcceptedQty cannot exceed its received quantity`)
     }
-    if (dot && (!/^\d{4}$/.test(dot) || Number(dot.slice(0, 2)) < 1 || Number(dot.slice(0, 2)) > 53)) {
+    if (!isBattery && dot && (!/^\d{4}$/.test(dot) || Number(dot.slice(0, 2)) < 1 || Number(dot.slice(0, 2)) > 53)) {
       throw new Error(`Batches[${index}].DOT must be a valid WWYY code`)
     }
     return {
       DOT: dot,
+      BatchCode: batch.BatchCode ? String(batch.BatchCode).trim() : dot,
       ReceivedQty: receivedQty,
       AcceptedQty: acceptedQty,
     }
@@ -93,6 +99,8 @@ exports.getPendingGoodsReceipts = (filters = {}) => {
   if (filters.POID != null) normalized.POID = normalizeId(filters.POID, "POID")
   if (filters.SupplierID != null) normalized.SupplierID = normalizeId(filters.SupplierID, "SupplierID")
   if (filters.PoTyresID != null) normalized.PoTyresID = normalizeId(filters.PoTyresID, "PoTyresID")
+  if (filters.PoBatteriesID != null) normalized.PoBatteriesID = normalizeId(filters.PoBatteriesID, "PoBatteriesID")
+  if (filters.Category != null) normalized.Category = String(filters.Category).trim().toLowerCase()
 
   if (filters.ExpectedFrom != null) normalized.ExpectedFrom = normalizeReceiptDate(filters.ExpectedFrom)
   if (filters.ExpectedTo != null) normalized.ExpectedTo = normalizeReceiptDate(filters.ExpectedTo)
@@ -117,18 +125,163 @@ exports.countPendingGoodsReceipts = (filters = {}) => {
 
 exports.postGoodsReceipt = (payload = {}, ctx) => {
   const poId = normalizeId(payload.POID, "POID")
-  const allocationId = normalizeId(payload.PoTyresSupplierID, "PoTyresSupplierID")
+  const allocationId = normalizeId(payload.PoBatterySupplierID || payload.PoTyresSupplierID, "Supplier Allocation ID")
   const receiptDate = normalizeReceiptDate(payload.ReceiptDate)
   const dispatchedQty = normalizeQty(payload.DispatchedQty ?? 0, "DispatchedQty")
   const damagedQty = normalizeQty(payload.DamagedQty ?? 0, "DamagedQty")
-  const batches = normalizeBatches(payload.Batches)
-  const receivedQty = batches.reduce((sum, batch) => sum + batch.ReceivedQty, 0)
-  const acceptedQty = batches.reduce((sum, batch) => sum + batch.AcceptedQty, 0)
+
+  const po = poRepo.getPOById(poId)
+  if (!po || (po.StatusCode !== STATUS_CODES.PENDING && po.StatusCode !== STATUS_CODES.ARRIVING)) {
+    throw new Error("Goods can only be received while the PO is Pending or Arriving; completion is automatic after all lines arrive")
+  }
+
+  const isBattery = po.Category === "battery"
+  let receivedQty = 0
+  let acceptedQty = 0
+  let batches = []
+
+  if (isBattery) {
+    if (Array.isArray(payload.Batches) && payload.Batches.length > 0) {
+      batches = normalizeBatches(payload.Batches, true)
+    }
+    if (payload.ReceivedQty != null) {
+      receivedQty = normalizeQty(payload.ReceivedQty, "ReceivedQty")
+    } else if (batches.length > 0) {
+      receivedQty = batches.reduce((sum, batch) => sum + batch.ReceivedQty, 0)
+    } else {
+      receivedQty = normalizeQty(payload.DispatchedQty ?? 0, "ReceivedQty")
+    }
+
+    if (payload.AcceptedQty != null) {
+      acceptedQty = normalizeQty(payload.AcceptedQty, "AcceptedQty")
+    } else if (batches.length > 0) {
+      acceptedQty = batches.reduce((sum, batch) => sum + batch.AcceptedQty, 0)
+    } else {
+      acceptedQty = receivedQty
+    }
+  } else {
+    batches = normalizeBatches(payload.Batches, false)
+    receivedQty = batches.reduce((sum, batch) => sum + batch.ReceivedQty, 0)
+    acceptedQty = batches.reduce((sum, batch) => sum + batch.AcceptedQty, 0)
+  }
   const rejectedQty = receivedQty - acceptedQty
 
   if (receivedQty <= 0) throw new Error("Received quantity must be greater than zero")
   if (damagedQty > rejectedQty) throw new Error("Damaged quantity cannot exceed the rejected quantity")
 
+  const shortageQty = Math.max(dispatchedQty - receivedQty, 0)
+  const overReceiptQty = Math.max(receivedQty - dispatchedQty, 0)
+  const discrepancyReason = String(payload.DiscrepancyReason ?? "").trim() || null
+
+  if ((shortageQty > 0 || overReceiptQty > 0 || damagedQty > 0) && !discrepancyReason) {
+    throw new Error(`Add a discrepancy reason for shortages, over-receipts, or damaged ${isBattery ? "batteries" : "tyres"}`)
+  }
+
+  if (isBattery) {
+    const allocation = poBatterySuppliersRepo.getPoBatterySupplierById(allocationId)
+    if (!allocation) throw new Error("PO supplier allocation not found")
+    if (Number(allocation.IsApproved) !== 1) throw new Error("Only approved supplier allocations can receive goods")
+
+    const poBattery = poBatteriesRepo.getPoBatteryById(allocation.PoBatteriesID)
+    if (!poBattery || Number(poBattery.POID) !== poId) throw new Error("Supplier allocation does not belong to this PO")
+    if (poBattery.StatusCode !== STATUS_CODES.ARRIVING) throw new Error("The PO battery line must be Arriving before goods can be received")
+
+    const location = poBatteryAllocationsRepo.getAllocationForPOAndBatteryID(poId, poBattery.ID)
+    if (!location) throw new Error("Allocate a storage location to this battery line before posting its GRN")
+
+    const allocationReceivedToDate = goodsReceiptRepo.getGoodsReceiptsByPoId(poId)
+      .filter((receiptLine) => Number(receiptLine.PoBatterySupplierID || receiptLine.PoTyresSupplierID) === allocationId)
+      .reduce((total, receiptLine) => total + Number(receiptLine.ReceivedQty), 0)
+    const acceptedForLineBeforeReceipt = goodsReceiptRepo.getPostedAcceptedQtyByPoBatteriesId(poBattery.ID)
+
+    return db.transaction(() => {
+      const receipt = goodsReceiptRepo.createGoodsReceipt({
+        POID: poId,
+        SupplierID: allocation.SupplierID,
+        ReceiptDate: receiptDate,
+        DeliveryNoteNumber: String(payload.DeliveryNoteNumber ?? "").trim() || null,
+        CreatedBy: resolveCreatedBy(ctx),
+      })
+      const lineId = goodsReceiptRepo.createGoodsReceiptLine({
+        GoodsReceiptID: receipt.ID,
+        PoBatteriesID: poBattery.ID,
+        PoBatterySupplierID: allocationId,
+        LocationID: location.LocationId,
+        DispatchedQty: dispatchedQty,
+        ReceivedQty: receivedQty,
+        AcceptedQty: acceptedQty,
+        DamagedQty: damagedQty,
+        ShortageQty: shortageQty,
+        OverReceiptQty: overReceiptQty,
+        DiscrepancyReason: discrepancyReason,
+      })
+
+      for (const batch of batches) {
+        goodsReceiptRepo.createGoodsReceiptBatch({
+          GoodsReceiptLineID: lineId,
+          DOT: batch.DOT || batch.BatchCode || null,
+          BatchCode: batch.BatchCode || batch.DOT || null,
+          ReceivedQty: batch.ReceivedQty,
+          AcceptedQty: batch.AcceptedQty,
+        })
+      }
+
+      const acceptedBatches = batches
+        .filter((batch) => batch.AcceptedQty > 0)
+        .map((batch) => ({
+          BatchCode: batch.BatchCode || batch.DOT || `BAT-LOT-${String(receipt.ID).padStart(4, "0")}`,
+          Qty: batch.AcceptedQty,
+        }))
+
+      if (acceptedQty > 0) {
+        batteryStorageManagerService.addArrivedPOToStorage(poBattery.BatteryID, location.LocationId, acceptedQty, {
+          orderId: poId,
+          batches: acceptedBatches,
+          ctx,
+        })
+      }
+
+      const receivedForAllocation = allocationReceivedToDate + receivedQty
+      if (receivedForAllocation >= Number(allocation.Qty) && !allocation.ActualDeliveryDate) {
+        const localNow = new Date()
+        const actualDate = [localNow.getFullYear(), String(localNow.getMonth() + 1).padStart(2, "0"), String(localNow.getDate()).padStart(2, "0")].join("-")
+        poBatterySuppliersRepo.updateActualDeliveryDate(allocationId, actualDate)
+      }
+
+      const acceptedForLine = acceptedForLineBeforeReceipt + acceptedQty
+      const currentPoBattery = poBatteriesRepo.getPoBatteryById(poBattery.ID)
+      if (acceptedForLine >= Number(poBattery.Qty) && currentPoBattery?.StatusCode === STATUS_CODES.ARRIVING) {
+        const arrivedStatusId = getStatusIdByCode(STATUS_CODES.ARRIVED)
+        if (arrivedStatusId) {
+          poBatteriesRepo.updateStatus(poBattery.ID, arrivedStatusId)
+        }
+      }
+
+      poService.completePOWhenAllTyreLinesArrived(poId, ctx)
+      poAuditLogService.recordPOAction({
+        action: AUDIT_ACTIONS.CREATE,
+        poId,
+        eventData: {
+          goodsReceiptId: receipt.ID,
+          grnNumber: receipt.GRNNumber,
+          poBatteriesId: poBattery.ID,
+          supplierAllocationId: allocationId,
+          receivedQty,
+          acceptedQty,
+          damagedQty,
+          shortageQty,
+          overReceiptQty,
+        },
+        before: null,
+        after: { ...receipt, GoodsReceiptLineID: lineId },
+        ctx,
+      })
+
+      return { ...receipt, GoodsReceiptLineID: lineId, ReceivedQty: receivedQty, AcceptedQty: acceptedQty }
+    })()
+  }
+
+  // Tyre PO logic
   const allocation = poTyresSuppliersRepo.getPoTyresSupplierById(allocationId)
   if (!allocation) throw new Error("PO supplier allocation not found")
   if (Number(allocation.IsApproved) !== 1) throw new Error("Only approved supplier allocations can receive goods")
@@ -137,11 +290,6 @@ exports.postGoodsReceipt = (payload = {}, ctx) => {
   if (!poTyre || Number(poTyre.POID) !== poId) throw new Error("Supplier allocation does not belong to this PO")
   if (poTyre.StatusCode !== STATUS_CODES.ARRIVING) throw new Error("The PO tyre line must be Arriving before goods can be received")
 
-  const po = poRepo.getPOById(poId)
-  if (!po || po.StatusCode !== STATUS_CODES.PENDING) {
-    throw new Error("Goods can only be received while the PO is Pending; completion is automatic after all tyre lines arrive")
-  }
-
   const location = poTyreAllocationsRepo.getAllocationForPOAndTyreID(poId, poTyre.ID)
   if (!location) throw new Error("Allocate a storage location to this tyre line before posting its GRN")
 
@@ -149,13 +297,6 @@ exports.postGoodsReceipt = (payload = {}, ctx) => {
     .filter((receiptLine) => Number(receiptLine.PoTyresSupplierID) === allocationId)
     .reduce((total, receiptLine) => total + Number(receiptLine.ReceivedQty), 0)
   const acceptedForLineBeforeReceipt = goodsReceiptRepo.getPostedAcceptedQtyByPoTyresId(poTyre.ID)
-  const shortageQty = Math.max(dispatchedQty - receivedQty, 0)
-  const overReceiptQty = Math.max(receivedQty - dispatchedQty, 0)
-  const discrepancyReason = String(payload.DiscrepancyReason ?? "").trim() || null
-
-  if ((shortageQty > 0 || overReceiptQty > 0 || damagedQty > 0) && !discrepancyReason) {
-    throw new Error("Add a discrepancy reason for shortages, over-receipts, or damaged tyres")
-  }
 
   return db.transaction(() => {
     const receipt = goodsReceiptRepo.createGoodsReceipt({

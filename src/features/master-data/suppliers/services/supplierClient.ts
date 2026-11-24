@@ -1,4 +1,4 @@
-import type { SupplierPayload, SupplierRecord } from "../models/supplier"
+import type { SupplierPayload, SupplierRecord, SupplierTypeRecord } from "../models/supplier"
 
 export const supplierClient = {
   suggest(field: string, query: string): Promise<string[]> {
@@ -11,6 +11,10 @@ export const supplierClient = {
 
   getById(supplierId: number): Promise<SupplierRecord> {
     return window.api.suppliers.getSupplierById(supplierId)
+  },
+
+  getTypes(): Promise<SupplierTypeRecord[]> {
+    return window.api.suppliers.getSupplierTypes()
   },
 
   create(data: SupplierPayload): Promise<SupplierRecord> {

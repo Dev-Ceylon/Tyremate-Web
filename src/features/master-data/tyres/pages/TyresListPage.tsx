@@ -3,6 +3,7 @@ import { useTyres } from "../hooks/useTyres"
 import { TyresTable } from "../components/TyresTable"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
+import { LoadingState } from "../../../../shared/ui/progress"
 import type { TyreRecord } from "../models/tyre"
 
 export default function TyresListPage() {
@@ -62,7 +63,7 @@ export default function TyresListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading tyres...</p> : null}
+      {loading ? <LoadingState message="Loading tyres…" /> : null}
       {error ? <p className="hero-text">Opps Something went Wrong!</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

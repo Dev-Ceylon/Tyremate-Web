@@ -1,4 +1,5 @@
 const db = require("../database/connection")
+const inquiryBatteriesRepo = require("./inquiryBatteriesRepository")
 
 // "Available to sell" stock: only Default (df) locations count, matching the
 // sales-order auto-PO drain logic so inquiry NeedToOrderQty cannot disagree
@@ -14,7 +15,7 @@ const AVAILABLE_STOCK_SQL = `
 
 exports.getAllInquiries = () => {
   return db.prepare(`
-    SELECT i.*, c.Name AS CustomerName, c.CustomerCode
+    SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, c.Name AS CustomerName, c.CustomerCode
     FROM Inquiry i
     LEFT JOIN CustomerM c ON c.CustomerID = i.CustomerID
   `).all()
@@ -22,7 +23,7 @@ exports.getAllInquiries = () => {
 
 exports.getInquiryById = (id) => {
   return db.prepare(`
-    SELECT i.*, c.Name AS CustomerName, c.CustomerCode
+    SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, c.Name AS CustomerName, c.CustomerCode
     FROM Inquiry i
     LEFT JOIN CustomerM c ON c.CustomerID = i.CustomerID
     WHERE i.InquiryID = ?
@@ -32,7 +33,7 @@ exports.getInquiryById = (id) => {
 exports.getInquiryByReminderId = (reminderId) => {
   return db
     .prepare(`
-      SELECT i.*, c.Name AS CustomerName, c.CustomerCode, i.Notes AS InquiryNotes
+      SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, c.Name AS CustomerName, c.CustomerCode, i.Notes AS InquiryNotes
       FROM Inquiry i
       INNER JOIN InquiryReminder ir ON ir.InquiryID = i.InquiryID
       LEFT JOIN CustomerM c ON c.CustomerID = i.CustomerID
@@ -59,13 +60,18 @@ exports.getInquiryTyresByInquiryId = (inquiryId) => {
   `).all(inquiryId)
 }
 
+exports.getInquiryBatteriesByInquiryId = (inquiryId) => {
+  return inquiryBatteriesRepo.getInquiryBatteriesByInquiryId(inquiryId)
+}
+
 exports.createInquiry = (data) => {
+  const category = (data.Category || "tyre").toLowerCase()
   const result = db
     .prepare(
-      `INSERT INTO Inquiry (Date, CustomerID, Notes, IsAdminApproved, ConvertedSOID)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO Inquiry (Date, Category, CustomerID, Notes, IsAdminApproved, ConvertedSOID)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .run(data.Date, data.CustomerID, data.Notes, data.IsAdminApproved, data.ConvertedSOID)
+    .run(data.Date, category, data.CustomerID, data.Notes, data.IsAdminApproved, data.ConvertedSOID)
   return result.lastInsertRowid
 }
 
@@ -85,15 +91,21 @@ exports.createInquiryTyre = (data) => {
     )
 }
 
+exports.createInquiryBattery = (data) => {
+  return inquiryBatteriesRepo.createInquiryBattery(data)
+}
+
 exports.updateInquiry = (id, data) => {
+  const category = (data.Category || "tyre").toLowerCase()
   const result = db
     .prepare(
       `UPDATE Inquiry
-       SET Date = ?, CustomerID = ?, Notes = ?, IsAdminApproved = ?, ConvertedSOID = ?
+       SET Date = ?, Category = ?, CustomerID = ?, Notes = ?, IsAdminApproved = ?, ConvertedSOID = ?
        WHERE InquiryID = ?`
     )
     .run(
       data.Date,
+      category,
       data.CustomerID,
       data.Notes,
       data.IsAdminApproved,
@@ -117,6 +129,10 @@ exports.deleteInquiryTyresByInquiryId = (inquiryId) => {
   return db.prepare("DELETE FROM InquiryTyres WHERE InquiryID = ?").run(inquiryId)
 }
 
+exports.deleteInquiryBatteriesByInquiryId = (inquiryId) => {
+  return inquiryBatteriesRepo.deleteInquiryBatteriesByInquiryId(inquiryId)
+}
+
 exports.updateApprovalStatus = (id, isApproved) => {
   return db
     .prepare("UPDATE Inquiry SET IsAdminApproved = ? WHERE InquiryID = ?")
@@ -127,6 +143,10 @@ exports.approveAllTyresForInquiry = (inquiryId) => {
   return db
     .prepare("UPDATE InquiryTyres SET IsAdminApproved = 1 WHERE InquiryID = ?")
     .run(inquiryId)
+}
+
+exports.approveAllBatteriesForInquiry = (inquiryId) => {
+  return inquiryBatteriesRepo.approveAllBatteriesForInquiry(inquiryId)
 }
 
 exports.getInquiriesByReminderIds = (reminderIds) => {

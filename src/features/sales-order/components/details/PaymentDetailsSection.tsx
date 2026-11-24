@@ -39,6 +39,8 @@ export function PaymentDetailsSection({
   isDownloadingSummaryReceipt,
 }: PaymentDetailsSectionProps) {
   const payments = order.Payments ?? []
+  const hasAdvance = payments.some((p) => p.IsAdvance)
+  const hasNonAdvance = payments.some((p) => !p.IsAdvance)
   const paymentStatus = order.IsPaymentCompleted !== undefined && order.IsPaymentCompleted !== null
 
   const {
@@ -57,7 +59,11 @@ export function PaymentDetailsSection({
           <h2>Payment Details</h2>
           {payments.length > 0 && (
             <p className="secondary-text">
-              Customer advance payment records for this sales order.
+              {hasAdvance && !hasNonAdvance
+                ? "Customer advance payment records for this sales order."
+                : hasAdvance && hasNonAdvance
+                  ? "Payment and advance deposit records for this sales order."
+                  : "Payment records for this sales order."}
             </p>
           )}
         </div>

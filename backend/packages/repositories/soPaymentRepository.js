@@ -1,14 +1,30 @@
 const db = require("../database/connection");
 
+const ensureSoPaymentColumns = () => {
+  try {
+    const columns = db.prepare("PRAGMA table_info(SOPayments)").all();
+    const hasIsAdvance = columns.some((c) => c.name.toLowerCase() === "isadvance");
+    if (!hasIsAdvance) {
+      db.exec("ALTER TABLE SOPayments ADD COLUMN IsAdvance INTEGER NOT NULL DEFAULT 0");
+    }
+  } catch (err) {
+    // ignore
+  }
+};
+
+ensureSoPaymentColumns();
+
 exports.createSOPayment = (data) => {
+  const isAdvance = data.IsAdvance ? 1 : 0;
   const result = db.prepare(`
-    INSERT INTO SOPayments (SoID, PaymentID)
-    VALUES (?, ?)
-  `).run(data.SoID, data.PaymentID);
+    INSERT INTO SOPayments (SoID, PaymentID, IsAdvance)
+    VALUES (?, ?, ?)
+  `).run(data.SoID, data.PaymentID, isAdvance);
 
   return {
     ID: result.lastInsertRowid,
-    ...data
+    ...data,
+    IsAdvance: isAdvance
   };
 };
 

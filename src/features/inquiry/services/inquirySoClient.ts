@@ -1,4 +1,4 @@
-﻿import type { LinkedSoRecord, SoLinkedInquiryRecord } from "../models/inquirySo"
+import type { LinkedSoRecord, SoLinkedInquiryRecord } from "../models/inquirySo"
 
 export const inquirySoClient = {
   getByInquiryId(inquiryId: number): Promise<LinkedSoRecord[]> {

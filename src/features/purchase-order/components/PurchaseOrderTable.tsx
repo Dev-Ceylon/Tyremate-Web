@@ -22,6 +22,7 @@ export const PurchaseOrderTable = ({ data }: PurchaseOrderTableProps) => {
         <thead>
           <tr>
             <th>ID</th>
+            <th>Category</th>
             <th>Date</th>
             <th>Linked SO</th>
             <th className="text-center">Status</th>
@@ -48,6 +49,11 @@ export const PurchaseOrderTable = ({ data }: PurchaseOrderTableProps) => {
             return (
               <tr key={po.ID} className="clickable-row" onClick={() => handleRowClick(po.ID)}>
                 <td className="mono-text">#{po.ID}</td>
+                <td>
+                  <span className={`status-badge ${po.Category === "battery" ? "status-pending" : "status-approved"}`}>
+                    {po.Category === "battery" ? "Batteries" : "Tyres"}
+                  </span>
+                </td>
                 <td className="secondary-text">{po.Date}</td>
                 <td className="mono-text">
                   {po.SoID ? (

@@ -5,6 +5,7 @@ const soReminderService = require("../soReminderService");
 const chequePaymentRepo = require("../../repositories/chequePaymentRepository");
 const soReminderRepo = require("../../repositories/soReminderRepository");
 const tyreExpiryReminderRepo = require("../../repositories/tyreExpiryReminderRepository");
+const batteryExpiryReminderRepo = require("../../repositories/batteryExpiryReminderRepository");
 const { REMINDER_TYPE_CODES } = require("../../constants/reminderTypeConstants");
 
 exports.enrichReminder = (reminder) => {
@@ -12,6 +13,7 @@ exports.enrichReminder = (reminder) => {
   let chequeDetails = null;
   let soDetails = null;
   let tyreExpiryDetails = null;
+  let batteryDetails = null;
 
   if (reminder.ReminderTypeCode === REMINDER_TYPE_CODES.INQUIRY_FOLLOW_UP) {
     try {
@@ -59,12 +61,28 @@ exports.enrichReminder = (reminder) => {
     }
   }
 
+  if (
+    reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_EXPIRY ||
+    reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_RECHARGE ||
+    reminder.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_WARRANTY
+  ) {
+    try {
+      batteryDetails = batteryExpiryReminderRepo.getBatteryReminderDetailsByReminderId(reminder.ID);
+    } catch (error) {
+      console.error(
+        `Failed to load battery reminder details for reminder ${reminder.ID}`,
+        error
+      );
+    }
+  }
+
   return {
     ...reminder,
     inquiryDetails,
     chequeDetails,
     soDetails,
-    tyreExpiryDetails
+    tyreExpiryDetails,
+    batteryDetails,
   };
 };
 
@@ -75,6 +93,12 @@ exports.batchEnrichReminders = (reminders) => {
   const chequeReminders = reminders.filter((r) => r.ReminderTypeCode === REMINDER_TYPE_CODES.CHEQUE_FOLLOW_UP);
   const soReminders = reminders.filter((r) => r.ReminderTypeCode === REMINDER_TYPE_CODES.SO_FOLLOW_UP);
   const tyreExpiryReminders = reminders.filter((r) => r.ReminderTypeCode === REMINDER_TYPE_CODES.TYRE_EXPIRY);
+  const batteryReminders = reminders.filter(
+    (r) =>
+      r.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_EXPIRY ||
+      r.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_RECHARGE ||
+      r.ReminderTypeCode === REMINDER_TYPE_CODES.BATTERY_WARRANTY
+  );
 
   const enrichmentMap = {};
 
@@ -167,11 +191,27 @@ exports.batchEnrichReminders = (reminders) => {
     }
   }
 
+  if (batteryReminders.length > 0) {
+    try {
+      const reminderIds = batteryReminders.map((r) => r.ID);
+      const results = batteryExpiryReminderRepo.getBatteryReminderDetailsByReminderIds(reminderIds);
+      for (const row of results) {
+        enrichmentMap[row.ReminderID] = {
+          ...enrichmentMap[row.ReminderID],
+          batteryDetails: row,
+        };
+      }
+    } catch (error) {
+      console.error("Failed to batch enrich battery reminders", error);
+    }
+  }
+
   return reminders.map((reminder) => ({
     ...reminder,
     inquiryDetails: enrichmentMap[reminder.ID]?.inquiryDetails || null,
     chequeDetails: enrichmentMap[reminder.ID]?.chequeDetails || null,
     soDetails: enrichmentMap[reminder.ID]?.soDetails || null,
-    tyreExpiryDetails: enrichmentMap[reminder.ID]?.tyreExpiryDetails || null
+    tyreExpiryDetails: enrichmentMap[reminder.ID]?.tyreExpiryDetails || null,
+    batteryDetails: enrichmentMap[reminder.ID]?.batteryDetails || null,
   }));
 };

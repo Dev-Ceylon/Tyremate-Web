@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS SupplierM (
   SupplierCode TEXT NOT NULL UNIQUE,
   Name TEXT NOT NULL,
   TinNo TEXT,
-  VatNo TEXT
+  VatNo TEXT,
+  SupplierTypeID INTEGER,
+  FOREIGN KEY (SupplierTypeID) REFERENCES SupplierTypeM(Id)
 );
 
 CREATE TABLE IF NOT EXISTS SupplierContact (

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { storageManagerService } from "../../storage-manager/services/storageManagerService"
 import type { StorageAllocationInput } from "../models/salesOrder"
+import type { SOCategory } from "../../../shared/constants/soCategoryConstants"
 
 export type StockLotRow = {
   StorageManagerID: number | null
   StorageManagerBatchID: number | null
   dot: string | null
+  batchCode?: string | null
+  expiryDate?: string | null
   locationName: string
   availableQty: number
   allocated: string
@@ -14,21 +17,22 @@ export type StockLotRow = {
 }
 
 /**
- * Loads the tyre's DOT batches (ordered oldest-DOT-first) whenever the
- * Quantity Manager modal opens for a tyre, pre-filling each batch's allocated
+ * Loads the item's batches (ordered oldest-first) whenever the
+ * Quantity Manager modal opens for an item, pre-filling each batch's allocated
  * quantity from the line's existing allocations.
  */
 export function useQuantityManagerStock(
   isOpen: boolean,
-  tyreId: number | null,
+  itemId: number | null,
   initialAllocations: StorageAllocationInput[],
+  category: SOCategory = "tyre",
 ) {
   const [rows, setRows] = useState<StockLotRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isOpen || tyreId === null) {
+    if (!isOpen || itemId === null) {
       return
     }
 
@@ -40,7 +44,14 @@ export function useQuantityManagerStock(
       setRows([])
 
       try {
-        const batches = await storageManagerService.getBatchesByTyreId(tyreId)
+        let batches: any[] = []
+        if (category === "battery") {
+          batches = window.api.batteryStorageManagers?.getBatchesByBatteryId
+            ? await window.api.batteryStorageManagers.getBatchesByBatteryId(itemId)
+            : []
+        } else {
+          batches = await storageManagerService.getBatchesByTyreId(itemId)
+        }
 
         if (cancelled) return
 
@@ -67,22 +78,30 @@ export function useQuantityManagerStock(
           }
         }
 
-        const nextRows: StockLotRow[] = batches.map((batch) => ({
-          StorageManagerID: batch.StorageManagerID,
-          StorageManagerBatchID: batch.Id,
-          dot: batch.DOT,
-          locationName: batch.LocationName ?? `Location #${batch.StorageManagerID}`,
-          availableQty: batch.Qty,
-          allocated: String(allocatedByBatch.get(batch.Id) ?? 0),
-          takeNow: String(takeNowByBatch.get(batch.Id) ?? 0),
-          receivedDate: batch.createdDate,
-        }))
+        const nextRows: StockLotRow[] = batches.map((batch) => {
+          const isBattery = category === "battery"
+          const smId = isBattery ? batch.BatteryStorageManagerID : batch.StorageManagerID
+          return {
+            StorageManagerID: smId,
+            StorageManagerBatchID: batch.Id,
+            dot: isBattery ? (batch.BatchCode || (batch.ExpiryDate ? `Exp: ${batch.ExpiryDate}` : null)) : batch.DOT,
+            batchCode: batch.BatchCode ?? null,
+            expiryDate: batch.ExpiryDate ?? null,
+            locationName: batch.LocationName ?? `Location #${smId}`,
+            availableQty: batch.Qty,
+            allocated: String(allocatedByBatch.get(batch.Id) ?? 0),
+            takeNow: String(takeNowByBatch.get(batch.Id) ?? 0),
+            receivedDate: batch.createdDate,
+          }
+        })
 
         nextRows.push({
           StorageManagerID: null,
           StorageManagerBatchID: null,
           dot: null,
-          locationName: "Auto (FIFO)",
+          batchCode: null,
+          expiryDate: null,
+          locationName: category === "battery" ? "Auto (FEFO)" : "Auto (FIFO)",
           availableQty: Number.POSITIVE_INFINITY,
           allocated: String(autoQty || 0),
           takeNow: String(autoTakeNow || 0),
@@ -105,7 +124,7 @@ export function useQuantityManagerStock(
     return () => {
       cancelled = true
     }
-  }, [isOpen, tyreId, initialAllocations])
+  }, [isOpen, itemId, initialAllocations, category])
 
   const totalQty = useMemo(
     () =>

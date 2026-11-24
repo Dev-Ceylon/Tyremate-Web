@@ -1,9 +1,12 @@
 import type { PoDetailedRecord, PoRecord, PoTyreRecord } from "../../purchase-order/models/purchaseOrder"
 import type { SoLinkedInquiryRecord } from "../../inquiry/models/inquirySo"
 import type { SoDeliveryRecord } from "./delivery"
+export type { SoDeliveryRecord } from "./delivery"
+import type { SOCategory } from "../../../shared/constants/soCategoryConstants"
 
 export type SoPayload = {
   Date: string
+  Category?: SOCategory
   IsAdminApproved?: number
   IsCompleted?: number
   IsPaymentCompleted?: number
@@ -12,6 +15,7 @@ export type SoPayload = {
 export type SoRecord = {
   SoID: number
   Date: string
+  Category?: SOCategory
   IsAdminApproved: number
   IsCompleted: number
   IsPaymentCompleted: number
@@ -59,6 +63,7 @@ export type SoPaymentRecord = {
   PaymentTypeCode: string
   PaymentTypeName: string
   Amount: number
+  IsAdvance?: boolean
   ReferenceNumber?: string
   PaymentDate?: string
   BankName?: string
@@ -72,7 +77,27 @@ export type SoPaymentRecord = {
   Receipts?: SoPaymentReceiptMeta[]
 }
 
+export type SoBatteryRecord = {
+  ID: number
+  SoID: number
+  BatteryID: number
+  Price: number
+  Discount: number
+  Qty: number
+  NeedToOrderQty: number
+  IsAdminApproved: number
+  Brand?: string
+  Model?: string
+  Capacity?: string
+  Voltage?: string
+  Application?: string
+  MaintenanceType?: string
+  returnedQty?: number
+  reTurnCompleted?: number
+}
+
 export type SoDetailedRecord = SoRecord & {
+  Category?: SOCategory
   Customer?: SoCustomerSummary
   CustomerName?: string
   CustomerCode?: string
@@ -80,6 +105,7 @@ export type SoDetailedRecord = SoRecord & {
   TotalDiscount?: number
   RemainingAmount?: number
   Tyres?: SoTyreRecord[]
+  Batteries?: SoBatteryRecord[]
   PO?: PoDetailedRecord | null
   Returns?: SoReturnTyresRecord[]
   SalesReturns?: Array<{ SalesReturnID: number; ReturnNo: string; StatusCode?: string; StatusName?: string; ReturnTypeName?: string; RequestedDate?: string; TotalQty?: number; RefundedAmount?: number }>
@@ -218,6 +244,21 @@ export type SoTyreStorageAllocationRecord = {
   ReturnedQty?: number
 }
 
+export type SoBatteryStorageAllocationRecord = {
+  Id: number
+  AllocationID?: number
+  SoBatteryID: number
+  BatteryStorageManagerID: number | null
+  BatteryStorageManagerBatchID: number | null
+  Qty: number
+  CreatedAt?: string
+  LocationName?: string | null
+  BatchCode?: string | null
+  ExpiryDate?: string | null
+  AvailableQty?: number
+  ReturnedQty?: number
+}
+
 export type ReturnAllocationItem = {
   allocationId: number
   storageManagerId: number | null
@@ -230,7 +271,8 @@ export type ReturnAllocationItem = {
 }
 
 export type SalesOrderLineInput = {
-  TyreID: number
+  TyreID?: number | null
+  BatteryID?: number | null
   Price: number
   Discount: number
   Allocations: StorageAllocationInput[]
@@ -261,10 +303,13 @@ export type SalesOrderPaymentInput = {
     AccountName?: string
     Branch?: string
   } | null
+  IsAdvance?: boolean
 }
 
 export type CreateSalesOrderPayload = {
   Date: string
+  Category?: SOCategory
+  IsAdvance?: boolean
   InquiryID?: number
   CustomerID?: number | null
   CustomerName?: string
@@ -284,9 +329,10 @@ export type CreateSalesOrderPayload = {
 export type CreateSalesOrderWithAutoPOResult = {
   so: SoRecord
   customerLink: SoCustomerRecord | SoWalkinCustomerRecord
-  lineItems: SoTyreRecord[]
+  lineItems: (SoTyreRecord | SoBatteryRecord)[]
   po: PoRecord | null
   poTyres: PoTyreRecord[]
+  poBatteries?: any[]
   delivery: SoDeliveryRecord | null
 }
 

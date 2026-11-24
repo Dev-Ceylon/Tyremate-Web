@@ -1,18 +1,23 @@
 export interface GoodsReceiptBatchPayload {
   DOT?: string | null
+  BatchCode?: string | null
   ReceivedQty: number
   AcceptedQty: number
 }
 
 export interface GoodsReceiptPayload {
   POID: number
-  PoTyresSupplierID: number
+  PoTyresSupplierID?: number | null
+  PoBatterySupplierID?: number | null
+  Category?: "tyre" | "battery"
   ReceiptDate: string
   DeliveryNoteNumber?: string | null
   DispatchedQty: number
+  ReceivedQty?: number
+  AcceptedQty?: number
   DamagedQty: number
   DiscrepancyReason?: string | null
-  Batches: GoodsReceiptBatchPayload[]
+  Batches?: GoodsReceiptBatchPayload[]
 }
 
 export interface GoodsReceiptBatchRecord extends GoodsReceiptBatchPayload {
@@ -24,15 +29,20 @@ export interface GoodsReceiptLineRecord {
   GoodsReceiptID: number
   GRNNumber: string
   POID: number
+  Category?: "tyre" | "battery"
   SupplierID: number
   SupplierName: string
   ReceiptDate: string
   DeliveryNoteNumber: string | null
   Status: "Posted"
   GoodsReceiptLineID: number
-  PoTyresID: number
-  PoTyresSupplierID: number
+  PoTyresID?: number | null
+  PoTyresSupplierID?: number | null
+  PoBatteriesID?: number | null
+  PoBatterySupplierID?: number | null
   LocationID: number
+  LocationName?: string | null
+  LocationCode?: string | null
   DispatchedQty: number
   ReceivedQty: number
   AcceptedQty: number
@@ -41,8 +51,11 @@ export interface GoodsReceiptLineRecord {
   OverReceiptQty: number
   DiscrepancyReason: string | null
   Brand: string
-  Size: string
-  Pattern: string
+  Size?: string | null
+  Pattern?: string | null
+  Model?: string | null
+  Capacity?: string | null
+  Voltage?: string | null
   Batches: GoodsReceiptBatchRecord[]
 }
 
@@ -50,6 +63,8 @@ export interface PendingGoodsReceiptFilters {
   POID?: number | null
   SupplierID?: number | null
   PoTyresID?: number | null
+  PoBatteriesID?: number | null
+  Category?: "all" | "tyre" | "battery" | null
   ExpectedFrom?: string | null
   ExpectedTo?: string | null
   OverdueOnly?: boolean
@@ -57,7 +72,10 @@ export interface PendingGoodsReceiptFilters {
 
 export interface PendingGoodsReceiptRecord {
   PoTyresSupplierID: number
-  PoTyresID: number
+  PoBatterySupplierID?: number | null
+  PoTyresID?: number | null
+  PoBatteriesID?: number | null
+  Category?: "tyre" | "battery"
   AllocatedQty: number
   AcceptedToDateQty: number
   PendingQty: number
@@ -75,10 +93,15 @@ export interface PendingGoodsReceiptRecord {
   POIsAdminApproved: number
   POIsSupplierApproved: number
   TyreLineStatusCode: string | null
-  TyreID: number
+  LineStatusCode?: string | null
+  TyreID?: number | null
+  BatteryID?: number | null
   Brand: string | null
   Size: string | null
   Pattern: string | null
+  Model?: string | null
+  Capacity?: string | null
+  Voltage?: string | null
   Price: number
   Discount: number
   AllocatedLocationId: number | null

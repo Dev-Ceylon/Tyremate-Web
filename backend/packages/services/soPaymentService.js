@@ -39,7 +39,8 @@ exports.getSOPaymentById = (id) => {
 exports.createSOPayment = (payload) => {
   const data = {
     SoID: normalizeSOId(payload.SoID),
-    PaymentID: payload.PaymentID ? normalizePositiveId(payload.PaymentID, "PaymentID") : undefined
+    PaymentID: payload.PaymentID ? normalizePositiveId(payload.PaymentID, "PaymentID") : undefined,
+    IsAdvance: payload.IsAdvance ? 1 : 0,
   };
 
   return soPaymentRepo.createSOPayment(data);

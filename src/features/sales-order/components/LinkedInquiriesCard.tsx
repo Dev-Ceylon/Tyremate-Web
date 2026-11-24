@@ -19,7 +19,7 @@ export function LinkedInquiriesCard({ inquiries }: Props) {
         </div>
       </div>
 
-      <div className="table-scroll">
+      <div className="table-scroll tm-table-scroll">
         <table className="product-table">
           <thead>
             <tr>

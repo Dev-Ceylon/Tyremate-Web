@@ -1,4 +1,8 @@
 import type { WalkinCustomerForm as WalkinCustomerPayload } from "../../../shared/walkinCustomer/models/walkinCustomer"
+import type { LinkedPoRecord } from "./inquiryPo"
+import type { SoLinkedInquiryRecord } from "./inquirySo"
+
+export type InquiryCategory = "tyre" | "battery"
 
 export interface InquiryTyrePayload {
   TyreID: number
@@ -18,15 +22,39 @@ export interface InquiryTyreRecord extends InquiryTyrePayload {
   NeedToOrderQty?: number
 }
 
+export interface InquiryBatteryPayload {
+  BatteryID: number
+  Price: number
+  Discount: number
+  Qty: number
+  IsAdminApproved?: number
+}
+
+export interface InquiryBatteryRecord extends InquiryBatteryPayload {
+  ID: number
+  InquiryID: number
+  Brand?: string
+  Model?: string
+  Capacity?: string
+  Voltage?: string
+  Application?: string
+  Technology?: string
+  PartNumber?: string
+  AvailableQuantity?: number
+  NeedToOrderQty?: number
+}
+
 export interface InquiryPayload {
   Date?: string
   ReminderDate?: string
+  Category?: InquiryCategory
   CustomerID?: number | null
   WalkinCustomer?: WalkinCustomerPayload
   Notes?: string
   IsAdminApproved?: number
   ConvertedSOID?: number | null
   tyres?: InquiryTyrePayload[]
+  batteries?: InquiryBatteryPayload[]
 }
 
 /**
@@ -44,6 +72,7 @@ export type InquiryCustomerSummary =
 export interface InquiryRecord {
   InquiryID: number
   Date: string
+  Category?: InquiryCategory
   CustomerID: number | null
   CustomerName?: string
   CustomerCode?: string
@@ -52,7 +81,10 @@ export interface InquiryRecord {
   ConvertedSOID: number | null
   Customer?: InquiryCustomerSummary
   tyres?: InquiryTyreRecord[]
+  batteries?: InquiryBatteryRecord[]
   RequestedDate?: string | null
+  LinkedPOs?: LinkedPoRecord[]
+  LinkedSOs?: SoLinkedInquiryRecord[]
 }
 
 export interface InquiryReminderPayload {

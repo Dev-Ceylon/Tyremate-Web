@@ -2,6 +2,8 @@ import { dbAdmin, restartBackend } from "../../../../web/bridge/backendClient"
 import {
   decodeConnectionCode,
   encodeConnectionCode,
+  isDatabaseConfigLocked,
+  isProductionEnvironment,
   loadDatabaseConfig,
   saveDatabaseConfig,
   saveSession,
@@ -61,8 +63,13 @@ export const databaseConfig = {
   validate: validateDatabaseConfig,
   encodeCode: encodeConnectionCode,
   decodeCode: decodeConnectionCode,
+  isLocked: isDatabaseConfigLocked,
+  isProduction: isProductionEnvironment,
   /** Saves the configuration for this browser and reconnects. */
   async apply(config: DatabaseConfig) {
+    if (isDatabaseConfigLocked()) {
+      throw new Error("Database configuration is locked in code and cannot be modified.")
+    }
     const valid = validateDatabaseConfig(config)
     saveDatabaseConfig(valid)
     // A session belongs to the database it was created in: sign in again.

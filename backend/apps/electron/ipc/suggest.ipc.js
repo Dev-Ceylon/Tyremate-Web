@@ -3,6 +3,7 @@ const { registerIpcHandler } = require("./errorMiddleware")
 
 const ENTITY_TABLE_MAP = {
   tyres: "TyreM",
+  batteries: "BatteryM",
   suppliers: "SupplierM",
   customers: "CustomerM",
   contractors: "ContractorM",
@@ -11,6 +12,7 @@ const ENTITY_TABLE_MAP = {
   storageLocations: "StorageLocationM",
   storageLocationTypes: "StorageLocationTypeM",
   consumableLocations: "ConsumableLocationM",
+  batteryLocations: "BatteryLocationM",
   bankDetails: "Bankdetails",
 }
 

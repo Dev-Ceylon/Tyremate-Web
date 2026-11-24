@@ -9,6 +9,19 @@ export type SupplierTyreAssociation = {
   SideWall?: string | null
 }
 
+export type SupplierBatteryAssociation = {
+  BatteryID: number
+  Price: number | null
+  Brand?: string | null
+  Model?: string | null
+  Series?: string | null
+  Voltage?: string | null
+  Capacity?: string | null
+  Technology?: string | null
+  Application?: string | null
+  WarrantyMonths?: number | null
+}
+
 export type SupplierContact = {
   PhoneNumber: string
   IsPrimary: boolean | number
@@ -29,15 +42,28 @@ export type SupplierAddress = {
   IsPrimary: boolean | number
 }
 
+export type SupplierTypeRecord = {
+  Id: number
+  TypeCode: string
+  TypeName: string
+  Description?: string | null
+  SupplierTypeCode?: string
+  SupplierTypeName?: string
+}
+
 export type SupplierPayload = {
   SupplierCode: string
   Name: string
   TinNo?: string | null
   VatNo?: string | null
+  SupplierTypeID?: number | null
+  SupplierTypeCode?: string | null
+  SupplierTypeName?: string | null
   Contacts?: SupplierContact[]
   Emails?: SupplierEmail[]
   Addresses?: SupplierAddress[]
   Tyres?: SupplierTyreAssociation[]
+  Batteries?: SupplierBatteryAssociation[]
 }
 
 export type SupplierRecord = SupplierPayload & {

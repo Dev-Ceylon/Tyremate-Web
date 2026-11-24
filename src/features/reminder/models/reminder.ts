@@ -89,3 +89,34 @@ export interface TyreExpiryReminderDetails {
 export type ReminderWithInquiryDetails = ReminderDetails & { inquiryDetails?: InquiryReminderDetails | null }
 
 export type ReminderWithTyreExpiryDetails = ReminderDetails & { tyreExpiryDetails?: TyreExpiryReminderDetails | null }
+
+export interface BatteryReminderDetails {
+  ID: number
+  BatteryStorageManagerBatchID: number | null
+  BatteryID: number
+  LocationID: number | null
+  ReminderID: number
+  BatchCode: string | null
+  ExpiryDate: string | null
+  IsDone: number
+  Brand: string | null
+  Model: string | null
+  Series: string | null
+  Voltage: string | null
+  Capacity: string | null
+  Technology: string | null
+  Application: string | null
+  WarrantyMonths: number | null
+  LocationName: string | null
+  LocationCode: string | null
+  BranchId: number | null
+  BranchName: string | null
+  MfgDate?: string | null
+  BatchQty?: number | null
+  Date?: string | null
+  IsCompleted?: number
+  ReminderTypeCode?: string
+  ReminderTypeName?: string
+}
+
+export type ReminderWithBatteryDetails = ReminderDetails & { batteryDetails?: BatteryReminderDetails | null }

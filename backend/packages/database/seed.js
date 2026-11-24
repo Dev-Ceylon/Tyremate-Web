@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs")
 const db = require("./connection")
 const { initializeStatusIds, STATUS_SEED_DATA } = require("../constants/statusConstants")
+const { initializeSupplierTypeIds, SUPPLIER_TYPE_SEED_DATA } = require("../constants/supplierTypeConstants")
 const { initializePaymentTypeIds, PAYMENT_TYPE_SEED_DATA } = require("../constants/paymentTypeConstants")
 const { initializeReminderTypeIds, REMINDER_TYPE_SEED_DATA } = require("../constants/reminderTypeConstants")
 const { initializePolicyViolationIds, POLICY_VIOLATION_SEED_DATA } = require("../constants/policyViolationConstants")
@@ -88,20 +89,37 @@ const seedRolesAndPermissions = (txDb) => {
     INSERT OR IGNORE INTO rolePermissions (roleId, permissionId)
     VALUES (?, ?)
   `)
+  const deleteRolePermission = txDb.prepare(`
+    DELETE FROM rolePermissions
+    WHERE roleId = ? AND permissionId = ?
+  `)
 
   Object.entries(ROLE_PERMISSIONS).forEach(([roleId, keys]) => {
+    const numericRoleId = Number(roleId)
     const rolePermissionKeys = keys === '*' ? PERMISSIONS_SEED.map(([key]) => key) : keys
-    rolePermissionKeys.forEach((key) => {
-      const permissionId = permissionIdByKey[key]
-      if (permissionId != null) {
-        insertRolePermission.run(Number(roleId), permissionId)
+    const targetPermissionIds = new Set(
+      rolePermissionKeys.map((key) => permissionIdByKey[key]).filter((id) => id != null)
+    )
+
+    // Remove permissions that are no longer assigned to this role
+    const currentPermissions = txDb
+      .prepare("SELECT permissionId FROM rolePermissions WHERE roleId = ?")
+      .all(numericRoleId)
+    currentPermissions.forEach(({ permissionId }) => {
+      if (!targetPermissionIds.has(permissionId)) {
+        deleteRolePermission.run(numericRoleId, permissionId)
       }
+    })
+
+    // Insert permissions assigned to this role
+    targetPermissionIds.forEach((permissionId) => {
+      insertRolePermission.run(numericRoleId, permissionId)
     })
   })
 }
 
 /**
- * Ensures the default admin (role 1) and super admin (role 0) users exist.
+ * Ensures the default admin (role 1), super admin (role 0), and salesrep (role 4) users exist.
  * Password hashing is async, so this runs outside the synchronous transaction.
  */
 const seedUsers = async () => {
@@ -126,6 +144,7 @@ const seedUsers = async () => {
 
   const adminUserId = await ensureUser("admin", null)
   const superAdminUserId = await ensureUser("superadmin", "Super Admin")
+  const salesRepUserId = await ensureUser("salesrep", "Sales Representative")
 
   const insertUserRole = db.prepare(`
     INSERT OR IGNORE INTO userRoles (userId, roleId)
@@ -133,6 +152,7 @@ const seedUsers = async () => {
   `)
   insertUserRole.run(adminUserId, 1)
   insertUserRole.run(superAdminUserId, 0)
+  insertUserRole.run(salesRepUserId, 4)
 }
 
 const runSeed = async () => {
@@ -148,6 +168,17 @@ const runSeed = async () => {
       })
 
       initializeStatusIds(db)
+
+      const insertSupplierType = db.prepare(`
+        INSERT OR IGNORE INTO SupplierTypeM (TypeCode, TypeName, Description)
+        VALUES (?, ?, ?)
+      `)
+
+      SUPPLIER_TYPE_SEED_DATA.forEach(([code, name, description]) => {
+        insertSupplierType.run(code, name, description)
+      })
+
+      initializeSupplierTypeIds(db)
 
       const insertPaymentType = db.prepare(`
         INSERT OR IGNORE INTO PaymentTypeM (PaymentTypeCode, PaymentTypeName)

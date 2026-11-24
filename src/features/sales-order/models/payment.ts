@@ -52,6 +52,7 @@ export type SalesOrderPaymentPayload = {
     ReceiptEncAuthTag?: string | null
     ReceiptEncKey?: string | null
   } | null
+  IsAdvance?: boolean
 }
 
 export type SalesOrderPaymentResult = {

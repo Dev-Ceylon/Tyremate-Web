@@ -242,9 +242,12 @@ exports.generateInvoiceFromSO = (soId, ctx) => {
   }
 
   const so = soService.getSOById(normalizedId)
-  const tyres = Array.isArray(so.Tyres) ? so.Tyres : []
-  if (tyres.length === 0) {
-    throw new Error("Cannot invoice a sales order with no tyre lines")
+  const isBattery = (so.Category || "tyre") === "battery"
+  const items = isBattery
+    ? (Array.isArray(so.Batteries) ? so.Batteries : [])
+    : (Array.isArray(so.Tyres) ? so.Tyres : [])
+  if (items.length === 0) {
+    throw new Error(`Cannot invoice a sales order with no ${isBattery ? "battery" : "tyre"} lines`)
   }
 
   const customer = buildCustomerFromSO(so)
@@ -273,24 +276,47 @@ exports.generateInvoiceFromSO = (soId, ctx) => {
       createdBy: ctx?.user?.id ?? null,
     })
 
-    tyres.forEach((tyre) => {
-      invoiceLineRepo.createInvoiceLine({
-        InvoiceID: invoiceId,
-        LineType: "tyre",
-        TyreID: tyre.TyreID,
-        SerialNo: null,
-        Description: null,
-        Size: tyre.Size,
-        Pattern: tyre.Pattern,
-        Brand: tyre.Brand,
-        Qty: tyre.Qty,
-        UnitPrice: tyre.Price,
-        Discount: tyre.Discount ?? 0,
-        LineTotal: round2(
-          (tyre.Price || 0) * (tyre.Qty || 0) * (1 - (tyre.Discount || 0) / 100.0)
-        ),
+    if (isBattery) {
+      items.forEach((battery) => {
+        const desc = `${battery.Brand || ""} ${battery.Model || ""} (${battery.Capacity || ""} ${battery.Voltage || ""})`.trim()
+        invoiceLineRepo.createInvoiceLine({
+          InvoiceID: invoiceId,
+          LineType: "battery",
+          BatteryID: battery.BatteryID,
+          SerialNo: null,
+          Description: desc,
+          Brand: battery.Brand,
+          Model: battery.Model,
+          Capacity: battery.Capacity,
+          Voltage: battery.Voltage,
+          Qty: battery.Qty,
+          UnitPrice: battery.Price,
+          Discount: battery.Discount ?? 0,
+          LineTotal: round2(
+            (battery.Price || 0) * (battery.Qty || 0) * (1 - (battery.Discount || 0) / 100.0)
+          ),
+        })
       })
-    })
+    } else {
+      items.forEach((tyre) => {
+        invoiceLineRepo.createInvoiceLine({
+          InvoiceID: invoiceId,
+          LineType: "tyre",
+          TyreID: tyre.TyreID,
+          SerialNo: null,
+          Description: null,
+          Size: tyre.Size,
+          Pattern: tyre.Pattern,
+          Brand: tyre.Brand,
+          Qty: tyre.Qty,
+          UnitPrice: tyre.Price,
+          Discount: tyre.Discount ?? 0,
+          LineTotal: round2(
+            (tyre.Price || 0) * (tyre.Qty || 0) * (1 - (tyre.Discount || 0) / 100.0)
+          ),
+        })
+      })
+    }
 
     payments.forEach((payment) => {
       if (payment?.PaymentID) {
@@ -420,20 +446,41 @@ exports.generateInvoiceFromDelivery = (deliveryId, ctx) => {
     lines.forEach((line) => {
       const qty = Number(line.Qty) || 0
       const amount = round2(line.Amount ?? 0)
-      invoiceLineRepo.createInvoiceLine({
-        InvoiceID: invoiceId,
-        LineType: "tyre",
-        TyreID: line.TyreID ?? null,
-        SerialNo: null,
-        Description: null,
-        Size: line.Size,
-        Pattern: line.Pattern,
-        Brand: line.Brand,
-        Qty: qty,
-        UnitPrice: qty > 0 ? round2(amount / qty) : amount,
-        Discount: 0,
-        LineTotal: amount,
-      })
+      const isBat = Boolean(line.BatteryID || line.SoBatteryID)
+
+      if (isBat) {
+        const desc = `${line.Brand || ""} ${line.Model || ""} (${line.Capacity || ""} ${line.Voltage || ""})`.trim()
+        invoiceLineRepo.createInvoiceLine({
+          InvoiceID: invoiceId,
+          LineType: "battery",
+          BatteryID: line.BatteryID ?? null,
+          SerialNo: null,
+          Description: desc,
+          Brand: line.Brand,
+          Model: line.Model,
+          Capacity: line.Capacity,
+          Voltage: line.Voltage,
+          Qty: qty,
+          UnitPrice: qty > 0 ? round2(amount / qty) : amount,
+          Discount: 0,
+          LineTotal: amount,
+        })
+      } else {
+        invoiceLineRepo.createInvoiceLine({
+          InvoiceID: invoiceId,
+          LineType: "tyre",
+          TyreID: line.TyreID ?? null,
+          SerialNo: null,
+          Description: null,
+          Size: line.Size,
+          Pattern: line.Pattern,
+          Brand: line.Brand,
+          Qty: qty,
+          UnitPrice: qty > 0 ? round2(amount / qty) : amount,
+          Discount: 0,
+          LineTotal: amount,
+        })
+      }
     })
 
     advanceAllocations.forEach((alloc) => {
@@ -788,6 +835,7 @@ exports.recordPaymentForInvoice = (invoiceId, payload = {}, ctx) => {
           soPaymentRepo.createSOPayment({
             SoID: soId,
             PaymentID: payment.PaymentID,
+            IsAdvance: 0,
           })
         }
       }

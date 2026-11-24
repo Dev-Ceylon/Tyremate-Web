@@ -89,6 +89,7 @@ const MASTER_SUPPLIER_SEED = [
     name: "CEAT Kelani Holdings (Pvt) Ltd",
     tinNo: "1012345678",
     vatNo: "VAT-101234567",
+    supplierTypeCode: "tyr",
     contacts: [{ phoneNumber: "011-2473500" }],
     emails: [{ emailAddress: "sales@ceatsri.com" }],
     addresses: [
@@ -107,6 +108,7 @@ const MASTER_SUPPLIER_SEED = [
     name: "Associated Motorways (Pvt) Ltd",
     tinNo: "1023456789",
     vatNo: "VAT-102345678",
+    supplierTypeCode: "tyr",
     contacts: [{ phoneNumber: "011-2300666" }],
     emails: [{ emailAddress: "info@amw.lk" }],
     addresses: [
@@ -125,6 +127,7 @@ const MASTER_SUPPLIER_SEED = [
     name: "Diesel & Motor Engineering PLC",
     tinNo: "1034567890",
     vatNo: "VAT-103456789",
+    supplierTypeCode: "tyr",
     contacts: [{ phoneNumber: "011-2123450" }],
     emails: [{ emailAddress: "customer@dimo.lk" }],
     addresses: [
@@ -143,6 +146,7 @@ const MASTER_SUPPLIER_SEED = [
     name: "Senasuma Tyre Company (Pvt) Ltd",
     tinNo: "1045678901",
     vatNo: "VAT-104567890",
+    supplierTypeCode: "tyr",
     contacts: [{ phoneNumber: "011-2223789" }],
     emails: [{ emailAddress: "orders@senasuma.lk" }],
     addresses: [
@@ -161,6 +165,7 @@ const MASTER_SUPPLIER_SEED = [
     name: "Blue Ocean Tyre Traders",
     tinNo: "1056789012",
     vatNo: "VAT-105678901",
+    supplierTypeCode: "tyr",
     contacts: [{ phoneNumber: "077-3124567" }],
     emails: [{ emailAddress: "sales@blueocean.lk" }],
     addresses: [
@@ -171,6 +176,71 @@ const MASTER_SUPPLIER_SEED = [
         city: "Kandy",
         state: "Central Province",
         postalCode: "20800",
+      },
+    ],
+  },
+  {
+    supplierCode: "SUP-KLEV01",
+    name: "Klevenberg (Pvt) Ltd",
+    tinNo: "1067890123",
+    vatNo: "VAT-106789012",
+    supplierTypeCode: "bat",
+    contacts: [{ phoneNumber: "011-2541281" }, { phoneNumber: "077-7891234" }],
+    emails: [{ emailAddress: "sales@klevenberg.lk" }, { emailAddress: "orders@klevenberg.lk" }],
+    addresses: [
+      {
+        addressType: "Head Office",
+        addressLine1: "155 Colombo Road",
+        addressLine2: "Divulapitiya",
+        city: "Boralesgamuwa",
+        state: "Western Province",
+        postalCode: "10290",
+      },
+      {
+        addressType: "Kandy Distribution Center",
+        addressLine1: "42 William Gopallawa Mawatha",
+        addressLine2: "Peradeniya Road",
+        city: "Kandy",
+        state: "Central Province",
+        postalCode: "20000",
+      },
+    ],
+  },
+  {
+    supplierCode: "SUP-ABM01",
+    name: "Associated Battery Manufacturers (Ceylon) PLC",
+    tinNo: "1078901234",
+    vatNo: "VAT-107890123",
+    supplierTypeCode: "bat",
+    contacts: [{ phoneNumber: "011-2695541" }, { phoneNumber: "077-2233445" }],
+    emails: [{ emailAddress: "industrial@abm.lk" }, { emailAddress: "orders@exidesl.com" }],
+    addresses: [
+      {
+        addressType: "Factory & Main Office",
+        addressLine1: "Chakkindarama Road",
+        addressLine2: "Ratmalana",
+        city: "Colombo",
+        state: "Western Province",
+        postalCode: "10390",
+      },
+    ],
+  },
+  {
+    supplierCode: "SUP-DSL01",
+    name: "Douglas & Sons (Pvt) Ltd",
+    tinNo: "1089012345",
+    vatNo: "VAT-108901234",
+    supplierTypeCode: "bat",
+    contacts: [{ phoneNumber: "011-2304900" }],
+    emails: [{ emailAddress: "battery@dsl-lanka.com" }],
+    addresses: [
+      {
+        addressType: "DSL Corporate Office",
+        addressLine1: "290 Sri Sangaraja Mawatha",
+        addressLine2: "Colombo 10",
+        city: "Colombo",
+        state: "Western Province",
+        postalCode: "01000",
       },
     ],
   },
@@ -565,6 +635,14 @@ const MASTER_CONSUMABLE_LOCATION_SEED = [
   { branchCode: "BR004", locationCode: "KUR-CNS", locationName: "Kurunegala Consumables Store", locationTypeCode: "df", capacity: 150 },
 ]
 
+const MASTER_BATTERY_LOCATION_SEED = [
+  { branchCode: "BR001", locationCode: "KAN-BAT", locationName: "Kandy Battery Store", locationTypeCode: "df", capacity: 300 },
+  { branchCode: "BR001", locationCode: "KAN-BAT-CHG", locationName: "Kandy Battery Charging Room", locationTypeCode: "df", capacity: 100 },
+  { branchCode: "BR002", locationCode: "CMB-BAT", locationName: "Colombo Battery Store", locationTypeCode: "df", capacity: 250 },
+  { branchCode: "BR003", locationCode: "GPH-BAT", locationName: "Gampaha Battery Store", locationTypeCode: "df", capacity: 200 },
+  { branchCode: "BR004", locationCode: "KUR-BAT", locationName: "Kurunegala Battery Store", locationTypeCode: "df", capacity: 200 },
+]
+
 const MASTER_BANK_DETAIL_SEED = [
   {
     bankName: "Commercial Bank of Ceylon PLC",
@@ -825,6 +903,55 @@ const MASTER_BATTERY_SEED = [
     actualSellingPrice: 8760,
     batterySuppliers: [{ supplierCode: "SUP-KLEV01", price: 6500 }],
   },
+  // Automotive / Passenger Car & Commercial Batteries
+  {
+    brand: "Amaron",
+    model: "AM-PRO-45",
+    series: "Pro",
+    voltage: "12V",
+    capacity: "45Ah",
+    technology: "Silver Alloy Maintenance Free",
+    application: "Passenger Car",
+    warrantyMonths: 24,
+    priceValidityFrom: "2026-01-01",
+    purchasedPrice: 22000,
+    mrpWithoutVat: 24336.28,
+    mrpWithVat: 27500,
+    actualSellingPrice: 27500,
+    batterySuppliers: [{ supplierCode: "SUP-DSL01", price: 22000 }],
+  },
+  {
+    brand: "Exide",
+    model: "EX-MTX-35",
+    series: "Matrix",
+    voltage: "12V",
+    capacity: "35Ah",
+    technology: "Lead-Acid Maintenance Free",
+    application: "Passenger Car",
+    warrantyMonths: 24,
+    priceValidityFrom: "2026-01-01",
+    purchasedPrice: 18500,
+    mrpWithoutVat: 20353.98,
+    mrpWithVat: 23000,
+    actualSellingPrice: 23000,
+    batterySuppliers: [{ supplierCode: "SUP-ABM01", price: 18500 }],
+  },
+  {
+    brand: "Exide",
+    model: "EX-MTX-65",
+    series: "Matrix",
+    voltage: "12V",
+    capacity: "65Ah",
+    technology: "Lead-Acid Maintenance Free",
+    application: "Commercial / SUV",
+    warrantyMonths: 24,
+    priceValidityFrom: "2026-01-01",
+    purchasedPrice: 32000,
+    mrpWithoutVat: 34955.75,
+    mrpWithVat: 39500,
+    actualSellingPrice: 39500,
+    batterySuppliers: [{ supplierCode: "SUP-ABM01", price: 32000 }],
+  },
 ]
 
 module.exports = {
@@ -836,5 +963,6 @@ module.exports = {
   MASTER_BATTERY_SEED,
   MASTER_STORAGE_LOCATION_SEED,
   MASTER_CONSUMABLE_LOCATION_SEED,
+  MASTER_BATTERY_LOCATION_SEED,
   MASTER_BANK_DETAIL_SEED,
 }

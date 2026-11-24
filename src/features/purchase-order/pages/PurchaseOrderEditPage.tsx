@@ -4,6 +4,7 @@ import { PurchaseOrderForm } from "../components/PurchaseOrderForm"
 import { SupplierSelectionModal } from "../components/SupplierSelectionModal"
 import { usePurchaseOrderForm } from "../hooks/usePurchaseOrderForm"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function PurchaseOrderEditPage() {
   const navigate = useNavigate()
@@ -29,9 +30,11 @@ export default function PurchaseOrderEditPage() {
   }, [showToast])
 
   const {
+    category,
     formData,
     lines,
     tyres,
+    batteries,
     initializing,
     submitting,
     error,
@@ -48,9 +51,18 @@ export default function PurchaseOrderEditPage() {
   })
 
   const [activeLineId, setActiveLineId] = useState<string | null>(null)
-  const activeLine = lines.find(l => l.id === activeLineId)
-  const selectedTyre = tyres.find(t => t.Id === activeLine?.TyreID)
-  const tyreLabel = selectedTyre ? `${selectedTyre.Brand} / ${selectedTyre.Size} / ${selectedTyre.Pattern}` : ""
+  const activeLine = lines.find((l) => l.id === activeLineId)
+  const selectedTyre = tyres.find((t) => t.Id === activeLine?.TyreID)
+  const selectedBattery = batteries.find((b) => b.Id === activeLine?.BatteryID)
+
+  const itemLabel =
+    category === "battery"
+      ? selectedBattery
+        ? `${selectedBattery.Brand} ${selectedBattery.Model || ""} (${selectedBattery.Capacity || ""} ${selectedBattery.Voltage || ""})`
+        : ""
+      : selectedTyre
+        ? `${selectedTyre.Brand} / ${selectedTyre.Size} / ${selectedTyre.Pattern}`
+        : ""
 
   return (
     <main className="app-shell">
@@ -62,28 +74,33 @@ export default function PurchaseOrderEditPage() {
           </div>
         </div>
 
-        {initializing ? <p className="hero-text">Loading order details...</p> : null}
+        {initializing ? <LoadingState message="Loading order details…" /> : null}
         {error ? <p className="hero-text error-text">{error}</p> : null}
 
-        <PurchaseOrderForm 
-          state={{ formData, lines, tyres, initializing, submitting, error }} 
-          actions={{ 
+        <PurchaseOrderForm
+          isEditMode={true}
+          state={{ category, formData, lines, tyres, batteries, initializing, submitting, error }}
+          actions={{
             onChangeDate: (val) => updateField("Date", val),
             onAddLine: addLine,
             onRemoveLine: removeLine,
             onUpdateLine: updateLine,
             onOpenSupplierModal: setActiveLineId,
             onSubmit: handleSubmit,
-            onCancel: () => navigate("/purchase-orders")
-          }} 
+            onCancel: () => navigate("/purchase-orders"),
+          }}
         />
 
         {activeLine && (
           <SupplierSelectionModal
             isOpen={!!activeLineId}
             onClose={() => setActiveLineId(null)}
+            category={category}
+            itemId={activeLine.BatteryID || activeLine.TyreID}
+            itemLabel={itemLabel}
             tyreId={activeLine.TyreID}
-            tyreLabel={tyreLabel}
+            batteryId={activeLine.BatteryID}
+            tyreLabel={itemLabel}
             lineQty={activeLine.Qty}
             existingSuppliers={activeLine.Suppliers}
             onConfirm={(suppliers) => {

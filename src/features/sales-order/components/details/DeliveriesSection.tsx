@@ -82,7 +82,7 @@ export function DeliveriesSection({
           <table className="product-table">
             <thead>
               <tr>
-                <th>Tyre (Brand / Size - Pattern)</th>
+                <th>Item (Brand / Specifications)</th>
                 <th className="text-right">Ordered</th>
                 <th className="text-right">Taken Now</th>
                 <th className="text-right">Ready to Collect</th>
@@ -92,10 +92,12 @@ export function DeliveriesSection({
             </thead>
             <tbody>
               {progress.Lines.map((line) => (
-                <tr key={line.SoTyreID}>
+                <tr key={line.SoTyreID ?? line.SoBatteryID}>
                   <td>
                     <span className="font-medium">
-                      {line.Brand || "NA"} / {line.Size || "NA"} - {line.Pattern || "NA"}
+                      {line.Size
+                        ? `${line.Brand || "NA"} / ${line.Size || "NA"} - ${line.Pattern || "NA"}`
+                        : `${line.Brand || "NA"} / ${line.Model || "NA"} (${line.Capacity || "NA"} ${line.Voltage || "NA"})`}
                     </span>
                   </td>
                   <td className="text-right">{line.OrderedQty}</td>
@@ -129,7 +131,7 @@ export function DeliveriesSection({
         {deliveries.length === 0 ? (
           <p className="secondary-text">
             {canRecord
-              ? "No deliveries recorded yet. Tyres are in stock and ready to collect above."
+              ? "No deliveries recorded yet. Items are in stock and ready to collect above."
               : "No deliveries recorded yet."}
           </p>
         ) : (
@@ -151,7 +153,7 @@ export function DeliveriesSection({
                             : ""}
                       </span>
                       <span className="delivery-record-sub">
-                        {delivery.Lines.length} line{delivery.Lines.length === 1 ? "" : "s"} - {totalQty} tyre(s)
+                        {delivery.Lines.length} line{delivery.Lines.length === 1 ? "" : "s"} - {totalQty} item(s)
                       </span>
                       {invoice && paymentStatus && (
                         <div className="delivery-record-payment-summary">
@@ -224,9 +226,9 @@ export function DeliveriesSection({
                       <table className="product-table">
                         <thead>
                           <tr>
-                            <th>Tyre (Brand / Size - Pattern)</th>
+                            <th>Item (Brand / Specifications)</th>
                             <th>Location</th>
-                            <th>DOT</th>
+                            <th>Batch / DOT</th>
                             <th className="text-right">Qty</th>
                           </tr>
                         </thead>
@@ -234,10 +236,12 @@ export function DeliveriesSection({
                           {delivery.Lines.map((line) => (
                             <tr key={line.ID}>
                               <td>
-                                {line.Brand || "NA"} / {line.Size || "NA"} - {line.Pattern || "NA"}
+                                {line.Size
+                                  ? `${line.Brand || "NA"} / ${line.Size || "NA"} - ${line.Pattern || "NA"}`
+                                  : `${line.Brand || "NA"} / ${line.Model || "NA"} (${line.Capacity || "NA"} ${line.Voltage || "NA"})`}
                               </td>
                               <td>{line.LocationName || "NA"}</td>
-                              <td>{line.DOT || "-"}</td>
+                              <td>{line.BatchCode || line.DOT || "-"}</td>
                               <td className="text-right font-bold">{line.Qty}</td>
                             </tr>
                           ))}

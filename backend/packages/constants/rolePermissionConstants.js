@@ -7,10 +7,15 @@ const ROLES_SEED = [
   [1, 'Admin', 'Administrative access', 1],
   [2, 'Manager', 'Operational access', 1],
   [3, 'Cashier', 'Point of sale access', 1],
+  [4, 'SalesRep', 'Sales representative access', 1],
 ]
 
 // [permissionKey, description]
 const PERMISSIONS_SEED = [
+  ['inquiry.view',   'View customer inquiries'],
+  ['inquiry.create', 'Create customer inquiries'],
+  ['inquiry.edit',   'Edit customer inquiries'],
+  ['inquiry.delete', 'Delete customer inquiries'],
   ['po.view',       'View purchase orders'],
   ['po.create',     'Create purchase orders'],
   ['po.edit',       'Edit purchase orders'],
@@ -53,8 +58,22 @@ const PERMISSIONS_SEED = [
 // Permission keys granted to each role. '*' grants every seeded permission.
 const ROLE_PERMISSIONS = {
   0: '*',
-  1: '*',
+  1: [
+    'inquiry.view', 'inquiry.create', 'inquiry.edit', 'inquiry.delete',
+    'po.view', 'po.create', 'po.edit', 'po.delete', 'po.approve',
+    'so.view', 'so.create', 'so.edit', 'so.delete', 'so.approve',
+    'dag.view', 'dag.create', 'dag.edit', 'dag.delete', 'dag.approve',
+    'other.view', 'other.create', 'other.edit', 'other.delete',
+    'invoice.view', 'invoice.create', 'invoice.edit', 'invoice.print',
+    'inventory.view', 'inventory.manage',
+    'customers.view', 'customers.manage',
+    'suppliers.view', 'suppliers.manage',
+    'reports.view',
+    'user.view', 'user.manage',
+    'violations.view', 'violations.create', 'violations.approve',
+  ],
   2: [
+    'inquiry.view', 'inquiry.create', 'inquiry.edit', 'inquiry.delete',
     'po.view', 'po.create', 'po.edit',
     'so.view', 'so.create', 'so.edit',
     'dag.view', 'dag.create', 'dag.edit', 'dag.approve',
@@ -74,6 +93,12 @@ const ROLE_PERMISSIONS = {
     'customers.view',
     'inventory.view',
     'violations.view',
+  ],
+  4: [
+    'inquiry.view',
+    'inquiry.create',
+    'inquiry.edit',
+    'inquiry.delete',
   ],
 }
 

@@ -9,6 +9,9 @@ export const REMINDER_TYPE_CODES = {
   CHEQUE_FOLLOW_UP: 'chfq',
   SO_FOLLOW_UP: 'sofu',
   TYRE_EXPIRY: 'tyex',
+  BATTERY_EXPIRY: 'baex',
+  BATTERY_RECHARGE: 'barc',
+  BATTERY_WARRANTY: 'bawn',
 } as const;
 
 export type ReminderTypeCode = typeof REMINDER_TYPE_CODES[keyof typeof REMINDER_TYPE_CODES];
@@ -26,6 +29,9 @@ export const REMINDER_TYPE_METADATA: Record<ReminderTypeCode, ReminderTypeMetada
   [REMINDER_TYPE_CODES.CHEQUE_FOLLOW_UP]: { name: 'Cheque Follow-up' },
   [REMINDER_TYPE_CODES.SO_FOLLOW_UP]: { name: 'SO Follow-up' },
   [REMINDER_TYPE_CODES.TYRE_EXPIRY]: { name: 'Tyre Expiry' },
+  [REMINDER_TYPE_CODES.BATTERY_EXPIRY]: { name: 'Battery Expiry' },
+  [REMINDER_TYPE_CODES.BATTERY_RECHARGE]: { name: 'Battery Recharge' },
+  [REMINDER_TYPE_CODES.BATTERY_WARRANTY]: { name: 'Battery Warranty' },
 };
 
 export const getReminderTypeCode = (key: keyof typeof REMINDER_TYPE_CODES): ReminderTypeCode => {

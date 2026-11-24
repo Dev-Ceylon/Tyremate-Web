@@ -19,7 +19,7 @@ function readSqlDir(dir) {
   return readdirSync(dir)
     .filter((f) => f.endsWith(".sql"))
     .sort()
-    .map((name) => ({ name, sql: readFileSync(join(dir, name), "utf-8") }))
+    .map((name) => ({ name, sql: readFileSync(join(dir, name), "utf-8").replace(/^\uFEFF/, "") }))
 }
 
 const migrations = readSqlDir(join(root, "backend/packages/database/migrations"))

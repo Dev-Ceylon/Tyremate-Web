@@ -23,6 +23,7 @@ export const SalesOrderTable = ({ data, deletingId, onDelete, deliveryProgressMa
           <tr>
             <th>ID</th>
             <th>Date</th>
+            <th>Category</th>
             <th>Customer</th>
             <th className="text-right">Total Sale</th>
             <th className="text-right">Total Discount</th>
@@ -40,6 +41,11 @@ export const SalesOrderTable = ({ data, deletingId, onDelete, deliveryProgressMa
               <tr key={so.SoID}>
                 <td className="mono-text">#{so.SoID}</td>
                 <td className="secondary-text">{so.Date}</td>
+                <td>
+                  <span className={`status-badge ${(so.Category || "tyre") === "battery" ? "status-pending" : "status-approved"}`}>
+                    {(so.Category || "tyre") === "battery" ? "Batteries" : "Tyres"}
+                  </span>
+                </td>
                 <td>
                   <div className="flex-column">
                     <span className="font-medium">{so.CustomerName || "-"}</span>

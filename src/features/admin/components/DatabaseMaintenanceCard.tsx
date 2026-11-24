@@ -26,7 +26,8 @@ export function DatabaseMaintenanceCard() {
   const [targetUrl, setTargetUrl] = useState("")
   const [targetToken, setTargetToken] = useState("")
   const [overwrite, setOverwrite] = useState(false)
-  const [includeStock, setIncludeStock] = useState(false)
+  const isDev = process.env.NODE_ENV === "development"
+  const [includeStock, setIncludeStock] = useState(true)
 
   const driver = status.state === "ready" || status.state === "starting" || status.state === "error" ? status.config.driver : "local"
 
@@ -138,20 +139,37 @@ export function DatabaseMaintenanceCard() {
     const ok = await confirm({
       title: "Load sample master data?",
       message:
-        "Adds demo branches, suppliers, customers, contractors, tyres, storage locations and bank accounts" +
-        (includeStock ? ", plus opening stock for every tyre." : ".") +
+        "Adds demo branches, suppliers, customers, contractors, tyres, batteries, storage locations, battery locations, and bank accounts" +
+        (includeStock ? ", plus opening stock for tyres and batteries." : ".") +
         " Intended for training/demo databases.",
       confirmLabel: "Load sample data",
     })
     if (!ok) return
     await run("Sample data", async () => {
       const result = await adminApi.seedSampleData({ includeStock })
-      const skipped = result?.master?.skipped && (!includeStock || result?.stock?.skipped)
-      showToast({
-        variant: "success",
-        title: skipped ? "Sample data already loaded" : "Sample data loaded",
-        message: skipped ? "Nothing to do." : "Master data is ready to use.",
-      })
+      const masterStats = result?.master?.stats
+      const stockStats = result?.stock?.stats
+      const masterAdded = masterStats
+        ? Object.values(masterStats).reduce<number>((a, b) => a + (typeof b === "number" ? b : 0), 0)
+        : 0
+      const stockQty = stockStats?.stockQty ?? 0
+
+      if (masterAdded > 0 || stockQty > 0) {
+        const parts: string[] = []
+        if (masterAdded > 0) parts.push(`${masterAdded} master records`)
+        if (stockQty > 0) parts.push(`${stockQty} units of stock`)
+        showToast({
+          variant: "success",
+          title: "Sample data loaded",
+          message: `Successfully seeded ${parts.join(" and ")}.`,
+        })
+      } else {
+        showToast({
+          variant: "info",
+          title: "Sample data up to date",
+          message: "All sample master records and opening stock are already loaded.",
+        })
+      }
     })
   }
 
@@ -197,21 +215,35 @@ export function DatabaseMaintenanceCard() {
         </div>
 
         <div className="tm-form">
-          <h3>Lookup &amp; sample data</h3>
+          <div className="tm-form-header">
+            <h3>Lookup &amp; sample data</h3>
+            {isDev ? <span className="stat-badge tm-dev-badge">Dev Mode</span> : null}
+          </div>
           <p className="tm-note">Statuses, payment types, roles and permissions are seeded automatically. Re-run if they look incomplete.</p>
           <div className="tm-inline">
             <button type="button" className="secondary-action" onClick={reseed} disabled={busy !== null}>
               {busy === "Seed" ? "Seeding…" : "Re-run lookup seed"}
             </button>
           </div>
-          <label className="tm-inline">
-            <input type="checkbox" checked={includeStock} onChange={(e) => setIncludeStock(e.target.checked)} />
-            <span>Include opening stock</span>
-          </label>
-          <div className="tm-inline">
-            <button type="button" className="secondary-action" onClick={sampleData} disabled={busy !== null}>
-              {busy === "Sample data" ? "Loading…" : "Load sample master data"}
-            </button>
+          <div className="tm-sample-data-box">
+            <label className="tm-inline">
+              <input type="checkbox" checked={includeStock} onChange={(e) => setIncludeStock(e.target.checked)} />
+              <span>Include opening stock (tyres &amp; batteries)</span>
+            </label>
+            <p className="tm-note">
+              Populates master records (branches, suppliers, customers, contractors, tyres, batteries, locations, bank accounts)
+              {includeStock ? " and 10 units of opening stock for each product in Kandy stores." : "."}
+            </p>
+            <div className="tm-inline">
+              <button
+                type="button"
+                className={isDev ? "primary-action" : "secondary-action"}
+                onClick={sampleData}
+                disabled={busy !== null}
+              >
+                {busy === "Sample data" ? "Loading sample data…" : includeStock ? "Load Master Data & Stock" : "Load Master Data"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

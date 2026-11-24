@@ -1,21 +1,28 @@
 const db = require("../database/connection")
 const poRepo = require("../repositories/poRepository")
 const poTyresRepo = require("../repositories/poTyresRepository")
+const poBatteriesRepo = require("../repositories/poBatteriesRepository")
 const soTyresRepo = require("../repositories/soTyresRepository")
 const storageManagerRepo = require("../repositories/storageManagerRepository")
 const storageManagerBatchRepo = require("../repositories/storageManagerBatchRepository")
 const soAllocationRepo = require("../repositories/soTyreStorageAllocationRepository")
 const poTyresSuppliersRepo = require("../repositories/poTyresSuppliersRepository")
+const poBatterySuppliersRepo = require("../repositories/poBatterySuppliersRepository")
 const poTyreBatchesRepo = require("../repositories/poTyreBatchesRepository")
+const poBatteryBatchesRepo = require("../repositories/poBatteryBatchesRepository")
 const poTyreAllocationsRepo = require("../repositories/poTyreAllocationsRepository")
+const poBatteryAllocationsRepo = require("../repositories/poBatteryAllocationsRepository")
 const poTyreAllocationsService = require("./poTyreAllocationsService")
 const storageManagerService = require("./storageManagerService")
+const batteryStorageManagerService = require("./batteryStorageManagerService")
+const batteryStorageManagerRepo = require("../repositories/batteryStorageManagerRepository")
 const soReminderService = require("./soReminderService")
 const reminderService = require("./reminderService")
 const poAuditLogService = require("./poAuditLogService")
 const inquiryPoService = require("./inquiryPoService")
 const { STATUS_CODES, getStatusId, getStatusIdByCode } = require("../constants/statusConstants")
 const { getPoNextStatus, isPoStatusTransitionAllowed, isPoStatusDeletable } = require("../constants/poStatusConstants")
+const { PO_CATEGORIES } = require("../constants/poCategoryConstants")
 const { getReminderTypeId } = require("../constants/reminderTypeConstants")
 const { AUDIT_ACTIONS } = require("../constants/auditActionConstants")
 
@@ -93,9 +100,16 @@ const normalizeDate = (value) => {
   return normalized
 }
 
+const normalizeCategory = (value) => {
+  if (!value) return "tyre"
+  const normalized = String(value).trim().toLowerCase()
+  return normalized === "battery" ? "battery" : "tyre"
+}
+
 const toPOPayload = (payload = {}) => {
   return {
     SoID: normalizeId(payload.SoID, "SoID"),
+    Category: normalizeCategory(payload.Category),
     IsAdminApproved: normalizeBooleanFlag(payload.IsAdminApproved, "IsAdminApproved"),
     IsSupplierApproved: normalizeBooleanFlag(payload.IsSupplierApproved, "IsSupplierApproved"),
     Date: normalizeDate(payload.Date),
@@ -104,6 +118,7 @@ const toPOPayload = (payload = {}) => {
 
 const toStandalonePOPayload = (payload = {}) => {
   return {
+    Category: normalizeCategory(payload.Category),
     IsAdminApproved: normalizeBooleanFlag(payload.IsAdminApproved, "IsAdminApproved"),
     IsSupplierApproved: normalizeBooleanFlag(payload.IsSupplierApproved, "IsSupplierApproved"),
     Date: normalizeDate(payload.Date),
@@ -142,12 +157,29 @@ const syncPoTyreStatusesWithParentStatus = (poId, statusCode) => {
   })
 }
 
-exports.getPOs = () => {
-  return poRepo.getAllPOs()
+const syncPoBatteryStatusesWithParentStatus = (poId, statusCode) => {
+  const statusId = getStatusIdByCode(statusCode)
+  if (!statusId) {
+    return
+  }
+
+  const batteries = poBatteriesRepo.getPoBatteriesByPoId(poId)
+  batteries.forEach((battery) => {
+    const batteryId = battery.ID || battery.Id
+    if (!batteryId) {
+      return
+    }
+
+    poBatteriesRepo.updateStatus(batteryId, statusId)
+  })
 }
 
-exports.getPendingPOCount = () => {
-  return poRepo.getPendingPOCount()
+exports.getPOs = (category) => {
+  return poRepo.getAllPOs(category)
+}
+
+exports.getPendingPOCount = (category) => {
+  return poRepo.getPendingPOCount(category)
 }
 
 exports.getPOById = (id) => {
@@ -158,6 +190,55 @@ exports.getPOById = (id) => {
     throw new Error("PO not found")
   }
 
+  const category = po.Category || "tyre"
+
+  if (category === "battery") {
+    const batteries = poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+    const allocations = poBatteryAllocationsRepo.getAllocationsByPoId(normalizedId)
+
+    const batteriesWithSuppliers = batteries.map((battery) => {
+      const batteryLineId = battery.ID || battery.Id
+      const suppliers = poBatterySuppliersRepo.getPoBatterySuppliersByPoBatteriesId(batteryLineId)
+      const batches = poBatteryBatchesRepo.getBatchesByPoBatteriesId(batteryLineId)
+
+      return {
+        ...battery,
+        Suppliers: suppliers,
+        Batches: batches,
+        IsBatchManaged: batches.length > 0,
+      }
+    })
+
+    let allSuppliersHaveFeedback = true
+    for (const battery of batteriesWithSuppliers) {
+      for (const supplier of battery.Suppliers) {
+        if (supplier.IsApproved === null) {
+          allSuppliersHaveFeedback = false
+          break
+        }
+      }
+    }
+
+    const isStoragesAllocated =
+      batteries.length > 0 &&
+      batteries.every((battery) => {
+        const lineId = battery.ID || battery.Id
+        return allocations.some((a) => a.PoBatteriesID === lineId)
+      })
+
+    const linkedInquiries = inquiryPoService.getLinkedInquiriesByPoId(normalizedId)
+
+    return {
+      ...po,
+      Category: "battery",
+      Batteries: batteriesWithSuppliers,
+      Lines: batteriesWithSuppliers,
+      SupplierFeedback: allSuppliersHaveFeedback,
+      isStoragesAllocated,
+      LinkedInquiries: linkedInquiries,
+    }
+  }
+
   // Aggregate lines with tyre details
   const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
 
@@ -165,7 +246,7 @@ exports.getPOById = (id) => {
   const allocations = poTyreAllocationsRepo.getAllocationsByPoId(normalizedId)
 
   // Aggregate supplier allocations for each line
-  const tyresWithSuppliers = tyres.map(tyre => {
+  const tyresWithSuppliers = tyres.map((tyre) => {
     const tyreId = tyre.ID || tyre.Id
     const suppliers = poTyresSuppliersRepo.getPoTyresSuppliersByPoTyresId(tyreId)
     const batches = poTyreBatchesRepo.getBatchesByPoTyresId(tyreId)
@@ -174,30 +255,40 @@ exports.getPOById = (id) => {
       ...tyre,
       Suppliers: suppliers,
       Batches: batches,
-      IsBatchManaged: batches.length > 0
+      IsBatchManaged: batches.length > 0,
     }
   })
 
   // Determine SupplierFeedback status
-  let allSuppliersHaveFeedback = true;
+  let allSuppliersHaveFeedback = true
   for (const tyre of tyresWithSuppliers) {
     for (const supplier of tyre.Suppliers) {
       if (supplier.IsApproved === null) {
-        allSuppliersHaveFeedback = false;
-        break;
+        allSuppliersHaveFeedback = false
+        break
       }
     }
   }
 
   // Determine isStoragesAllocated status
-  const isStoragesAllocated = tyres.length > 0 && tyres.every(tyre => {
-    const tyreLineId = tyre.ID || tyre.Id
-    return allocations.some(a => a.PoTyresID === tyreLineId)
-  })
+  const isStoragesAllocated =
+    tyres.length > 0 &&
+    tyres.every((tyre) => {
+      const tyreLineId = tyre.ID || tyre.Id
+      return allocations.some((a) => a.PoTyresID === tyreLineId)
+    })
 
   const linkedInquiries = inquiryPoService.getLinkedInquiriesByPoId(normalizedId)
 
-  return { ...po, Tyres: tyresWithSuppliers, SupplierFeedback: allSuppliersHaveFeedback, isStoragesAllocated, LinkedInquiries: linkedInquiries };
+  return {
+    ...po,
+    Category: "tyre",
+    Tyres: tyresWithSuppliers,
+    Lines: tyresWithSuppliers,
+    SupplierFeedback: allSuppliersHaveFeedback,
+    isStoragesAllocated,
+    LinkedInquiries: linkedInquiries,
+  }
 }
 
 // A PO may reference one inquiry (InquiryID) or several (InquiryIDs).
@@ -234,6 +325,14 @@ exports.createPO = (payload, ctx) => {
   const statusId = hasSuppliers ? getStatusId('PENDING') : getStatusId('DRAFT')
 
   const created = poRepo.createPO({ ...po, StatusID: statusId })
+
+  if (po.Category === "battery") {
+    const processedLines = validateAndProcessPoBatteryLines(created.ID, linesInput, statusId)
+    persistPoBatteryLinesWithSuppliers(processedLines)
+  } else {
+    const processedLines = validateAndProcessPoLines(created.ID, linesInput, statusId)
+    persistPoLinesWithSuppliers(processedLines)
+  }
 
   // A PO raised from an inquiry keeps a link so the inquiry can show it.
   const inquiryIds = collectInquiryIds(payload)
@@ -301,6 +400,54 @@ const persistPoLinesWithSuppliers = (processedLines) => {
   })
 }
 
+const validateAndProcessPoBatteryLines = (poId, linesInput, defaultStatusId = null) => {
+  const lines = Array.isArray(linesInput) ? linesInput : []
+
+  return lines.map((line, index) => {
+    const row = index + 1
+
+    const battery = {
+      POID: poId,
+      BatteryID: normalizeId(line.BatteryID || line.TyreID, `BatteryID on line ${row}`),
+      Price: normalizeNumber(line.Price, `Price on line ${row}`),
+      Discount: normalizeNumber(line.Discount, `Discount on line ${row}`),
+      Qty: normalizeInteger(line.Qty, `Qty on line ${row}`),
+      IsAdminApproved: normalizeBooleanFlag(line.IsAdminApproved, `IsAdminApproved on line ${row}`),
+      StatusID: resolveLineStatusId(line, defaultStatusId),
+    }
+
+    const supplierInput = line.Suppliers || line.Supplliers || []
+    const suppliers = (Array.isArray(supplierInput) ? supplierInput : []).map((s, sIdx) => {
+      const sRow = `Supplier ${sIdx + 1} on line ${row}`
+      return {
+        SupplierID: normalizeId(s.SupplierID, `SupplierID for ${sRow}`),
+        Qty: normalizeInteger(s.Qty, `Qty for ${sRow}`),
+        IsApproved: normalizeBooleanFlag(s.IsApproved, `IsApproved for ${sRow}`, null),
+      }
+    })
+
+    return { battery, suppliers }
+  })
+}
+
+const persistPoBatteryLinesWithSuppliers = (processedLines) => {
+  processedLines.forEach((item) => {
+    const createdPoBattery = poBatteriesRepo.createPoBattery(item.battery)
+    const poBatteryId = createdPoBattery.ID || createdPoBattery.Id
+
+    if (item.suppliers && item.suppliers.length > 0) {
+      item.suppliers.forEach((s) => {
+        poBatterySuppliersRepo.createPoBatterySupplier({
+          PoBatteriesID: poBatteryId,
+          SupplierID: s.SupplierID,
+          Qty: s.Qty,
+          IsApproved: s.IsApproved,
+        })
+      })
+    }
+  })
+}
+
 exports.createStandalonePO = (payload, ctx) => {
   const createTransaction = db.transaction(() => {
     const linesInput = Array.isArray(payload.Lines) ? payload.Lines : []
@@ -316,8 +463,14 @@ exports.createStandalonePO = (payload, ctx) => {
       StatusID: statusId
     }
     const created = poRepo.createStandalonePO(po)
-    const processedLines = validateAndProcessPoLines(created.ID, linesInput, statusId)
-    persistPoLinesWithSuppliers(processedLines)
+
+    if (po.Category === "battery") {
+      const processedLines = validateAndProcessPoBatteryLines(created.ID, linesInput, statusId)
+      persistPoBatteryLinesWithSuppliers(processedLines)
+    } else {
+      const processedLines = validateAndProcessPoLines(created.ID, linesInput, statusId)
+      persistPoLinesWithSuppliers(processedLines)
+    }
 
     // A PO raised from an inquiry keeps a link so the inquiry can show it.
     const inquiryIds = collectInquiryIds(payload)
@@ -373,15 +526,23 @@ exports.updatePO = (id, payload, ctx) => {
     const updated = poRepo.updatePO(normalizedId, { ...po, StatusID: statusId })
 
     // Replace lines and suppliers to match UI state
-    const existingTyres = poTyresRepo.getPoTyresByPoId(normalizedId)
-    existingTyres.forEach(t => poTyresSuppliersRepo.deletePoTyresSuppliersByPoTyresId(t.ID || t.Id))
-    poTyresRepo.deletePoTyresByPoId(normalizedId)
-    poTyreAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+    if (current.Category === "battery" || po.Category === "battery") {
+      const existingBatteries = poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+      existingBatteries.forEach(b => poBatterySuppliersRepo.deletePoBatterySuppliersByPoBatteriesId(b.ID || b.Id))
+      poBatteryAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+      poBatteriesRepo.deletePoBatteriesByPoId(normalizedId)
 
-    // Lines inherit the parent status when the client omits one, so editing a
-    // PO never silently resets its tyre lines (e.g. back to a NULL status).
-    const processedLines = validateAndProcessPoLines(normalizedId, linesInput, statusId)
-    persistPoLinesWithSuppliers(processedLines)
+      const processedLines = validateAndProcessPoBatteryLines(normalizedId, linesInput, statusId)
+      persistPoBatteryLinesWithSuppliers(processedLines)
+    } else {
+      const existingTyres = poTyresRepo.getPoTyresByPoId(normalizedId)
+      existingTyres.forEach(t => poTyresSuppliersRepo.deletePoTyresSuppliersByPoTyresId(t.ID || t.Id))
+      poTyresRepo.deletePoTyresByPoId(normalizedId)
+      poTyreAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+
+      const processedLines = validateAndProcessPoLines(normalizedId, linesInput, statusId)
+      persistPoLinesWithSuppliers(processedLines)
+    }
 
     const after = exports.getPOById(normalizedId)
 
@@ -422,14 +583,24 @@ exports.updateStandalonePO = (id, payload, ctx) => {
     const updated = poRepo.updateStandalonePO(normalizedId, { ...po, StatusID: statusId })
 
     // Replace existing lines
-    const existingTyres = poTyresRepo.getPoTyresByPoId(normalizedId)
-    existingTyres.forEach(t => poTyresSuppliersRepo.deletePoTyresSuppliersByPoTyresId(t.ID || t.Id))
-    poTyreAllocationsRepo.deleteAllocationsByPoId(normalizedId)
-    poTyresRepo.deletePoTyresByPoId(normalizedId)
+    if (current.Category === "battery" || po.Category === "battery") {
+      const existingBatteries = poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+      existingBatteries.forEach(b => poBatterySuppliersRepo.deletePoBatterySuppliersByPoBatteriesId(b.ID || b.Id))
+      poBatteryAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+      poBatteriesRepo.deletePoBatteriesByPoId(normalizedId)
 
-    // Lines inherit the parent status when the client omits one (see updatePO).
-    const processedLines = validateAndProcessPoLines(normalizedId, linesInput, statusId)
-    persistPoLinesWithSuppliers(processedLines)
+      const processedLines = validateAndProcessPoBatteryLines(normalizedId, linesInput, statusId)
+      persistPoBatteryLinesWithSuppliers(processedLines)
+    } else {
+      const existingTyres = poTyresRepo.getPoTyresByPoId(normalizedId)
+      existingTyres.forEach(t => poTyresSuppliersRepo.deletePoTyresSuppliersByPoTyresId(t.ID || t.Id))
+      poTyreAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+      poTyresRepo.deletePoTyresByPoId(normalizedId)
+
+      // Lines inherit the parent status when the client omits one (see updatePO).
+      const processedLines = validateAndProcessPoLines(normalizedId, linesInput, statusId)
+      persistPoLinesWithSuppliers(processedLines)
+    }
 
     const after = exports.getPOById(normalizedId)
 
@@ -459,19 +630,25 @@ exports.deletePO = (id, ctx) => {
       )
     }
 
-    // 1. Fetch child lines to clean up supplier allocations first
-    const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
-    tyres.forEach((t) => {
-      poTyresSuppliersRepo.deletePoTyresSuppliersByPoTyresId(t.ID || t.Id)
-    })
+    // 1. Clean up line items, supplier allocations, batches, and storage allocations
+    if (before.Category === "battery") {
+      const batteries = poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+      batteries.forEach((b) => {
+        poBatterySuppliersRepo.deletePoBatterySuppliersByPoBatteriesId(b.ID || b.Id)
+        poBatteryBatchesRepo.deleteBatchesByPoBatteriesId(b.ID || b.Id)
+      })
+      poBatteryAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+      poBatteriesRepo.deletePoBatteriesByPoId(normalizedId)
+    } else {
+      const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
+      tyres.forEach((t) => {
+        poTyresSuppliersRepo.deletePoTyresSuppliersByPoTyresId(t.ID || t.Id)
+      })
+      poTyreAllocationsRepo.deleteAllocationsByPoId(normalizedId)
+      poTyresRepo.deletePoTyresByPoId(normalizedId)
+    }
 
-    // 2. Delete associated tyre allocations (must come before POTyres due to FK)
-    poTyreAllocationsRepo.deleteAllocationsByPoId(normalizedId)
-
-    // 3. Delete the PO tyre lines
-    poTyresRepo.deletePoTyresByPoId(normalizedId)
-
-    // 3. Delete the parent PO record
+    // 2. Delete the parent PO record
     const result = poRepo.deletePO(normalizedId)
 
     if (result.changes === 0) {
@@ -494,8 +671,12 @@ exports.deletePO = (id, ctx) => {
 
 exports.updatePOStatus = (id, statusCode, ctx) => {
   const normalizedId = normalizeId(id, "ID")
+  const current = poRepo.getPOById(normalizedId)
+  if (!current) {
+    throw new Error("PO not found")
+  }
 
-  if ([STATUS_CODES.ARRIVING, STATUS_CODES.ARRIVED, STATUS_CODES.COMPLETED].includes(statusCode)) {
+  if (current.Category !== "battery" && [STATUS_CODES.ARRIVING, STATUS_CODES.ARRIVED, STATUS_CODES.COMPLETED].includes(statusCode)) {
     throw new Error("PO receipt status is updated automatically after all tyre lines are received through GRNs")
   }
 
@@ -505,11 +686,6 @@ exports.updatePOStatus = (id, statusCode, ctx) => {
   }
 
   const updateTransaction = db.transaction(() => {
-    const current = poRepo.getPOById(normalizedId)
-    if (!current) {
-      throw new Error("PO not found")
-    }
-
     const before = exports.getPOById(normalizedId)
 
     // Idempotency: re-setting the current status is a no-op.
@@ -525,15 +701,28 @@ exports.updatePOStatus = (id, statusCode, ctx) => {
     }
 
     if (statusCode === STATUS_CODES.ARRIVED) {
-      const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
-      const unbatchedLines = tyres.filter(
-        (tyre) => poTyreBatchesRepo.getBatchesByPoTyresId(tyre.ID || tyre.Id).length === 0
-      )
-
-      if (unbatchedLines.length > 0) {
-        throw new Error(
-          `${unbatchedLines.length} tyre line item${unbatchedLines.length > 1 ? "s have" : " has"} no batch managed. Manage batches before marking the PO as arrived.`
+      if (current.Category === "battery") {
+        const batteries = poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+        const unbatchedLines = batteries.filter(
+          (battery) => poBatteryBatchesRepo.getBatchesByPoBatteriesId(battery.ID || battery.Id).length === 0
         )
+
+        if (unbatchedLines.length > 0) {
+          throw new Error(
+            `${unbatchedLines.length} battery line item${unbatchedLines.length > 1 ? "s have" : " has"} no batch managed. Manage batches before marking the PO as arrived.`
+          )
+        }
+      } else {
+        const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
+        const unbatchedLines = tyres.filter(
+          (tyre) => poTyreBatchesRepo.getBatchesByPoTyresId(tyre.ID || tyre.Id).length === 0
+        )
+
+        if (unbatchedLines.length > 0) {
+          throw new Error(
+            `${unbatchedLines.length} tyre line item${unbatchedLines.length > 1 ? "s have" : " has"} no batch managed. Manage batches before marking the PO as arrived.`
+          )
+        }
       }
     }
 
@@ -543,18 +732,35 @@ exports.updatePOStatus = (id, statusCode, ctx) => {
     }
 
     if (statusCode === STATUS_CODES.PENDING || statusCode === STATUS_CODES.ARRIVING || statusCode === STATUS_CODES.ARRIVED || statusCode === STATUS_CODES.COMPLETED || statusCode === STATUS_CODES.DRAFT) {
-      syncPoTyreStatusesWithParentStatus(normalizedId, statusCode)
+      if (current.Category === "battery") {
+        syncPoBatteryStatusesWithParentStatus(normalizedId, statusCode)
+      } else {
+        syncPoTyreStatusesWithParentStatus(normalizedId, statusCode)
+      }
     }
 
     if (statusCode === STATUS_CODES.ARRIVED) {
-      const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
-      for (const tyre of tyres) {
-        if (tyre.LocationId) {
-          storageManagerService.addArrivedPOToStorage(tyre.TyreID, tyre.LocationId, tyre.Qty, {
-            orderId: normalizedId,
-            batches: poTyreBatchesRepo.getBatchesByPoTyresId(tyre.ID || tyre.Id),
-            ctx,
-          })
+      if (current.Category === "battery") {
+        const batteries = poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+        for (const battery of batteries) {
+          if (battery.LocationId) {
+            batteryStorageManagerService.addArrivedPOToStorage(battery.BatteryID, battery.LocationId, battery.Qty, {
+              orderId: normalizedId,
+              batches: poBatteryBatchesRepo.getBatchesByPoBatteriesId(battery.ID || battery.Id),
+              ctx,
+            })
+          }
+        }
+      } else {
+        const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
+        for (const tyre of tyres) {
+          if (tyre.LocationId) {
+            storageManagerService.addArrivedPOToStorage(tyre.TyreID, tyre.LocationId, tyre.Qty, {
+              orderId: normalizedId,
+              batches: poTyreBatchesRepo.getBatchesByPoTyresId(tyre.ID || tyre.Id),
+              ctx,
+            })
+          }
         }
       }
 
@@ -672,9 +878,12 @@ exports.completePOWhenAllTyreLinesArrived = (id, ctx) => {
   if (!current) throw new Error("PO not found")
   if (current.StatusCode === STATUS_CODES.COMPLETED) return current
 
-  const tyres = poTyresRepo.getPoTyresByPoId(normalizedId)
-  const uniqueTyres = [...new Map(tyres.map((tyre) => [tyre.ID || tyre.Id, tyre])).values()]
-  if (uniqueTyres.length === 0 || uniqueTyres.some((tyre) => tyre.StatusCode !== STATUS_CODES.ARRIVED)) {
+  const lines = current.Category === "battery"
+    ? poBatteriesRepo.getPoBatteriesByPoId(normalizedId)
+    : poTyresRepo.getPoTyresByPoId(normalizedId)
+
+  const uniqueLines = [...new Map(lines.map((line) => [line.ID || line.Id, line])).values()]
+  if (uniqueLines.length === 0 || uniqueLines.some((line) => line.StatusCode !== STATUS_CODES.ARRIVED)) {
     return current
   }
 
@@ -683,11 +892,11 @@ exports.completePOWhenAllTyreLinesArrived = (id, ctx) => {
 
   const before = exports.getPOById(normalizedId)
   const updated = poRepo.updateStatus(normalizedId, completedStatusId)
-  if (!updated) throw new Error("Failed to complete PO after all tyre lines arrived")
+  if (!updated) throw new Error("Failed to complete PO after all lines arrived")
 
-  // The ordered tyres have physically arrived. Ensure all received stock
+  // The ordered goods have physically arrived. Ensure all received stock
   // is tied to the order so it can be issued from the warehouse.
-  if (current.SoID) {
+  if (current.SoID && current.Category !== "battery") {
     exports.allocateArrivedStockToSo(current.SoID, normalizedId)
   }
 
@@ -699,7 +908,7 @@ exports.completePOWhenAllTyreLinesArrived = (id, ctx) => {
   poAuditLogService.recordPOAction({
     action: AUDIT_ACTIONS.STATUS,
     poId: normalizedId,
-    eventData: { statusCode: STATUS_CODES.COMPLETED, reason: "all_tyres_arrived" },
+    eventData: { statusCode: STATUS_CODES.COMPLETED, reason: "all_lines_arrived" },
     before,
     after,
     ctx,
@@ -736,8 +945,33 @@ exports.AllocatePoTyreLocation = (payloads, ctx) => {
 
   const allocateTransaction = db.transaction(() => {
     for (const payload of payloads) {
-      const newAllocation = poTyreAllocationsService.createPoTyreAllocation(payload)
-      createdAllocations.push(newAllocation)
+      const poId = normalizeId(payload.POID, "POID")
+      const po = poRepo.getPOById(poId)
+
+      if (po && (po.Category === "battery" || payload.PoBatteriesID)) {
+        const lineId = normalizeId(payload.PoBatteriesID || payload.PoTyresID, "Line ID")
+        const locationId = normalizeId(payload.LocationId, "LocationId")
+
+        const line = poBatteriesRepo.getPoBatteriesByPoId(poId).find((b) => (b.ID || b.Id) === lineId)
+        if (!line) {
+          throw new Error("Purchase Order Battery line item not found")
+        }
+
+        const loc = batteryStorageManagerRepo.getStorageLocationByIdForBatteries(locationId)
+        if (!loc) {
+          throw new Error("Storage Location not found")
+        }
+
+        const created = poBatteryAllocationsRepo.createAllocation({
+          POID: poId,
+          PoBatteriesID: lineId,
+          LocationId: locationId,
+        })
+        createdAllocations.push(created)
+      } else {
+        const newAllocation = poTyreAllocationsService.createPoTyreAllocation(payload)
+        createdAllocations.push(newAllocation)
+      }
     }
 
     payloads.forEach((payload) => {

@@ -11,8 +11,8 @@ registerIpcHandler("tyres:getAllWithAvailableQuantity", {}, () => tyreService.ge
 
 registerIpcHandler("tyres:getLowStockCount", {}, () => tyreService.getLowStockCount())
 
-registerServiceHandler("tyres:create", {}, tyreService, "createTyre")
+registerServiceHandler("tyres:create", { permission: "inventory.manage" }, tyreService, "createTyre")
 
-registerServiceHandler("tyres:update", {}, tyreService, "updateTyre")
+registerServiceHandler("tyres:update", { permission: "inventory.manage" }, tyreService, "updateTyre")
 
-registerServiceHandler("tyres:delete", {}, tyreService, "deleteTyre")
+registerServiceHandler("tyres:delete", { permission: "inventory.manage" }, tyreService, "deleteTyre")

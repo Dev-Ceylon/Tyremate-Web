@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS BatteryM (
   Series TEXT,
   Voltage TEXT NOT NULL DEFAULT '12V',
   Capacity TEXT NOT NULL,
-  Technology TEXT NOT NULL DEFAULT 'VRLA Maintenance Free',
+  Technology TEXT,
   Application TEXT NOT NULL DEFAULT 'Motorcycle',
   WarrantyMonths INTEGER NOT NULL DEFAULT 12,
   BatchCode TEXT,
@@ -50,7 +50,24 @@ CREATE INDEX IF NOT EXISTS idx_battery_supplier_battery ON BatterySupplier (Batt
 CREATE INDEX IF NOT EXISTS idx_battery_supplier_supplier ON BatterySupplier (SupplierID);
 
 -- ============================================================================
--- 3. INVENTORY & BATCH STORAGE: BatteryStorageManager (mirrors StorageManager)
+-- 3. MASTER TABLE: BatteryLocationM (mirrors StorageLocationM & ConsumableLocationM)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS BatteryLocationM (
+  Id INTEGER PRIMARY KEY AUTOINCREMENT,
+  LocationCode TEXT,
+  LocationName TEXT,
+  BranchId INTEGER,
+  LocationTypeId INTEGER,
+  Capacity INTEGER,
+  FOREIGN KEY (BranchId) REFERENCES BranchM(Id),
+  FOREIGN KEY (LocationTypeId) REFERENCES StorageLocationTypeM(Id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_battery_location_branch ON BatteryLocationM (BranchId);
+CREATE INDEX IF NOT EXISTS idx_battery_location_code ON BatteryLocationM (LocationCode);
+
+-- ============================================================================
+-- 4. INVENTORY & BATCH STORAGE: BatteryStorageManager (mirrors StorageManager)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS BatteryStorageManager (
   Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +80,6 @@ CREATE TABLE IF NOT EXISTS BatteryStorageManager (
   CreatedBy TEXT,
   createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (BatteryId) REFERENCES BatteryM(Id),
-  FOREIGN KEY (LocationID) REFERENCES StorageLocationM(Id),
   FOREIGN KEY (SourceTypeId) REFERENCES StorageSourceM(Id)
 );
 
@@ -100,7 +116,6 @@ CREATE TABLE IF NOT EXISTS BatteryExpiryReminder (
   createdDate DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (BatteryStorageManagerBatchID) REFERENCES BatteryStorageManagerBatch(Id) ON DELETE CASCADE,
   FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id),
-  FOREIGN KEY (LocationID) REFERENCES StorageLocationM(Id),
   FOREIGN KEY (ReminderID) REFERENCES Reminders(ID)
 );
 
@@ -121,6 +136,9 @@ CREATE TABLE IF NOT EXISTS InquiryBatteries (
   FOREIGN KEY (InquiryID) REFERENCES Inquiry(InquiryID),
   FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_inquiry_batteries_inquiry ON InquiryBatteries (InquiryID);
+CREATE INDEX IF NOT EXISTS idx_inquiry_batteries_battery ON InquiryBatteries (BatteryID);
 
 -- ============================================================================
 -- 6. PURCHASE ORDERS: POBatteries & Allocations (mirrors POTyres)
@@ -160,7 +178,6 @@ CREATE TABLE IF NOT EXISTS PoBatteryAllocations (
   LocationId INTEGER NOT NULL,
   FOREIGN KEY (POID) REFERENCES PO(ID),
   FOREIGN KEY (PoBatteriesID) REFERENCES POBatteries(ID),
-  FOREIGN KEY (LocationId) REFERENCES StorageLocationM(Id),
   UNIQUE (POID, PoBatteriesID)
 );
 
@@ -220,33 +237,3 @@ CREATE TABLE IF NOT EXISTS SoReturnBatteries (
   FOREIGN KEY (SalesReturnID) REFERENCES SalesReturn(SalesReturnID),
   FOREIGN KEY (StatusId) REFERENCES SalesReturnStatusM(Id)
 );
-
--- ============================================================================
--- 8. INITIAL SEEDING: Lucas Motorcycle Batteries
--- ============================================================================
-
--- Seed Document 1: Lucas Motorcycle Batteries (Standard VRLA, Effective June 16, 2026)
-INSERT OR IGNORE INTO BatteryM (
-  Brand, Model, Series, Voltage, Capacity, Technology, Application, WarrantyMonths, 
-  PriceValidityFrom, MRP_WithoutVAT, MRP_WithVAT, ActualSellingPrice
-) VALUES
-  ('Lucas', 'LU-12XL2.5L-C', 'Standard VRLA', '12V', '2.5Ah', 'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 4398.31, 5190.00, 5190.00),
-  ('Lucas', 'LU-12XL5B',     'Standard VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 6576.27, 7760.00, 7760.00),
-  ('Lucas', 'LU-12XL7B-B',   'Standard VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 8601.69, 10150.00, 10150.00),
-  ('Lucas', 'LU-12XL9B',     'Standard VRLA', '12V', '9Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 8792.37, 10375.00, 10375.00),
-  ('Lucas', 'LU-XPTZ4',      'Standard VRLA', '12V', '4Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 5669.49, 6690.00, 6690.00),
-  ('Lucas', 'LU-XPTZ5',      'Standard VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 6644.07, 7840.00, 7840.00),
-  ('Lucas', 'LU-XPTZ7',      'Standard VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-06-16', 8389.83, 9900.00, 9900.00);
-
--- Seed Document 2: Lucas Motorcycle Batteries (Lite VRLA, Effective November 1, 2026)
-INSERT OR IGNORE INTO BatteryM (
-  Brand, Model, Series, Voltage, Capacity, Technology, Application, WarrantyMonths, 
-  PriceValidityFrom, MRP_WithoutVAT, MRP_WithVAT, ActualSellingPrice
-) VALUES
-  ('Lucas', 'LL-12XL2.5L-C', 'Lite VRLA', '12V', '2.5Ah', 'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 3610.17, 4260.00, 4260.00),
-  ('Lucas', 'LL-12XL5B',     'Lite VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 5330.51, 6290.00, 6290.00),
-  ('Lucas', 'LL-12XL7B-B',   'Lite VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 7364.41, 8690.00, 8690.00),
-  ('Lucas', 'LL-12XL9B',     'Lite VRLA', '12V', '9Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 7618.64, 8990.00, 8990.00),
-  ('Lucas', 'LL-XPTZ4',      'Lite VRLA', '12V', '4Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 4322.03, 5100.00, 5100.00),
-  ('Lucas', 'LL-XPTZ5',      'Lite VRLA', '12V', '5Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 5110.17, 6030.00, 6030.00),
-  ('Lucas', 'LL-XPTZ7',      'Lite VRLA', '12V', '7Ah',   'VRLA Maintenance Free', 'Motorcycle', 12, '2026-11-01', 7423.73, 8760.00, 8760.00);

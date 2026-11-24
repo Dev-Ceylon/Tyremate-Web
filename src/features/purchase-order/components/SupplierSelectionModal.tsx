@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { TyreSupplierApiRecord } from "../../tyre-suppliers/models/tyreSupplier"
 import type { PurchaseOrderLineSupplier } from "../hooks/usePurchaseOrderForm"
 import { v4 as uuidv4 } from "uuid"
@@ -7,8 +8,12 @@ import { v4 as uuidv4 } from "uuid"
 interface SupplierSelectionModalProps {
   isOpen: boolean
   onClose: () => void
-  tyreId: number
-  tyreLabel: string
+  tyreId?: number
+  batteryId?: number
+  itemId?: number
+  category?: 'tyre' | 'battery'
+  tyreLabel?: string
+  itemLabel?: string
   lineQty: number
   existingSuppliers: PurchaseOrderLineSupplier[]
   onConfirm: (suppliers: PurchaseOrderLineSupplier[]) => void
@@ -18,21 +23,28 @@ export function SupplierSelectionModal({
   isOpen,
   onClose,
   tyreId,
+  batteryId,
+  itemId,
+  category = "tyre",
   tyreLabel,
+  itemLabel,
   lineQty,
   existingSuppliers,
   onConfirm,
 }: SupplierSelectionModalProps) {
   const [loading, setLoading] = useState(false)
-  const [suppliers, setSuppliers] = useState<TyreSupplierApiRecord[]>([])
+  const [suppliers, setSuppliers] = useState<any[]>([])
   const [allocations, setAllocations] = useState<Record<number, number>>({})
   const [prices, setPrices] = useState<Record<number, number>>({})
   const [discounts, setDiscounts] = useState<Record<number, number>>({})
   const [error, setError] = useState<string | null>(null)
 
+  const effectiveItemId = itemId || (category === "battery" ? batteryId : tyreId) || 0
+  const effectiveLabel = itemLabel || tyreLabel || (category === "battery" ? "Selected Battery" : "Selected Tyre")
+
   useEffect(() => {
-    if (isOpen && tyreId) {
-      loadSuppliers()
+    if (isOpen && effectiveItemId) {
+      loadSuppliers(effectiveItemId)
       const initialQty: Record<number, number> = {}
       const initialPrices: Record<number, number> = {}
       const initialDiscounts: Record<number, number> = {}
@@ -45,17 +57,20 @@ export function SupplierSelectionModal({
       setPrices(initialPrices)
       setDiscounts(initialDiscounts)
     }
-  }, [isOpen, tyreId, existingSuppliers])
+  }, [isOpen, effectiveItemId, existingSuppliers])
 
-  const loadSuppliers = async () => {
+  const loadSuppliers = async (id: number) => {
     try {
       setLoading(true)
       setError(null)
-      const data = await window.api.tyreSuppliers.getSuppliersByTyreId(tyreId)
-      setSuppliers(data)
+      const data =
+        category === "battery"
+          ? await window.api.batterySuppliers.getSuppliersByBatteryId(id)
+          : await window.api.tyreSuppliers.getSuppliersByTyreId(id)
+      setSuppliers(data || [])
       setPrices((prev) => {
         const merged = { ...prev }
-        data.forEach((s) => {
+        ;(data || []).forEach((s: any) => {
           const sId = Number(s.SupplierID)
           if (!merged[sId] && s.Price) {
             merged[sId] = Number(s.Price)
@@ -133,7 +148,7 @@ export function SupplierSelectionModal({
     <AppModal isOpen={isOpen} title="Manage Supplier Allocations" onClose={onClose}>
       <div className="quick-order-modal-content">
         <div className="order-modal-tyre-info">
-          <h4>{tyreLabel}</h4>
+          <h4>{effectiveLabel}</h4>
           <div className="order-modal-metrics">
             <div>
               <label>Target Line Qty:</label>
@@ -175,11 +190,11 @@ export function SupplierSelectionModal({
 
         <div className="supplier-list-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
           {loading ? (
-            <p className="supplier-list-loading">Fetching available suppliers...</p>
+            <LoadingState message="Fetching available suppliers…" />
           ) : error ? (
             <p className="supplier-list-error">{error}</p>
           ) : suppliers.length === 0 ? (
-            <p className="supplier-list-empty">No suppliers found for this tyre.</p>
+            <p className="supplier-list-empty">No suppliers found for this item.</p>
           ) : (
             <div className="tm-table-scroll">
               <table className="supplier-list-table">

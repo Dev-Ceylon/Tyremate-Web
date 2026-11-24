@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import type { LinkedSoRecord } from "../models/inquirySo"
 import { inquirySoService } from "../services/inquirySoService"
 

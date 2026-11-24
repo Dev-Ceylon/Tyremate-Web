@@ -1,10 +1,12 @@
 const db = require("../database/connection")
 const poTyresSuppliersRepo = require("../repositories/poTyresSuppliersRepository")
 const poTyresRepo = require("../repositories/poTyresRepository")
+const poBatterySuppliersRepo = require("../repositories/poBatterySuppliersRepository")
+const poBatteriesRepo = require("../repositories/poBatteriesRepository")
 const poTyresService = require("./poTyresService")
 const poAuditLogService = require("./poAuditLogService")
 const { AUDIT_ACTIONS } = require("../constants/auditActionConstants")
-const { STATUS_CODES } = require("../constants/statusConstants")
+const { STATUS_CODES, getStatusIdByCode } = require("../constants/statusConstants")
 
 const normalizeDateValue = (value, fieldName) => {
   if (value === undefined || value === null || value === "") {
@@ -139,7 +141,28 @@ exports.updateApprovalById = (id, isApproved, ctx) => {
 
   const current = poTyresSuppliersRepo.getPoTyresSupplierById(normalizedId)
   if (!current) {
-    throw new Error("PoTyresSupplier not found")
+    const batterySupplier = poBatterySuppliersRepo.getPoBatterySupplierById(normalizedId)
+    if (!batterySupplier) {
+      throw new Error("PoSupplier allocation not found")
+    }
+
+    const updated = poBatterySuppliersRepo.updateSupplierApproval(normalizedId, normalizedApproved)
+    const poBattery = poBatteriesRepo.getPoBatteryById(batterySupplier.PoBatteriesID)
+
+    poAuditLogService.recordPOAction({
+      action: AUDIT_ACTIONS.SUPPLIER_APPROVAL,
+      poId: poBattery?.POID ?? null,
+      eventData: {
+        PoBatteriesID: batterySupplier.PoBatteriesID,
+        SupplierID: batterySupplier.SupplierID,
+        IsApproved: normalizedApproved,
+      },
+      before: batterySupplier,
+      after: updated,
+      ctx,
+    })
+
+    return updated
   }
 
   const updated = poTyresSuppliersRepo.updateApprovalStatus(normalizedId, normalizedApproved)
@@ -168,8 +191,55 @@ exports.updateApprovalById = (id, isApproved, ctx) => {
 exports.updateDeliveryDatesById = (id, dates = {}, ctx) => {
   const normalizedId = normalizeId(id, "ID")
   const current = poTyresSuppliersRepo.getPoTyresSupplierById(normalizedId)
+
   if (!current) {
-    throw new Error("PoTyresSupplier not found")
+    const batterySupplier = poBatterySuppliersRepo.getPoBatterySupplierById(normalizedId)
+    if (!batterySupplier) {
+      throw new Error("PoSupplier allocation not found")
+    }
+
+    const isApproved = batterySupplier.IsApproved === 1 || batterySupplier.IsApproved === true
+    if (!isApproved) {
+      throw new Error("Supplier delivery dates can only be set after the supplier is approved.")
+    }
+
+    const payload = {
+      ExpectedDeliveryDate: normalizeDateValue(dates.ExpectedDeliveryDate ?? batterySupplier.ExpectedDeliveryDate, "ExpectedDeliveryDate"),
+      ActualDeliveryDate: normalizeDateValue(dates.ActualDeliveryDate ?? batterySupplier.ActualDeliveryDate, "ActualDeliveryDate"),
+    }
+
+    const poBattery = poBatteriesRepo.getPoBatteryById(batterySupplier.PoBatteriesID)
+    const updated = db.transaction(() => {
+      const updatedAllocation = poBatterySuppliersRepo.updatePoBatterySupplier(normalizedId, {
+        ...batterySupplier,
+        ...payload,
+      })
+
+      if (dates.ExpectedDeliveryDate && (!poBattery?.StatusCode || poBattery.StatusCode === STATUS_CODES.PENDING)) {
+        const arrivingStatusId = getStatusIdByCode(STATUS_CODES.ARRIVING)
+        if (arrivingStatusId) {
+          poBatteriesRepo.updateStatus(batterySupplier.PoBatteriesID, arrivingStatusId)
+        }
+      }
+
+      return updatedAllocation
+    })()
+
+    poAuditLogService.recordPOAction({
+      action: AUDIT_ACTIONS.UPDATE,
+      poId: poBattery?.POID ?? null,
+      eventData: {
+        PoBatteriesID: batterySupplier.PoBatteriesID,
+        SupplierID: batterySupplier.SupplierID,
+        ExpectedDeliveryDate: payload.ExpectedDeliveryDate,
+        ActualDeliveryDate: payload.ActualDeliveryDate,
+      },
+      before: batterySupplier,
+      after: updated,
+      ctx,
+    })
+
+    return updated
   }
 
   const isApproved = current.IsApproved === 1 || current.IsApproved === true

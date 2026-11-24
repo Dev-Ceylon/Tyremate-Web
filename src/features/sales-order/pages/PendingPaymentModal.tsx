@@ -35,14 +35,14 @@ export function PendingPaymentModal({
           </div>
 
           <div className="login-form">
-            <div className="details-summary" style={{ gridColumn: "1 / -1", marginBottom: "1rem" }}>
-              <div className="summary-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+            <div className="details-summary details-summary-full">
+              <div className="summary-item summary-item-row">
                 <span className="label">Already Paid</span>
                 <span className="value">${paidAmount.toFixed(2)}</span>
               </div>
-              <div className="summary-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderTop: '1px solid var(--border-subtle)', marginTop: '4px', paddingTop: '8px' }}>
+              <div className="summary-item summary-item-row-total">
                 <span className="label">Remaining Pending</span>
-                <span className="value font-bold" style={{ color: 'var(--action-primary-strong)' }}>
+                <span className="value font-bold summary-item-value-highlight">
                   ${pendingAmount.toFixed(2)}
                 </span>
               </div>
@@ -50,14 +50,14 @@ export function PendingPaymentModal({
 
             {/* Content area for additional pending-payment fields */}
             <div className="login-form-full-span">
-              <p className="secondary-text" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+              <p className="secondary-text secondary-text-sm">
                 Configure additional settlement details or notes for this pending balance below.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="modal-actions" style={{ marginTop: "2rem" }}>
+        <div className="modal-actions modal-actions-mt">
           <button
             type="button"
             className="primary-action"

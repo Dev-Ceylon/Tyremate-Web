@@ -24,7 +24,7 @@ export function SuggestionInput({
   hideLabel = false,
   required = false,
 }: SuggestionInputProps) {
-  const { query, setQuery, suggestions } = useDebouncedSuggestions(fetchSuggestions)
+  const { query, setQuery, suggestions, loading } = useDebouncedSuggestions(fetchSuggestions)
   const [showDropdown, setShowDropdown] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -95,19 +95,26 @@ export function SuggestionInput({
   const showDropdownItems = showDropdown && query.length >= 2 && suggestions.length > 0
 
   const inputElement = (
-    <input
-      className={className}
-      value={value ?? ""}
-      onChange={handleChange}
-      onFocus={() => {
-        if (query.length >= 2 && suggestions.length > 0) setShowDropdown(true)
-      }}
-      onKeyDown={handleKeyDown}
-      placeholder={placeholder}
-      disabled={disabled}
-      required={required}
-      autoComplete="off"
-    />
+    <div className={`tm-select-loading-wrap ${loading ? "is-loading" : ""}`}>
+      <input
+        className={className}
+        value={value ?? ""}
+        onChange={handleChange}
+        onFocus={() => {
+          if (query.length >= 2 && (suggestions.length > 0 || loading)) setShowDropdown(true)
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled}
+        required={required}
+        autoComplete="off"
+      />
+      {loading && (
+        <span className="tm-select-spinner" aria-hidden="true" title="Searching…">
+          <span className="tm-spinner tm-spinner-xs" />
+        </span>
+      )}
+    </div>
   )
 
   return (
@@ -119,6 +126,14 @@ export function SuggestionInput({
           {label}
           {inputElement}
         </label>
+      )}
+      {showDropdown && loading && query.length >= 2 && suggestions.length === 0 && (
+        <div className="suggestion-dropdown">
+          <div className="suggestion-item suggestion-item-loading">
+            <span className="tm-spinner tm-spinner-xs" aria-hidden="true" />
+            <span>Searching…</span>
+          </div>
+        </div>
       )}
       {showDropdownItems && (
         <div className="suggestion-dropdown">

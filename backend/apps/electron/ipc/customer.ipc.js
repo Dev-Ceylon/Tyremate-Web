@@ -5,8 +5,8 @@ registerIpcHandler("customers:getAll", {}, () => customerService.getCustomers())
 
 registerIpcHandler("customers:getById", {}, (_event, customerId) => customerService.getCustomerById(customerId))
 
-registerServiceHandler("customers:create", {}, customerService, "createCustomer")
+registerServiceHandler("customers:create", { permission: "customers.manage" }, customerService, "createCustomer")
 
-registerServiceHandler("customers:update", {}, customerService, "updateCustomer")
+registerServiceHandler("customers:update", { permission: "customers.manage" }, customerService, "updateCustomer")
 
-registerServiceHandler("customers:delete", {}, customerService, "deleteCustomer")
+registerServiceHandler("customers:delete", { permission: "customers.manage" }, customerService, "deleteCustomer")

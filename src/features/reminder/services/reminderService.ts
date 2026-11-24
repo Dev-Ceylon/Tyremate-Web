@@ -3,6 +3,7 @@ import type {
   ReminderRecord,
   PendingReminderRecord,
   ReminderWithTyreExpiryDetails,
+  ReminderWithBatteryDetails,
 } from "../models/reminder"
 import { reminderClient } from "./reminderClient"
 
@@ -29,6 +30,14 @@ export const reminderService = {
 
   getTyreExpiryReminderDetails(reminderId: number): Promise<ReminderWithTyreExpiryDetails> {
     return reminderClient.getReminderDetails(reminderId)
+  },
+
+  getBatteryReminderDetails(reminderId: number): Promise<ReminderWithBatteryDetails> {
+    return reminderClient.getBatteryReminderDetails(reminderId)
+  },
+
+  syncBatteryReminders(): Promise<any> {
+    return reminderClient.syncBatteryReminders()
   },
 
   createReminder(data: ReminderPayload): Promise<ReminderRecord> {

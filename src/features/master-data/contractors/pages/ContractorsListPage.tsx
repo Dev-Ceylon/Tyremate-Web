@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { ContractorsTable } from "../components/ContractorsTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useContractors } from "../hooks/useContractors"
 import type { ContractorRecord } from "../models/contractor"
 
@@ -58,7 +59,7 @@ export default function ContractorsListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading contractors...</p> : null}
+      {loading ? <LoadingState message="Loading contractors…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

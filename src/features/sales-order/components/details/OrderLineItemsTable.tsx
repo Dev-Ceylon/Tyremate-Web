@@ -1,14 +1,15 @@
-import type { SoDetailedRecord, SoTyreRecord } from "../../models/salesOrder"
+import type { SoDetailedRecord, SoTyreRecord, SoBatteryRecord } from "../../models/salesOrder"
 
 type OrderLineItemsTableProps = {
   order: SoDetailedRecord
   netTotal: number
-  onReturn: (tyre: SoTyreRecord) => void
+  onReturn: (item: any) => void
   disabled?: boolean
 }
 
 export function OrderLineItemsTable({ order, netTotal, onReturn, disabled = false }: OrderLineItemsTableProps) {
-  const lines = order.Tyres ?? []
+  const isBattery = order.Category === "battery"
+  const lines = isBattery ? (order.Batteries ?? []) : (order.Tyres ?? [])
   return (
     <section className="table-panel panel panel-strong mt-6">
       <div className="table-panel-header">
@@ -22,7 +23,7 @@ export function OrderLineItemsTable({ order, netTotal, onReturn, disabled = fals
         <table className="product-table">
           <thead>
             <tr>
-              <th>Tyre (Brand / Size - Pattern)</th>
+              <th>{isBattery ? "Battery (Brand / Model - Capacity Voltage)" : "Tyre (Brand / Size - Pattern)"}</th>
               <th className="text-right">Unit Price</th>
               <th className="text-right">Disc %</th>
               <th className="text-right">Qty</th>
@@ -32,31 +33,33 @@ export function OrderLineItemsTable({ order, netTotal, onReturn, disabled = fals
             </tr>
           </thead>
           <tbody>
-            {lines.map((tyre) => (
-              <tr key={tyre.ID}>
+            {lines.map((item: any) => (
+              <tr key={item.ID}>
                 <td>
                   <span className="font-medium">
-                    {tyre.Brand || "NA"} / {tyre.Size || "NA"} - {tyre.Pattern || "NA"}
+                    {isBattery
+                      ? `${item.Brand || "NA"} / ${item.Model || "NA"} - ${item.Capacity || "NA"} ${item.Voltage || "NA"}`
+                      : `${item.Brand || "NA"} / ${item.Size || "NA"} - ${item.Pattern || "NA"}`}
                   </span>
                 </td>
-                <td className="text-right">${tyre.Price.toLocaleString()}</td>
-                <td className="text-right">{tyre.Discount}%</td>
-                <td className="text-right font-bold">{tyre.Qty}</td>
-                <td className="text-right">{tyre.returnedQty ?? 0}</td>
+                <td className="text-right">${item.Price.toLocaleString()}</td>
+                <td className="text-right">{item.Discount}%</td>
+                <td className="text-right font-bold">{item.Qty}</td>
+                <td className="text-right">{item.returnedQty ?? 0}</td>
                 <td className="text-right">
-                  <span className={tyre.NeedToOrderQty > 0 ? "text-danger font-bold" : ""}>
-                    {tyre.NeedToOrderQty}
+                  <span className={item.NeedToOrderQty > 0 ? "text-danger font-bold" : ""}>
+                    {item.NeedToOrderQty}
                   </span>
                 </td>
                 <td className="text-right">
-                  {tyre.reTurnCompleted === 1 || tyre.reTurnCompleted === true ? (
+                  {item.reTurnCompleted === 1 || item.reTurnCompleted === true ? (
                     <span className="status-badge status-completed">Returned</span>
                   ) : (
                     <button
                       className="secondary-action table-action"
-                      onClick={() => onReturn(tyre)}
+                      onClick={() => onReturn(item)}
                       disabled={disabled}
-                      title="Initiate tyre return"
+                      title={isBattery ? "Initiate battery return" : "Initiate tyre return"}
                     >
                       Return
                     </button>

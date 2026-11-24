@@ -3,11 +3,16 @@
 // already been handed over against it).
 export type SoDeliveryAllocation = {
   AllocationID: number
-  SoTyreID: number
+  SoTyreID?: number
+  SoBatteryID?: number
   StorageManagerID: number | null
   StorageManagerBatchID: number | null
+  BatteryStorageManagerID?: number | null
+  BatteryStorageManagerBatchID?: number | null
   LocationName?: string | null
   DOT?: string | null
+  BatchCode?: string | null
+  ExpiryDate?: string | null
   Price?: number
   Discount?: number
   Qty: number
@@ -18,11 +23,16 @@ export type SoDeliveryAllocation = {
 // Per sales-order line view of fulfilment: ordered vs. delivered vs. still to
 // order, plus the allocations that make up the collectable quantity.
 export type SoDeliveryProgressLine = {
-  SoTyreID: number
-  TyreID: number
+  SoTyreID?: number
+  SoBatteryID?: number
+  TyreID?: number | null
+  BatteryID?: number | null
   Brand?: string
   Size?: string
   Pattern?: string
+  Model?: string
+  Capacity?: string
+  Voltage?: string
   OrderedQty: number
   DeliveredQty: number
   RemainingToCollect: number
@@ -44,14 +54,16 @@ export type SoDeliveryProgressTotals = {
 export type SoDeliveryProgress = {
   SoID: number
   Lines: SoDeliveryProgressLine[]
-  Allocations: (SoDeliveryAllocation & { SoTyreID: number })[]
+  Allocations: (SoDeliveryAllocation & { SoTyreID?: number; SoBatteryID?: number })[]
   Totals: SoDeliveryProgressTotals
   IsFullyDelivered: boolean
 }
 
 // One requested hand-over line: collect `Qty` from a specific reservation.
 export type SoDeliveryLineInput = {
-  SoTyreStorageAllocationID: number
+  SoTyreStorageAllocationID?: number
+  SoBatteryStorageAllocationID?: number
+  AllocationID?: number
   Qty: number
 }
 
@@ -66,18 +78,28 @@ export type RecordSoDeliveryPayload = {
 export type SoDeliveryLineRecord = {
   ID: number
   SODeliveryID: number
-  SoTyreID: number
-  TyreID: number
-  SoTyreStorageAllocationID: number | null
-  StorageManagerID: number | null
-  StorageManagerBatchID: number | null
+  SoTyreID?: number | null
+  TyreID?: number | null
+  SoBatteryID?: number | null
+  BatteryID?: number | null
+  SoTyreStorageAllocationID?: number | null
+  SoBatteryStorageAllocationID?: number | null
+  StorageManagerID?: number | null
+  StorageManagerBatchID?: number | null
+  BatteryStorageManagerID?: number | null
+  BatteryStorageManagerBatchID?: number | null
   Qty: number
   Amount: number
   Brand?: string
   Size?: string
   Pattern?: string
+  Model?: string
+  Capacity?: string
+  Voltage?: string
   LocationName?: string | null
   DOT?: string | null
+  BatchCode?: string | null
+  ExpiryDate?: string | null
 }
 
 // Whether the warehouse may release this hand-over. A gate pass is issued only

@@ -17,6 +17,8 @@ function errorText(error: unknown) {
 export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }) {
   const status = useBackendStatus()
   const ids = useId()
+  const isLocked = databaseConfig.isLocked()
+  const environmentName = databaseConfig.isProduction() ? "Production" : "Development"
   const saved = databaseConfig.load()
   const [driver, setDriver] = useState<DatabaseConfig["driver"]>(saved.driver)
   const [url, setUrl] = useState(saved.driver === "libsql" ? saved.url : "")
@@ -52,6 +54,7 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
   }
 
   const handleSave = async () => {
+    if (isLocked) return
     setBusy("save")
     setMessage(null)
     try {
@@ -99,10 +102,22 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
         <p className="eyebrow">Database connection</p>
         <h2 id={`${ids}-title`}>Where this browser stores TyreMate data</h2>
         <p className="tm-card-sub">
-          This setting is saved in this browser only. Use a shared remote database when several people or devices
-          work together; use the local database for a single computer, demos or offline use.
+          {isLocked
+            ? `Connection credentials are automatically configured for ${environmentName} in application code.`
+            : "This setting is saved in this browser only. Use a shared remote database when several people or devices work together; use the local database for a single computer, demos or offline use."}
         </p>
       </div>
+
+      {isLocked ? (
+        <div className="tm-banner tm-banner-info">
+          <div>
+            <strong>Database connection is managed by application code ({environmentName} mode).</strong>
+            <p className="tm-note tm-banner-note">
+              Database URL and token are configured in the codebase (<code>web/config/databaseCredentials.ts</code>). Manual configuration in setup is temporarily disabled.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <dl className="tm-kv">
         <dt>Status</dt>
@@ -131,13 +146,14 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
         ) : null}
       </dl>
 
-      <fieldset className="tm-choice" aria-label="Database type">
+      <fieldset className="tm-choice" aria-label="Database type" disabled={isLocked}>
         <label>
           <input
             type="radio"
             name={`${ids}-driver`}
             value="local"
             checked={driver === "local"}
+            disabled={isLocked}
             onChange={() => setDriver("local")}
           />
           <span>
@@ -151,6 +167,7 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
             name={`${ids}-driver`}
             value="libsql"
             checked={driver === "libsql"}
+            disabled={isLocked}
             onChange={() => setDriver("libsql")}
           />
           <span>
@@ -164,13 +181,15 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
         <div className="tm-form">
           <div className="tm-form-row">
             <label className="field-label" htmlFor={`${ids}-url`}>
-              Database URL
+              Database URL {isLocked ? `(${environmentName} Code Config)` : ""}
             </label>
             <input
               id={`${ids}-url`}
               className="text-input"
               placeholder="libsql://tyremate-yourorg.turso.io"
               value={url}
+              disabled={isLocked}
+              readOnly={isLocked}
               autoComplete="off"
               spellCheck={false}
               onChange={(e) => setUrl(e.target.value)}
@@ -178,26 +197,31 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
           </div>
           <div className="tm-form-row">
             <label className="field-label" htmlFor={`${ids}-token`}>
-              Auth token
+              Auth token {isLocked ? `(${environmentName} Code Config)` : ""}
             </label>
             <div className="tm-inline">
               <input
                 id={`${ids}-token`}
-                className="text-input"
-                style={{ flex: "1 1 18rem" }}
+                className="text-input tm-flex-input"
                 type={showToken ? "text" : "password"}
-                placeholder="Database token (turso db tokens create …)"
-                value={token}
+                placeholder="Database token (configured in code)"
+                value={token ? (showToken ? token : "••••••••••••••••••••••••") : (isLocked ? "(No token configured)" : "")}
+                disabled={isLocked}
+                readOnly={isLocked}
                 autoComplete="off"
                 spellCheck={false}
                 onChange={(e) => setToken(e.target.value)}
               />
-              <button type="button" className="secondary-action" onClick={() => setShowToken((v) => !v)}>
-                {showToken ? "Hide" : "Show"}
-              </button>
+              {token ? (
+                <button type="button" className="secondary-action" onClick={() => setShowToken((v) => !v)}>
+                  {showToken ? "Hide" : "Show"}
+                </button>
+              ) : null}
             </div>
             <p className="tm-note">
-              The token is stored only in this browser&apos;s local storage and sent only to the database URL above.
+              {isLocked
+                ? `Configured in web/config/databaseCredentials.ts (${environmentName.toLowerCase()} settings).`
+                : "The token is stored only in this browser's local storage and sent only to the database URL above."}
             </p>
           </div>
         </div>
@@ -207,9 +231,15 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
         <button type="button" className="secondary-action" onClick={handleTest} disabled={busy !== null}>
           {busy === "test" ? "Testing…" : "Test connection"}
         </button>
-        <button type="button" className="primary-action" onClick={handleSave} disabled={busy !== null}>
-          {busy === "save" ? "Connecting…" : "Save & connect"}
-        </button>
+        {!isLocked ? (
+          <button type="button" className="primary-action" onClick={handleSave} disabled={busy !== null}>
+            {busy === "save" ? "Connecting…" : "Save & connect"}
+          </button>
+        ) : (
+          <span className="tm-locked-text">
+            Database connection is locked to codebase credentials.
+          </span>
+        )}
       </div>
 
       {message ? (
@@ -231,38 +261,39 @@ export function DatabaseConnectionCard({ onApplied }: { onApplied?: () => void }
         </dl>
       ) : null}
 
-      <details>
-        <summary>Connection code (set up other devices quickly)</summary>
-        <div className="tm-form" style={{ marginTop: "0.75rem" }}>
-          <p className="tm-note">
-            A connection code contains the URL and token. Share it only with people allowed to access the database.
-          </p>
-          <div className="tm-inline">
-            <button type="button" className="secondary-action" onClick={handleGenerateCode}>
-              Generate code for these settings
-            </button>
+      {!isLocked ? (
+        <details>
+          <summary>Connection code (set up other devices quickly)</summary>
+          <div className="tm-form tm-login-note">
+            <p className="tm-note">
+              A connection code contains the URL and token. Share it only with people allowed to access the database.
+            </p>
+            <div className="tm-inline">
+              <button type="button" className="secondary-action" onClick={handleGenerateCode}>
+                Generate code for these settings
+              </button>
+            </div>
+            {generatedCode ? (
+              <textarea className="text-input tm-code" readOnly rows={3} value={generatedCode} aria-label="Generated connection code" />
+            ) : null}
+            <label className="field-label" htmlFor={`${ids}-code`}>
+              Paste a connection code
+            </label>
+            <div className="tm-inline">
+              <input
+                id={`${ids}-code`}
+                className="text-input tm-flex-input"
+                value={code}
+                placeholder="TM1.…"
+                onChange={(e) => setCode(e.target.value)}
+              />
+              <button type="button" className="secondary-action" onClick={handleApplyCode} disabled={!code.trim()}>
+                Load code
+              </button>
+            </div>
           </div>
-          {generatedCode ? (
-            <textarea className="text-input tm-code" readOnly rows={3} value={generatedCode} aria-label="Generated connection code" />
-          ) : null}
-          <label className="field-label" htmlFor={`${ids}-code`}>
-            Paste a connection code
-          </label>
-          <div className="tm-inline">
-            <input
-              id={`${ids}-code`}
-              className="text-input"
-              style={{ flex: "1 1 18rem" }}
-              value={code}
-              placeholder="TM1.…"
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <button type="button" className="secondary-action" onClick={handleApplyCode} disabled={!code.trim()}>
-              Load code
-            </button>
-          </div>
-        </div>
-      </details>
+        </details>
+      ) : null}
     </section>
   )
 }

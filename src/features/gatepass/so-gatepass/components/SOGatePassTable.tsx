@@ -38,7 +38,7 @@ export function SOGatePassTable({ records, expandedRowKey, onToggleExpand }: Pro
             <th>Date</th>
             <th>Delivery Date</th>
             <th>Customer</th>
-            <th>Tyres</th>
+            <th>Items</th>
             <th className="text-right">Qty</th>
             <th>Status</th>
             <th>Actions</th>
@@ -80,7 +80,9 @@ export function SOGatePassTable({ records, expandedRowKey, onToggleExpand }: Pro
                     <div className="contractor-tyre-tags">
                       {record.Lines.map((line) => (
                         <span key={line.ID} className="contractor-tyre-tag">
-                          {line.Brand || "NA"} / {line.Size || "NA"} ({line.Qty})
+                          {line.Size
+                            ? `${line.Brand || "NA"} / ${line.Size || "NA"} (${line.Qty})`
+                            : `${line.Brand || "NA"} / ${line.Model || "NA"} (${line.Qty})`}
                         </span>
                       ))}
                     </div>
@@ -153,13 +155,17 @@ export function SOGatePassTable({ records, expandedRowKey, onToggleExpand }: Pro
                     </div>
                     <div className="expanded-table-wrap">
                       <table className="product-table expanded-allocation-table">
-                        <thead><tr><th>Tyre</th><th>Location</th><th>DOT</th><th className="text-right">Qty</th></tr></thead>
+                        <thead><tr><th>Item (Brand / Specifications)</th><th>Location</th><th>Batch / DOT</th><th className="text-right">Qty</th></tr></thead>
                         <tbody>
                           {record.Lines.map((line) => (
                             <tr key={line.ID}>
-                              <td>{line.Brand || "NA"} / {line.Size || "NA"} - {line.Pattern || "NA"}</td>
+                              <td>
+                                {line.Size
+                                  ? `${line.Brand || "NA"} / ${line.Size || "NA"} - ${line.Pattern || "NA"}`
+                                  : `${line.Brand || "NA"} / ${line.Model || "NA"} (${line.Capacity || "NA"} ${line.Voltage || "NA"})`}
+                              </td>
                               <td>{line.LocationName || "-"}</td>
-                              <td>{line.DOT || "-"}</td>
+                              <td>{line.BatchCode || line.DOT || "-"}</td>
                               <td className="text-right font-bold">{line.Qty}</td>
                             </tr>
                           ))}

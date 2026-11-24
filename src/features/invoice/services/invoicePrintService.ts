@@ -6,7 +6,11 @@ export function buildInvoicePrintData(invoice: InvoiceDetailedRecord) {
   const format = (n: number) => Number(n).toLocaleString()
 
   const lines = (invoice.Lines || []).map((l) => {
-    const desc = l.Description || [l.Brand, l.Size, l.Pattern, l.SerialNo].filter(Boolean).join(" / ")
+    const isBattery = l.LineType === "battery" || Boolean(l.BatteryID)
+    const spec = isBattery
+      ? [l.Brand, l.Model, l.Capacity, l.Voltage, l.SerialNo].filter(Boolean).join(" / ")
+      : [l.Brand, l.Size, l.Pattern, l.SerialNo].filter(Boolean).join(" / ")
+    const desc = l.Description || spec
     return {
       description: desc,
       qty: String(l.Qty),

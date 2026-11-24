@@ -11,6 +11,7 @@ type BatchDraft = {
 type UseGoodsReceiptFormOptions = {
   isOpen: boolean
   poId: number
+  category?: "tyre" | "battery"
   supplierAllocationId: number | null
   allocationQty: number
   receivedToDate: number
@@ -34,6 +35,7 @@ const emptyBatch = (key: number): BatchDraft => ({
 export function useGoodsReceiptForm({
   isOpen,
   poId,
+  category,
   supplierAllocationId,
   allocationQty,
   receivedToDate,
@@ -44,17 +46,24 @@ export function useGoodsReceiptForm({
   const [receiptDate, setReceiptDate] = useState(today)
   const [deliveryNoteNumber, setDeliveryNoteNumber] = useState("")
   const [dispatchedQty, setDispatchedQty] = useState("")
+  const [receivedQty, setReceivedQty] = useState("")
+  const [acceptedQty, setAcceptedQty] = useState("")
   const [damagedQty, setDamagedQty] = useState("0")
   const [discrepancyReason, setDiscrepancyReason] = useState("")
   const [batches, setBatches] = useState<BatchDraft[]>([emptyBatch(1)])
   const [nextBatchKey, setNextBatchKey] = useState(2)
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
 
+  const isBattery = category === "battery"
+
   useEffect(() => {
     if (!isOpen) return
+    const remaining = Math.max(allocationQty - receivedToDate, 0)
     setReceiptDate(today())
     setDeliveryNoteNumber("")
-    setDispatchedQty(String(Math.max(allocationQty - receivedToDate, 0)))
+    setDispatchedQty(String(remaining))
+    setReceivedQty(String(remaining))
+    setAcceptedQty(String(remaining))
     setDamagedQty("0")
     setDiscrepancyReason("")
     setBatches([emptyBatch(1)])
@@ -62,11 +71,15 @@ export function useGoodsReceiptForm({
     setValidationMessage(null)
   }, [isOpen, supplierAllocationId, allocationQty, receivedToDate])
 
-  const receivedTotal = batches.reduce((total, batch) => total + (Number(batch.ReceivedQty) || 0), 0)
-  const acceptedTotal = batches.reduce((total, batch) => total + (Number(batch.AcceptedQty) || 0), 0)
+  const receivedTotal = isBattery
+    ? (Number(receivedQty) || 0)
+    : batches.reduce((total, batch) => total + (Number(batch.ReceivedQty) || 0), 0)
+  const acceptedTotal = isBattery
+    ? (Number(acceptedQty) || 0)
+    : batches.reduce((total, batch) => total + (Number(batch.AcceptedQty) || 0), 0)
   const shortage = Math.max((Number(dispatchedQty) || 0) - receivedTotal, 0)
   const overReceipt = Math.max(receivedTotal - (Number(dispatchedQty) || 0), 0)
-  const rejectedTotal = receivedTotal - acceptedTotal
+  const rejectedTotal = Math.max(receivedTotal - acceptedTotal, 0)
 
   const updateBatch = useCallback((key: number, patch: Partial<BatchDraft>) => {
     setBatches((current) => current.map((batch) => batch.key === key ? { ...batch, ...patch } : batch))
@@ -84,21 +97,33 @@ export function useGoodsReceiptForm({
   const submit = useCallback(async () => {
     setValidationMessage(null)
     if (!supplierAllocationId) return
+    const isBattery = category === "battery"
     if (!locationName) {
-      setValidationMessage("Allocate a storage location to this tyre line before posting a receipt.")
+      setValidationMessage(`Allocate a storage location to this ${isBattery ? "battery" : "tyre"} line before posting a receipt.`)
       return
     }
     if (!receiptDate) {
       setValidationMessage("Select the receipt date.")
       return
     }
-    if (batches.length === 0 || batches.some((batch) => !Number.isInteger(Number(batch.ReceivedQty)) || Number(batch.ReceivedQty) <= 0)) {
-      setValidationMessage("Enter a positive received quantity for each batch.")
-      return
-    }
-    if (batches.some((batch) => !Number.isInteger(Number(batch.AcceptedQty)) || Number(batch.AcceptedQty) < 0 || Number(batch.AcceptedQty) > Number(batch.ReceivedQty))) {
-      setValidationMessage("Accepted batch quantities must be between zero and each batch's received quantity.")
-      return
+    if (isBattery) {
+      if (!Number.isInteger(Number(receivedQty)) || Number(receivedQty) <= 0) {
+        setValidationMessage("Enter a positive received quantity.")
+        return
+      }
+      if (!Number.isInteger(Number(acceptedQty)) || Number(acceptedQty) < 0 || Number(acceptedQty) > Number(receivedQty)) {
+        setValidationMessage("Accepted quantity must be between zero and the received quantity.")
+        return
+      }
+    } else {
+      if (batches.length === 0 || batches.some((batch) => !Number.isInteger(Number(batch.ReceivedQty)) || Number(batch.ReceivedQty) <= 0)) {
+        setValidationMessage("Enter a positive received quantity for each batch.")
+        return
+      }
+      if (batches.some((batch) => !Number.isInteger(Number(batch.AcceptedQty)) || Number(batch.AcceptedQty) < 0 || Number(batch.AcceptedQty) > Number(batch.ReceivedQty))) {
+        setValidationMessage("Accepted batch quantities must be between zero and each batch's received quantity.")
+        return
+      }
     }
     if (!Number.isInteger(Number(dispatchedQty)) || Number(dispatchedQty) < 0) {
       setValidationMessage("Dispatched quantity must be a non-negative whole number.")
@@ -109,22 +134,29 @@ export function useGoodsReceiptForm({
       return
     }
     if ((shortage > 0 || overReceipt > 0 || Number(damagedQty) > 0) && !discrepancyReason.trim()) {
-      setValidationMessage("Enter a reason for shortages, over-receipts, or damaged tyres.")
+      setValidationMessage(`Enter a reason for shortages, over-receipts, or damaged ${isBattery ? "batteries" : "tyres"}.`)
       return
     }
 
     try {
-      const receiptBatches: GoodsReceiptBatchPayload[] = batches.map(({ DOT, ReceivedQty, AcceptedQty }) => ({
-        DOT: DOT.trim() || null,
-        ReceivedQty: Number(ReceivedQty),
-        AcceptedQty: Number(AcceptedQty),
-      }))
+      const receiptBatches: GoodsReceiptBatchPayload[] = isBattery
+        ? []
+        : batches.map(({ DOT, ReceivedQty, AcceptedQty }) => ({
+            DOT: DOT.trim() || null,
+            BatchCode: null,
+            ReceivedQty: Number(ReceivedQty),
+            AcceptedQty: Number(AcceptedQty),
+          }))
       await onPost({
         POID: poId,
-        PoTyresSupplierID: supplierAllocationId,
+        PoTyresSupplierID: isBattery ? null : supplierAllocationId,
+        PoBatterySupplierID: isBattery ? supplierAllocationId : null,
+        Category: category,
         ReceiptDate: receiptDate,
         DeliveryNoteNumber: deliveryNoteNumber.trim() || null,
         DispatchedQty: Number(dispatchedQty),
+        ReceivedQty: receivedTotal,
+        AcceptedQty: acceptedTotal,
         DamagedQty: Number(damagedQty),
         DiscrepancyReason: discrepancyReason.trim() || null,
         Batches: receiptBatches,
@@ -135,8 +167,14 @@ export function useGoodsReceiptForm({
     }
   }, [
     supplierAllocationId,
+    category,
     locationName,
     receiptDate,
+    isBattery,
+    receivedQty,
+    acceptedQty,
+    receivedTotal,
+    acceptedTotal,
     batches,
     dispatchedQty,
     damagedQty,
@@ -157,6 +195,10 @@ export function useGoodsReceiptForm({
     setDeliveryNoteNumber,
     dispatchedQty,
     setDispatchedQty,
+    receivedQty,
+    setReceivedQty,
+    acceptedQty,
+    setAcceptedQty,
     damagedQty,
     setDamagedQty,
     discrepancyReason,

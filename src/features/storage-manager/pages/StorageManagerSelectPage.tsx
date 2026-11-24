@@ -37,6 +37,18 @@ export default function StorageManagerSelectPage() {
             Go to consumable stock
           </Link>
         </article>
+
+        <article className="info-panel panel panel-strong module-card">
+          <p className="section-label">Inventory</p>
+          <h2>Battery Stock</h2>
+          <p>
+            Manage battery inventory, batch codes, manufacture and expiry dates,
+            and monitor storage location capacity.
+          </p>
+          <Link className="text-link" to="/storage-manager/batteries">
+            Go to battery stock
+          </Link>
+        </article>
       </section>
     </main>
   )

@@ -37,12 +37,17 @@ export default function SupplierFormPage() {
     availableTyres,
     tyresLoading,
     tyresError,
+    availableBatteries,
+    batteriesLoading,
+    batteriesError,
     submitting,
     initializing,
     updateField,
     handleSubmit,
     loadTyresOnDemand,
     reloadTyres,
+    loadBatteriesOnDemand,
+    reloadBatteries,
   } = useSupplierForm({
     supplierId: parsedSupplierId,
     onSuccess: handleSuccess,
@@ -70,6 +75,11 @@ export default function SupplierFormPage() {
         tyresError={tyresError}
         onOpenTyrePicker={loadTyresOnDemand}
         onTyreCreated={reloadTyres}
+        availableBatteries={availableBatteries}
+        batteriesLoading={batteriesLoading}
+        batteriesError={batteriesError}
+        onOpenBatteryPicker={loadBatteriesOnDemand}
+        onBatteryCreated={reloadBatteries}
         onChange={updateField}
         onSubmit={handleSubmit}
         onCancel={() => navigate("..")}

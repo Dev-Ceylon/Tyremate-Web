@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { BankDetailsTable } from "../components/BankDetailsTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useBankDetails } from "../hooks/useBankDetails"
 import type { BankDetailRecord } from "../models/bankDetail"
 
@@ -64,7 +65,7 @@ export default function BankDetailsListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading bank details...</p> : null}
+      {loading ? <LoadingState message="Loading bank details…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

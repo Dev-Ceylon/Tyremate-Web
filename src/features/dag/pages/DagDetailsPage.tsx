@@ -13,6 +13,7 @@ import { AssignContractorDialog } from "../components/AssignContractorDialog"
 import { IssueGatePassDialog } from "../components/IssueGatePassDialog"
 import { DeliveryDateDialog } from "../components/DeliveryDateDialog"
 import { STATUS_CODES } from "../../../shared/constants/statusConstants"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { DagPaymentDetail } from "../models/dag"
 
 export function DagDetailsPage() {
@@ -103,7 +104,7 @@ export function DagDetailsPage() {
   if (loading) {
     return (
       <main className="app-shell">
-        <p className="hero-text">Loading DAG details...</p>
+        <LoadingState message="Loading DAG details…" />
       </main>
     )
   }

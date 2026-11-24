@@ -4,41 +4,60 @@ import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
 import { STATUS_METADATA } from "../../../shared/constants/statusConstants"
 import { usePurchaseOrderList } from "../hooks/usePurchaseOrderList"
 import { PurchaseOrderTable } from "../components/PurchaseOrderTable"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function PurchaseOrderListPage() {
   const navigate = useNavigate()
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "tyre" | "battery">("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const { purchaseOrders, loading, error } = usePurchaseOrderList()
 
+  const categoryTabs = useMemo(() => {
+    const tyreCount = purchaseOrders.filter((po) => (po.Category || "tyre") === "tyre").length
+    const batteryCount = purchaseOrders.filter((po) => po.Category === "battery").length
+
+    return [
+      { key: "all", label: "All Categories", badge: purchaseOrders.length },
+      { key: "tyre", label: "Tyres", badge: tyreCount },
+      { key: "battery", label: "Batteries", badge: batteryCount },
+    ]
+  }, [purchaseOrders])
+
+  const poInCategory = useMemo(() => {
+    if (categoryFilter === "all") return purchaseOrders
+    return purchaseOrders.filter((po) => (po.Category || "tyre") === categoryFilter)
+  }, [purchaseOrders, categoryFilter])
+
   const statusTabs = useMemo(() => {
     const countByStatus: Record<string, number> = {}
-    purchaseOrders.forEach((po) => {
+    poInCategory.forEach((po) => {
       const code = po.StatusCode ?? "unknown"
       countByStatus[code] = (countByStatus[code] ?? 0) + 1
     })
 
     return [
-      { key: "all", label: "All", badge: purchaseOrders.length },
+      { key: "all", label: "All Statuses", badge: poInCategory.length },
       ...Object.entries(STATUS_METADATA).map(([code, meta]) => ({
         key: code,
         label: meta.name,
         badge: countByStatus[code] ?? 0,
       })),
     ]
-  }, [purchaseOrders])
+  }, [poInCategory])
 
   const filteredPurchaseOrders = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
 
-    return purchaseOrders.filter((po) => {
+    return poInCategory.filter((po) => {
       if (statusFilter !== "all" && po.StatusCode !== statusFilter) return false
       if (dateFilter && po.Date !== dateFilter) return false
 
       if (query) {
         const searchable = [
           String(po.ID),
+          po.Category ?? "tyre",
           po.SoID ? `SO ${po.SoID}` : "",
           po.Date,
           po.SupplierName ?? "",
@@ -50,9 +69,9 @@ export default function PurchaseOrderListPage() {
 
       return true
     })
-  }, [purchaseOrders, statusFilter, dateFilter, searchQuery])
+  }, [poInCategory, statusFilter, dateFilter, searchQuery])
 
-  const isFiltering = statusFilter !== "all" || !!dateFilter || !!searchQuery.trim()
+  const isFiltering = categoryFilter !== "all" || statusFilter !== "all" || !!dateFilter || !!searchQuery.trim()
 
   return (
     <main className="app-shell">
@@ -64,7 +83,7 @@ export default function PurchaseOrderListPage() {
         </div>
         <div className="header-actions">
           <button className="primary-action" onClick={() => navigate("/purchase-orders/new")}>
-            Create New PO
+            New PO
           </button>
         </div>
       </section>
@@ -72,6 +91,10 @@ export default function PurchaseOrderListPage() {
       <section className="table-panel panel panel-strong">
         <div className="table-panel-header">
           <h2>Purchase Order List</h2>
+        </div>
+
+        <div style={{ marginBottom: "0.75rem" }}>
+          <FilterTabs tabs={categoryTabs} activeKey={categoryFilter} onChange={(key) => setCategoryFilter(key as any)} />
         </div>
 
         <FilterTabs tabs={statusTabs} activeKey={statusFilter} onChange={setStatusFilter} />
@@ -125,7 +148,7 @@ export default function PurchaseOrderListPage() {
         )}
 
         {loading ? (
-          <p className="hero-text">Loading purchase orders...</p>
+          <LoadingState message="Loading purchase orders…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (

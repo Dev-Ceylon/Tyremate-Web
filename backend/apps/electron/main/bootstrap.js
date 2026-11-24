@@ -26,6 +26,9 @@ require("../ipc/consumableLocation.ipc")
 require("../ipc/consumableStorageManager.ipc")
 require("../ipc/tyre.ipc")
 require("../ipc/tyreSupplier.ipc")
+require("../ipc/battery.ipc")
+require("../ipc/batteryLocation.ipc")
+require("../ipc/batteryStorageManager.ipc")
 require("../ipc/stockSnapshot.ipc")
 require("../ipc/auth.ipc")
 require("../ipc/so.ipc")
@@ -55,12 +58,15 @@ require("../../../packages/listeners/notificationLogger")
 const { registerAuthHandlers } = require("../ipc/authHandlers.ipc")
 const registerPrinterIpc = require("../ipc/printer.ipc")
 const { runSeed, initializeLookupIds } = require("../../../packages/database/seed")
+const { runMasterDataSeed, runDevMasterDataFeed } = require("../../../packages/database/masterDataSeeder")
+const { ENABLE_MASTER_DATA_SEED, ENABLE_DEV_MASTER_DATA_FEED } = require("../../../packages/config/seedConfig")
 const appSettingsRepository = require("../../../packages/repositories/appSettingsRepository")
 const { SCHEMA_HASH } = require("../../../platform/migrations.generated")
 require("../listeners/reminderIpcListener")
 require("../listeners/notificationIpcListener")
 const notificationMonitor = require("../../../packages/services/notifications/notificationMonitorService")
 const tyreExpiryMonitor = require("../../../packages/services/notifications/tyreExpiryMonitorService")
+const batteryReminderMonitor = require("../../../packages/services/notifications/batteryReminderMonitorService")
 const { logError } = require("../../../packages/errors/errorLogger")
 
 const SEED_MARKER_KEY = "seed.coreVersion"
@@ -89,7 +95,7 @@ function seedVersion() {
     require("../../../packages/constants/salesReturnConstants"),
   ]
   const seedData = constants.map((mod) =>
-    Object.fromEntries(Object.entries(mod).filter(([key]) => /SEED/.test(key))),
+    Object.fromEntries(Object.entries(mod).filter(([key]) => /SEED|ROLE_PERMISSIONS/.test(key))),
   )
   return `${SCHEMA_HASH}:${hashText(JSON.stringify(seedData))}`
 }
@@ -136,6 +142,16 @@ async function start({ startMonitors = true } = {}) {
   let seedResult = null
   if (!isLocked) {
     seedResult = await seedDatabase()
+    try {
+      if (ENABLE_MASTER_DATA_SEED) {
+        await runMasterDataSeed()
+      }
+      if (ENABLE_DEV_MASTER_DATA_FEED) {
+        await runDevMasterDataFeed()
+      }
+    } catch (error) {
+      logError(error, { channel: "masterDataSeed:startup" })
+    }
   }
   registerAuthHandlers()
   registerPrinterIpc()
@@ -143,6 +159,7 @@ async function start({ startMonitors = true } = {}) {
     monitorsStarted = true
     notificationMonitor.start()
     tyreExpiryMonitor.start()
+    batteryReminderMonitor.start()
   }
   return { locked: isLocked, seed: seedResult }
 }
@@ -151,6 +168,7 @@ function stop() {
   if (monitorsStarted) {
     notificationMonitor.stop()
     tyreExpiryMonitor.stop()
+    batteryReminderMonitor.stop()
     monitorsStarted = false
   }
 }

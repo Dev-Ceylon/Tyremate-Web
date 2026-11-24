@@ -7,8 +7,11 @@ interface GoodsReceiptHistoryProps {
 
 export function GoodsReceiptHistory({ supplierAllocationId, receipts }: GoodsReceiptHistoryProps) {
   const allocationReceipts = receipts.filter(
-    (receipt) => receipt.PoTyresSupplierID === supplierAllocationId
+    (receipt) =>
+      receipt.PoTyresSupplierID === supplierAllocationId ||
+      receipt.PoBatterySupplierID === supplierAllocationId
   )
+  const isBattery = allocationReceipts.some((r) => r.PoBatteriesID || r.PoBatterySupplierID)
 
   return (
     <section className="grn-history-section">
@@ -26,7 +29,7 @@ export function GoodsReceiptHistory({ supplierAllocationId, receipts }: GoodsRec
                   <th className="text-right">Accepted</th>
                   <th className="text-right">Damaged</th>
                   <th className="text-right">Short / over</th>
-                  <th>DOT batches</th>
+                  <th>{isBattery ? "Batches" : "DOT batches"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -39,7 +42,14 @@ export function GoodsReceiptHistory({ supplierAllocationId, receipts }: GoodsRec
                     <td className="text-right">{receipt.AcceptedQty}</td>
                     <td className="text-right">{receipt.DamagedQty}</td>
                     <td className="text-right">{receipt.ShortageQty} / {receipt.OverReceiptQty}</td>
-                    <td>{receipt.Batches.map((batch) => `${batch.DOT || "No DOT"}: ${batch.AcceptedQty}/${batch.ReceivedQty}`).join(", ")}</td>
+                    <td>
+                      {receipt.Batches.length > 0
+                        ? receipt.Batches.map(
+                            (batch) =>
+                              `${batch.BatchCode || batch.DOT || (isBattery ? "No Batch" : "No DOT")}: ${batch.AcceptedQty}/${batch.ReceivedQty}`
+                          ).join(", ")
+                        : "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

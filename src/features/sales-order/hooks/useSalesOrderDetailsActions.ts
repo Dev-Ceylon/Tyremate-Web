@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react"
 import type { SalesOrderPaymentPayload } from "../models/payment"
 import type { SoDetailedRecord, SoTyreRecord, ReturnAllocationItem } from "../models/salesOrder"
+import type { SoDeliveryRecord } from "../models/delivery"
 import { PAYMENT_TYPE_CODES } from "../../../shared/payment/constants/paymentTypeConstants"
 import { useConfirm } from "../../../shared/ui/confirm/ConfirmProvider"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
@@ -10,6 +11,7 @@ import { salesReturnService } from "../../sales-return/services/salesReturnServi
 
 type Options = {
   order: SoDetailedRecord | null
+  deliveries?: SoDeliveryRecord[]
   makePayment: (payment: SalesOrderPaymentPayload) => Promise<boolean>
   completeChequePayment: (paymentId: number) => Promise<boolean>
   refreshOrder: () => Promise<void>
@@ -19,6 +21,7 @@ type Options = {
 
 export function useSalesOrderDetailsActions({
   order,
+  deliveries = [],
   makePayment,
   completeChequePayment,
   refreshOrder,
@@ -53,7 +56,8 @@ export function useSalesOrderDetailsActions({
   const handleMakePayment = useCallback(async (payload: SalesOrderPaymentPayload) => {
     setIsSubmittingPayment(true)
     try {
-      if (await makePayment(payload)) {
+      const isAdvance = (deliveries?.length ?? 0) === 0
+      if (await makePayment({ ...payload, IsAdvance: isAdvance })) {
         setIsPaymentModalOpen(false)
         showToast({
           variant: "success",

@@ -7,17 +7,17 @@ import type { StorageLocationRecord } from "../../master-data/storage-locations/
  */
 export const poClient = {
   /**
-   * Fetches all purchase orders.
+   * Fetches all purchase orders, optionally filtered by category ('tyre' | 'battery').
    */
-  getPOs(): Promise<PoDetailedRecord[]> {
-    return window.api.po.getPOs()
+  getPOs(category?: string): Promise<PoDetailedRecord[]> {
+    return window.api.po.getPOs(category)
   },
 
   /**
-   * Fetches the count of pending (open) purchase orders.
+   * Fetches the count of pending (open) purchase orders, optionally filtered by category.
    */
-  getPendingPOCount(): Promise<PoPendingCount> {
-    return window.api.po.getPendingPOCount()
+  getPendingPOCount(category?: string): Promise<PoPendingCount> {
+    return window.api.po.getPendingPOCount(category)
   },
 
   /**

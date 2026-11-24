@@ -117,6 +117,7 @@ const api = {
     suggest: (field, query) => ipcRenderer.invoke("suppliers:suggest", field, query),
     getSuppliers: () => ipcRenderer.invoke("suppliers:getAll"),
     getSupplierById: (supplierId) => ipcRenderer.invoke("suppliers:getById", supplierId),
+    getSupplierTypes: () => ipcRenderer.invoke("suppliers:getTypes"),
     createSupplier: (data) => ipcRenderer.invoke("suppliers:create", data),
     updateSupplier: (supplierId, data) => ipcRenderer.invoke("suppliers:update", supplierId, data),
     deleteSupplier: (supplierId) => ipcRenderer.invoke("suppliers:delete", supplierId)
@@ -181,7 +182,9 @@ const api = {
     markReminderCompleted: (reminderId, isCompleted) =>
       ipcRenderer.invoke("reminders:markCompleted", reminderId, isCompleted),
     deleteReminder: (reminderId) => ipcRenderer.invoke("reminders:delete", reminderId),
-    getSoIdBySOReminderId: (reminderId) => ipcRenderer.invoke("reminders:getSoIdBySOReminderId", reminderId)
+    getSoIdBySOReminderId: (reminderId) => ipcRenderer.invoke("reminders:getSoIdBySOReminderId", reminderId),
+    syncBatteryReminders: () => ipcRenderer.invoke("reminders:syncBatteryReminders"),
+    syncTyreExpiryReminders: () => ipcRenderer.invoke("reminders:syncTyreExpiryReminders")
   },
 
   notifications: {
@@ -267,6 +270,16 @@ const api = {
     deleteConsumableLocation: (id) => ipcRenderer.invoke("consumableLocations:delete", id)
   },
 
+  batteryLocations: {
+    suggest: (field, query) => ipcRenderer.invoke("batteryLocations:suggest", field, query),
+    getBatteryLocations: () => ipcRenderer.invoke("batteryLocations:getAll"),
+    getBatteryLocationsByBranch: (branchId) => ipcRenderer.invoke("batteryLocations:getByBranch", branchId),
+    getBatteryLocationById: (id) => ipcRenderer.invoke("batteryLocations:getById", id),
+    createBatteryLocation: (data) => ipcRenderer.invoke("batteryLocations:create", data),
+    updateBatteryLocation: (id, data) => ipcRenderer.invoke("batteryLocations:update", id, data),
+    deleteBatteryLocation: (id) => ipcRenderer.invoke("batteryLocations:delete", id)
+  },
+
   consumableStorageManagers: {
     getConsumableStorageManagers: () => ipcRenderer.invoke("consumableStorageManagers:getAll"),
     getConsumableStorageManagersByLocation: (locationId) => ipcRenderer.invoke("consumableStorageManagers:getByLocation", locationId),
@@ -298,12 +311,62 @@ const api = {
     createTyreSupplier: (data) => ipcRenderer.invoke("tyreSuppliers:create", data)
   },
 
+  batteries: {
+    suggest: (field, query) => ipcRenderer.invoke("batteries:suggest", field, query),
+    getBatteries: () => ipcRenderer.invoke("batteries:getAll"),
+    getBatteriesWithAvailableQuantity: () => ipcRenderer.invoke("batteries:getAllWithAvailableQuantity"),
+    getLowStockCount: () => ipcRenderer.invoke("batteries:getLowStockCount"),
+    getBatteryById: (batteryId) => ipcRenderer.invoke("batteries:getById", batteryId),
+    getBatteryByIdWithAvailableQuantity: (batteryId) => ipcRenderer.invoke("batteries:getByIdWithAvailableQuantity", batteryId),
+    createBattery: (data) => ipcRenderer.invoke("batteries:create", data),
+    updateBattery: (batteryId, data) => ipcRenderer.invoke("batteries:update", batteryId, data),
+    deleteBattery: (batteryId) => ipcRenderer.invoke("batteries:delete", batteryId)
+  },
+
+  batterySuppliers: {
+    getSuppliersByBatteryId: (batteryId) => ipcRenderer.invoke("batterySuppliers:getSuppliersByBatteryId", batteryId),
+    createBatterySupplier: (data) => ipcRenderer.invoke("batterySuppliers:create", data)
+  },
+
+  batteryStorageManagers: {
+    getBatteryStorageManagers: () => ipcRenderer.invoke("batteryStorageManagers:getAll"),
+    getBatteryStorageManagersByLocation: (locationId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getByLocation", locationId),
+    getBatteryStorageManagerById: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:getById", id),
+    getBatteryStorageManagersByBatteryId: (batteryId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getByBatteryId", batteryId),
+    getBatchesByBatteryId: (batteryId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getBatchesByBatteryId", batteryId),
+    getBatchesByStorageManagerId: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:getBatchesByStorageManagerId", id),
+    getBatchesByLocation: (locationId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getBatchesByLocation", locationId),
+    getStorageLocationsByBranch: (branchId) =>
+      ipcRenderer.invoke("batteryStorageManagers:getLocationsByBranch", branchId),
+    getStorageLocationById: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:getLocationById", id),
+    createBatteryStorageManager: (data) =>
+      ipcRenderer.invoke("batteryStorageManagers:create", data),
+    updateBatteryStorageManager: (id, data) =>
+      ipcRenderer.invoke("batteryStorageManagers:update", id, data),
+    deleteBatteryStorageManager: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:delete", id),
+    createBatch: (storageManagerId, data) =>
+      ipcRenderer.invoke("batteryStorageManagers:createBatch", storageManagerId, data),
+    updateBatch: (id, data) =>
+      ipcRenderer.invoke("batteryStorageManagers:updateBatch", id, data),
+    deleteBatch: (id) =>
+      ipcRenderer.invoke("batteryStorageManagers:deleteBatch", id),
+  },
+
   so: {
-    getSOs: () => ipcRenderer.invoke("so:getAll"),
+    getSOs: (category) => ipcRenderer.invoke("so:getAll", category),
     getTodaySalesSummary: (date) => ipcRenderer.invoke("so:getTodaySalesSummary", date),
     getSalesTrendSummary: (fromDate, toDate) => ipcRenderer.invoke("so:getSalesTrendSummary", fromDate, toDate),
     getSOById: (soId) => ipcRenderer.invoke("so:getById", soId),
     getTyresBySoId: (soId) => ipcRenderer.invoke("so:getTyresBySoId", soId),
+    getBatteriesBySoId: (soId) => ipcRenderer.invoke("so:getBatteriesBySoId", soId),
     getWarehouseDispatch: (soId) => ipcRenderer.invoke("so:getWarehouseDispatch", soId),
     getDeliveryWarehouseDispatch: (soId, deliveryId) => ipcRenderer.invoke("so:getDeliveryWarehouseDispatch", soId, deliveryId),
     getDeliveryProgress: (soId) => ipcRenderer.invoke("so:getDeliveryProgress", soId),
@@ -322,6 +385,7 @@ const api = {
     createReturn: (soId, data) => ipcRenderer.invoke("so:createReturn", soId, data),
     getReturnsBySoId: (soId) => ipcRenderer.invoke("so:getReturnsBySoId", soId),
     getAllocationsBySoTyreId: (soTyreId) => ipcRenderer.invoke("so:getAllocationsBySoTyreId", soTyreId),
+    getAllocationsBySoBatteryId: (soBatteryId) => ipcRenderer.invoke("so:getAllocationsBySoBatteryId", soBatteryId),
     completeSO: (soId) => ipcRenderer.invoke("so:complete", soId)
   },
 
@@ -393,8 +457,8 @@ const api = {
   },
 
   po: {
-    getPOs: () => ipcRenderer.invoke("po:getAll"),
-    getPendingPOCount: () => ipcRenderer.invoke("po:getPendingPOCount"),
+    getPOs: (category) => ipcRenderer.invoke("po:getAll", category),
+    getPendingPOCount: (category) => ipcRenderer.invoke("po:getPendingPOCount", category),
     getPOById: (id) => ipcRenderer.invoke("po:getById", id),
     createPO: (data) => ipcRenderer.invoke("po:create", data),
     createStandalonePO: (data) => ipcRenderer.invoke("po:createStandalone", data),
@@ -646,6 +710,7 @@ const api = {
     getBySoId: (soId) => ipcRenderer.invoke("violations:getBySoId", soId),
     getByTyreId: (soTyreId) => ipcRenderer.invoke("violations:getByTyreId", soTyreId),
     getAll: (filters) => ipcRenderer.invoke("violations:getAll", filters),
+    getPending: () => ipcRenderer.invoke("violations:getPending"),
     getById: (violationId) => ipcRenderer.invoke("violations:getById", violationId),
     approve: (violationId, payload) => ipcRenderer.invoke("violations:approve", violationId, payload),
     reject: (violationId, rejectReason) => ipcRenderer.invoke("violations:reject", violationId, { rejectReason }),

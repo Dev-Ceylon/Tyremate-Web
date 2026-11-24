@@ -7,16 +7,21 @@ type FinancialOverviewCardProps = {
 }
 
 export function FinancialOverviewCard({ order, netTotal }: FinancialOverviewCardProps) {
-  const advancePaid = (order.Payments ?? []).reduce((sum, p) => {
+  const settledPayments = (order.Payments ?? []).filter((p) => {
     const isCollectedCheque =
       p.PaymentTypeCode === PAYMENT_TYPE_CODES.CHEQUE &&
       (p.Collected === 1 || p.Collected === true)
     const isLiquid =
       p.PaymentTypeCode === PAYMENT_TYPE_CODES.CASH ||
       p.PaymentTypeCode === PAYMENT_TYPE_CODES.BANK_TRANSFER
-    const isSettled = isLiquid || isCollectedCheque
-    return isSettled ? sum + (Number(p.Amount) || 0) : sum
-  }, 0)
+    return isLiquid || isCollectedCheque
+  })
+
+  const totalPaid = settledPayments.reduce((sum, p) => sum + (Number(p.Amount) || 0), 0)
+  const advancePaid = settledPayments
+    .filter((p) => p.IsAdvance)
+    .reduce((sum, p) => sum + (Number(p.Amount) || 0), 0)
+  const regularPaid = totalPaid - advancePaid
 
   return (
     <div className="info-panel panel panel-strong">
@@ -38,6 +43,12 @@ export function FinancialOverviewCard({ order, netTotal }: FinancialOverviewCard
           <div className="detail-card-row">
             <span className="detail-card-key">Advance Paid</span>
             <span className="detail-card-val text-success font-bold">${advancePaid.toLocaleString()}</span>
+          </div>
+        )}
+        {regularPaid > 0 && (
+          <div className="detail-card-row">
+            <span className="detail-card-key">{advancePaid > 0 ? "Additional Paid" : "Amount Paid"}</span>
+            <span className="detail-card-val text-success font-bold">${regularPaid.toLocaleString()}</span>
           </div>
         )}
         {(order.RemainingAmount ?? 0) > 0 && (

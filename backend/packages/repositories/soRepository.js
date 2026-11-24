@@ -1,27 +1,41 @@
 const db = require("../database/connection")
 
-exports.getAllSOs = () => {
+exports.getAllSOs = (category) => {
+  const baseQuery = `
+    SELECT
+      s.SoID,
+      s.Date,
+      s.CreatedDateTime,
+      s.IsAdminApproved,
+      s.IsCompleted,
+      s.IsPaymentCompleted,
+      COALESCE(s.Category, 'tyre') AS Category,
+      COALESCE(c.Name, swc.CustomerName) AS CustomerName,
+      c.CustomerCode,
+      CASE
+        WHEN COALESCE(s.Category, 'tyre') = 'battery' THEN
+          COALESCE((SELECT SUM(sb.Price * sb.Qty * (1 - COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+        ELSE
+          COALESCE((SELECT SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+      END AS TotalSale,
+      CASE
+        WHEN COALESCE(s.Category, 'tyre') = 'battery' THEN
+          COALESCE((SELECT SUM(sb.Price * sb.Qty * (COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+        ELSE
+          COALESCE((SELECT SUM(st.Price * st.Qty * (COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+      END AS TotalDiscount
+    FROM SO s
+    LEFT JOIN SoCustomer sc ON sc.SoID = s.SoID
+    LEFT JOIN CustomerM c ON c.CustomerID = sc.CustomerID
+    LEFT JOIN SoWalkinCustomer swc ON swc.SoID = s.SoID
+  `
+  if (category && category !== "all") {
+    return db
+      .prepare(`${baseQuery} WHERE COALESCE(s.Category, 'tyre') = ? GROUP BY s.SoID ORDER BY s.SoID DESC`)
+      .all(category)
+  }
   return db
-    .prepare(`
-      SELECT
-        s.SoID,
-        s.Date,
-        s.CreatedDateTime,
-        s.IsAdminApproved,
-        s.IsCompleted,
-        s.IsPaymentCompleted,
-        COALESCE(c.Name, swc.CustomerName) AS CustomerName,
-        c.CustomerCode,
-        COALESCE(SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalSale,
-        COALESCE(SUM(st.Price * st.Qty * (COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalDiscount
-      FROM SO s
-      LEFT JOIN SoCustomer sc ON sc.SoID = s.SoID
-      LEFT JOIN CustomerM c ON c.CustomerID = sc.CustomerID
-      LEFT JOIN SoWalkinCustomer swc ON swc.SoID = s.SoID
-      LEFT JOIN SoTyres st ON st.SoID = s.SoID
-      GROUP BY s.SoID
-      ORDER BY s.SoID DESC
-    `)
+    .prepare(`${baseQuery} GROUP BY s.SoID ORDER BY s.SoID DESC`)
     .all()
 }
 
@@ -35,15 +49,25 @@ exports.getSOById = (soId) => {
         s.IsAdminApproved,
         s.IsCompleted,
         s.IsPaymentCompleted,
+        COALESCE(s.Category, 'tyre') AS Category,
         COALESCE(c.Name, swc.CustomerName) AS CustomerName,
         c.CustomerCode,
-        COALESCE(SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalSale,
-        COALESCE(SUM(st.Price * st.Qty * (COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalDiscount
+        CASE
+          WHEN COALESCE(s.Category, 'tyre') = 'battery' THEN
+            COALESCE((SELECT SUM(sb.Price * sb.Qty * (1 - COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+          ELSE
+            COALESCE((SELECT SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+        END AS TotalSale,
+        CASE
+          WHEN COALESCE(s.Category, 'tyre') = 'battery' THEN
+            COALESCE((SELECT SUM(sb.Price * sb.Qty * (COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+          ELSE
+            COALESCE((SELECT SUM(st.Price * st.Qty * (COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+        END AS TotalDiscount
       FROM SO s
       LEFT JOIN SoCustomer sc ON sc.SoID = s.SoID
       LEFT JOIN CustomerM c ON c.CustomerID = sc.CustomerID
       LEFT JOIN SoWalkinCustomer swc ON swc.SoID = s.SoID
-      LEFT JOIN SoTyres st ON st.SoID = s.SoID
       WHERE s.SoID = ?
       GROUP BY s.SoID
     `)
@@ -51,6 +75,38 @@ exports.getSOById = (soId) => {
 }
 
 exports.getWarehouseDispatchBySoId = (soId) => {
+  const so = db.prepare("SELECT Category FROM SO WHERE SoID = ?").get(soId)
+  const isBattery = (so?.Category || "tyre") === "battery"
+
+  if (isBattery) {
+    return db
+      .prepare(`
+        SELECT
+          COALESCE(bl.Id, sl.Id) AS LocationID,
+          COALESCE(bl.LocationName, sl.LocationName, 'Battery Bay') AS LocationName,
+          COALESCE(bl.LocationCode, sl.LocationCode, '') AS LocationCode,
+          a.BatteryStorageManagerID AS StorageManagerID,
+          a.BatteryStorageManagerBatchID AS StorageManagerBatchID,
+          bsmb.BatchCode AS DOT,
+          a.SoBatteryID AS SoTyreID,
+          b.Id AS TyreID,
+          b.Brand,
+          b.Model AS Size,
+          b.Capacity || ' ' || b.Voltage AS Pattern,
+          a.Qty
+        FROM SoBatteryStorageAllocation a
+        INNER JOIN SoBatteries sb ON sb.ID = a.SoBatteryID
+        INNER JOIN BatteryM b ON b.Id = sb.BatteryID
+        LEFT JOIN BatteryStorageManager bsm ON bsm.Id = a.BatteryStorageManagerID
+        LEFT JOIN BatteryLocationM bl ON bl.Id = bsm.LocationID
+        LEFT JOIN StorageLocationM sl ON sl.Id = bsm.LocationID
+        LEFT JOIN BatteryStorageManagerBatch bsmb ON bsmb.Id = a.BatteryStorageManagerBatchID
+        WHERE sb.SoID = ?
+        ORDER BY LocationName ASC, b.Brand ASC, b.Model ASC, bsmb.BatchCode ASC, a.Id ASC
+      `)
+      .all(soId)
+  }
+
   return db
     .prepare(`
       SELECT
@@ -83,15 +139,17 @@ exports.createSO = (so) => {
     .prepare(`
       INSERT INTO SO (
         Date,
+        Category,
         CreatedDateTime,
         IsAdminApproved,
         IsCompleted,
         IsPaymentCompleted
       )
-      VALUES (?, datetime('now', 'localtime'), ?, ?, ?)
+      VALUES (?, ?, datetime('now', 'localtime'), ?, ?, ?)
     `)
     .run(
       so.Date,
+      so.Category || "tyre",
       so.IsAdminApproved,
       so.IsCompleted,
       so.IsPaymentCompleted
@@ -106,6 +164,7 @@ exports.updateSO = (soId, so) => {
       UPDATE SO
       SET
         Date = ?,
+        Category = COALESCE(?, Category, 'tyre'),
         IsAdminApproved = ?,
         IsCompleted = ?,
         IsPaymentCompleted = ?
@@ -113,6 +172,7 @@ exports.updateSO = (soId, so) => {
     `)
     .run(
       so.Date,
+      so.Category || null,
       so.IsAdminApproved,
       so.IsCompleted,
       so.IsPaymentCompleted,
@@ -131,9 +191,15 @@ exports.getTodaySalesSummary = (date) => {
     .prepare(`
       SELECT
         COUNT(DISTINCT s.SoID) AS OrderCount,
-        COALESCE(SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalSale
+        COALESCE(SUM(
+          CASE
+            WHEN COALESCE(s.Category, 'tyre') = 'battery' THEN
+              COALESCE((SELECT SUM(sb.Price * sb.Qty * (1 - COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+            ELSE
+              COALESCE((SELECT SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+          END
+        ), 0) AS TotalSale
       FROM SO s
-      LEFT JOIN SoTyres st ON st.SoID = s.SoID
       WHERE date(s.CreatedDateTime) = ?
     `)
     .get(date)
@@ -150,10 +216,16 @@ exports.getSalesTrendSummary = (fromDate, toDate) => {
       SELECT
         dates.d AS Date,
         COUNT(DISTINCT s.SoID) AS OrderCount,
-        COALESCE(SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)), 0) AS TotalSale
+        COALESCE(SUM(
+          CASE
+            WHEN COALESCE(s.Category, 'tyre') = 'battery' THEN
+              COALESCE((SELECT SUM(sb.Price * sb.Qty * (1 - COALESCE(sb.Discount, 0) / 100.0)) FROM SoBatteries sb WHERE sb.SoID = s.SoID), 0)
+            ELSE
+              COALESCE((SELECT SUM(st.Price * st.Qty * (1 - COALESCE(st.Discount, 0) / 100.0)) FROM SoTyres st WHERE st.SoID = s.SoID), 0)
+          END
+        ), 0) AS TotalSale
       FROM dates
       LEFT JOIN SO s ON date(s.CreatedDateTime) = dates.d
-      LEFT JOIN SoTyres st ON st.SoID = s.SoID
       GROUP BY dates.d
       ORDER BY dates.d ASC
     `)

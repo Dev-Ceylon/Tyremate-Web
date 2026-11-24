@@ -1,4 +1,4 @@
-﻿const db = require("../database/connection")
+const db = require("../database/connection")
 const inquirySoRepo = require("../repositories/inquirySoRepository")
 const inquiryRepo = require("../repositories/inquiryRepository")
 const soRepo = require("../repositories/soRepository")
@@ -67,7 +67,8 @@ exports.linkSoToInquiries = (soId, inquiryIds, ctx) => {
 
   const linkMany = db.transaction(() => {
     ids.forEach((inquiryId) => {
-      if (!inquiryRepo.getInquiryById(inquiryId)) {
+      const existingInquiry = inquiryRepo.getInquiryById(inquiryId)
+      if (!existingInquiry) {
         throw new Error(`Inquiry #${inquiryId} not found`)
       }
 
@@ -76,6 +77,13 @@ exports.linkSoToInquiries = (soId, inquiryIds, ctx) => {
         SOID: normalizedSoId,
         CreatedBy: changedBy,
       })
+
+      if (!existingInquiry.ConvertedSOID) {
+        inquiryRepo.updateInquiry(inquiryId, {
+          ...existingInquiry,
+          ConvertedSOID: normalizedSoId,
+        })
+      }
     })
   })
 

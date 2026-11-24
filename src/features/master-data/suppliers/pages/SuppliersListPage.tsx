@@ -3,6 +3,7 @@ import { useSuppliers } from "../hooks/useSuppliers"
 import { SuppliersTable } from "../components/SuppliersTable"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
+import { LoadingState } from "../../../../shared/ui/progress"
 import type { SupplierRecord } from "../models/supplier"
 
 export default function SuppliersListPage() {
@@ -58,7 +59,7 @@ export default function SuppliersListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading suppliers...</p> : null}
+      {loading ? <LoadingState message="Loading suppliers…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

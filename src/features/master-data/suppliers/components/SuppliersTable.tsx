@@ -1,3 +1,4 @@
+import { getSupplierTypeBadgeClass, getSupplierTypeName } from "../constants/supplierTypeConstants"
 import type { SupplierRecord } from "../models/supplier"
 
 type SuppliersTableProps = {
@@ -24,6 +25,7 @@ export function SuppliersTable({
           <tr>
             <th>Code</th>
             <th>Name</th>
+            <th>Type</th>
             <th>Contact</th>
             <th>Address</th>
             <th>TIN</th>
@@ -36,6 +38,11 @@ export function SuppliersTable({
             <tr key={supplier.SupplierID}>
               <td>{supplier.SupplierCode}</td>
               <td>{supplier.Name}</td>
+              <td>
+                <span className={getSupplierTypeBadgeClass(supplier.SupplierTypeCode)}>
+                  {supplier.SupplierTypeName || getSupplierTypeName(supplier.SupplierTypeCode)}
+                </span>
+              </td>
               <td>{supplier.Contact || "-"}</td>
               <td>{supplier.Address || "-"}</td>
               <td>{supplier.TinNo || "-"}</td>

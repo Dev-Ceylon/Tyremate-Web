@@ -27,6 +27,10 @@ const describeEntity = (entityType, record) => {
       const parts = [record.Brand, record.Size, record.Pattern].filter(Boolean)
       return parts.length > 0 ? parts.join(" ") : `Tyre #${record.Id}`
     }
+    case "Battery": {
+      const parts = [record.Brand, record.Model, record.Capacity].filter(Boolean)
+      return parts.length > 0 ? parts.join(" ") : `Battery #${record.Id}`
+    }
     case "Supplier": {
       const label = [record.SupplierCode, record.Name].filter(Boolean).join(" - ")
       return label || `Supplier #${record.SupplierID}`

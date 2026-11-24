@@ -22,6 +22,7 @@ import { useGenerateDeliveryInvoice } from "../hooks/useGenerateDeliveryInvoice"
 import { LinkedInquiriesCard } from "../components/LinkedInquiriesCard"
 import { useGenerateInvoice } from "../../invoice/hooks/useGenerateInvoice"
 import { usePrintSOPaymentReceipt } from "../hooks/usePrintSOPaymentReceipt"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function SalesOrderDetailsPage() {
   const navigate = useNavigate()
@@ -118,6 +119,7 @@ export default function SalesOrderDetailsPage() {
     handleIssueGatePass,
   } = useSalesOrderDetailsActions({
     order,
+    deliveries,
     makePayment,
     completeChequePayment,
     refreshOrder: refresh,
@@ -137,7 +139,7 @@ export default function SalesOrderDetailsPage() {
   const { generatingId: generatingDeliveryId, generate: handleGenerateDeliveryInvoice } =
     useGenerateDeliveryInvoice()
 
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading order details...</p></main>
+  if (loading) return <main className="app-shell"><LoadingState message="Loading order details…" /></main>
   if (error || !order) return <main className="app-shell"><p className="hero-text error-text">{error || "Order not found"}</p></main>
 
   return (
@@ -234,7 +236,7 @@ export default function SalesOrderDetailsPage() {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         onConfirm={handleMakePayment}
-        confirmLabel="Confirm SO"
+        confirmLabel={(deliveries?.length ?? 0) === 0 ? "Confirm Advance Payment" : "Record Payment"}
         submitting={isSubmittingPayment}
         form={paymentForm}
       />

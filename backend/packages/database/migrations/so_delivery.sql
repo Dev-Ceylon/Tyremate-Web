@@ -38,18 +38,27 @@ CREATE TABLE IF NOT EXISTS SODelivery (
 CREATE TABLE IF NOT EXISTS SODeliveryLine (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,
   SODeliveryID INTEGER NOT NULL,
-  SoTyreID INTEGER NOT NULL,
-  TyreID INTEGER NOT NULL,
+  SoTyreID INTEGER,
+  TyreID INTEGER,
   SoTyreStorageAllocationID INTEGER,
   StorageManagerID INTEGER,
   StorageManagerBatchID INTEGER,
+  SoBatteryID INTEGER,
+  BatteryID INTEGER,
+  SoBatteryStorageAllocationID INTEGER,
+  BatteryStorageManagerID INTEGER,
+  BatteryStorageManagerBatchID INTEGER,
   Qty INTEGER NOT NULL CHECK (Qty > 0),
   Amount REAL NOT NULL DEFAULT 0,
   FOREIGN KEY (SODeliveryID) REFERENCES SODelivery(ID) ON DELETE CASCADE,
   FOREIGN KEY (SoTyreID) REFERENCES SoTyres(ID),
   FOREIGN KEY (TyreID) REFERENCES TyreM(Id),
   FOREIGN KEY (SoTyreStorageAllocationID) REFERENCES SoTyreStorageAllocation(Id),
-  FOREIGN KEY (StorageManagerID) REFERENCES StorageManager(Id)
+  FOREIGN KEY (StorageManagerID) REFERENCES StorageManager(Id),
+  FOREIGN KEY (SoBatteryID) REFERENCES SoBatteries(ID),
+  FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id),
+  FOREIGN KEY (SoBatteryStorageAllocationID) REFERENCES SoBatteryStorageAllocation(Id),
+  FOREIGN KEY (BatteryStorageManagerID) REFERENCES BatteryStorageManager(Id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_so_delivery_so

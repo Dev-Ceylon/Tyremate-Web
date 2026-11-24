@@ -1,5 +1,6 @@
 import { useInvoices, type InvoiceListFilter } from "../hooks/useInvoices"
 import { InvoiceTable } from "../components/InvoiceTable"
+import { LoadingState } from "../../../shared/ui/progress"
 
 const FILTERS: { key: InvoiceListFilter; label: string }[] = [
   { key: "all", label: "All Invoices" },
@@ -38,7 +39,7 @@ export default function InvoiceListPage() {
         </div>
 
         {loading ? (
-          <p className="hero-text">Loading invoices...</p>
+          <LoadingState message="Loading invoices…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (

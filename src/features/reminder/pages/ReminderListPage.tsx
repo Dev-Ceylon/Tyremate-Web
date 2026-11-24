@@ -1,7 +1,9 @@
 import { useNavigate } from "@/lib/router"
 import { useReminderList } from "../hooks/useReminderList"
 import { ReminderTable } from "../components/ReminderTable"
+import { LoadingState } from "../../../shared/ui/progress"
 import { TyreExpiryReminderModal } from "../components/TyreExpiryReminderModal"
+import { BatteryReminderModal } from "../components/BatteryReminderModal"
 import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
 import {
   getReminderTypeName,
@@ -42,6 +44,14 @@ export default function ReminderListPage() {
     tyreExpiryLoading,
     closeTyreExpiryModal,
     gotoStock,
+    batteryReminder,
+    batteryDetails,
+    batteryModalOpen,
+    batteryLoading,
+    batteryCompleting,
+    closeBatteryModal,
+    gotoBatteryStock,
+    handleMarkBatteryCompleted,
   } = useReminderList()
 
   const tabs = buildTabs(reminders)
@@ -67,7 +77,7 @@ export default function ReminderListPage() {
         <FilterTabs tabs={tabs} activeKey={activeType} onChange={setActiveType} />
 
         {loading ? (
-          <p className="hero-text">Loading reminders...</p>
+          <LoadingState message="Loading reminders…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (
@@ -88,6 +98,17 @@ export default function ReminderListPage() {
         loading={tyreExpiryLoading}
         onClose={closeTyreExpiryModal}
         onViewStock={gotoStock}
+      />
+
+      <BatteryReminderModal
+        isOpen={batteryModalOpen}
+        reminder={batteryReminder}
+        details={batteryDetails?.batteryDetails ?? null}
+        loading={batteryLoading}
+        onClose={closeBatteryModal}
+        onViewStock={gotoBatteryStock}
+        onMarkCompleted={handleMarkBatteryCompleted}
+        completing={batteryCompleting}
       />
     </main>
   )

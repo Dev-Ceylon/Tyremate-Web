@@ -1,6 +1,7 @@
 import { useNavigate } from "@/lib/router"
 import { useOtherServiceList } from "../hooks/useOtherServiceList"
 import { OtherServiceTable } from "../components/OtherServiceTable"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function OtherServiceListPage() {
   const navigate = useNavigate()
@@ -27,7 +28,7 @@ export default function OtherServiceListPage() {
         </div>
 
         {loading ? (
-          <p className="hero-text">Loading other services...</p>
+          <LoadingState message="Loading other services…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (

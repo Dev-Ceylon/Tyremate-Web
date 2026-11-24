@@ -63,19 +63,24 @@ CREATE INDEX IF NOT EXISTS idx_invoice_customer ON Invoice (CustomerID);
 CREATE TABLE IF NOT EXISTS InvoiceLine (
   InvoiceLineID INTEGER PRIMARY KEY AUTOINCREMENT,
   InvoiceID INTEGER NOT NULL,
-  LineType TEXT NOT NULL CHECK (LineType IN ('tyre', 'service', 'consumable', 'other')),
+  LineType TEXT NOT NULL CHECK (LineType IN ('tyre', 'battery', 'service', 'consumable', 'other')),
   TyreID INTEGER,
+  BatteryID INTEGER,
   SerialNo TEXT,
   Description TEXT,
   Size TEXT,
   Pattern TEXT,
   Brand TEXT,
+  Model TEXT,
+  Capacity TEXT,
+  Voltage TEXT,
   Qty REAL NOT NULL DEFAULT 0,
   UnitPrice REAL NOT NULL DEFAULT 0,
   Discount REAL NOT NULL DEFAULT 0,
   LineTotal REAL NOT NULL DEFAULT 0,
   FOREIGN KEY (InvoiceID) REFERENCES Invoice(InvoiceID) ON DELETE CASCADE,
-  FOREIGN KEY (TyreID) REFERENCES TyreM(Id)
+  FOREIGN KEY (TyreID) REFERENCES TyreM(Id),
+  FOREIGN KEY (BatteryID) REFERENCES BatteryM(Id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_invoice_line_invoice ON InvoiceLine (InvoiceID);

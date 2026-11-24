@@ -1,6 +1,13 @@
-import { Link } from "@/lib/router"
+import { Link, Navigate } from "@/lib/router"
+import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 
 export default function MasterDataPage() {
+  const { hasAnyPermission } = useAuthorization()
+
+  if (!hasAnyPermission("inventory.manage", "suppliers.view", "customers.manage")) {
+    return <Navigate to="/inquiries" replace />
+  }
+
   return (
     <main className="app-shell">
       <section className="page-header panel">
@@ -69,6 +76,17 @@ export default function MasterDataPage() {
           </p>
           <Link className="text-link" to="/master-data/tyres">
             Go to tyres
+          </Link>
+        </article>
+
+        <article className="info-panel panel panel-strong module-card">
+          <p className="section-label">Module</p>
+          <h2>Batteries</h2>
+          <p>
+            Manage battery reference records for purchasing, pricing, and sales readiness.
+          </p>
+          <Link className="text-link" to="/master-data/batteries">
+            Go to batteries
           </Link>
         </article>
 

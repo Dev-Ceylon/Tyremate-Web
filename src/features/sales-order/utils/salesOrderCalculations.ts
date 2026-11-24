@@ -10,7 +10,8 @@ type LineAmountInput = {
 }
 
 type LineAvailabilityInput = {
-  TyreID: number | ""
+  TyreID?: number | ""
+  BatteryID?: number | ""
   Qty: number
 }
 
@@ -18,6 +19,8 @@ export type NewestStockCheckInput = {
   StorageManagerID: number | null
   StorageManagerBatchID: number | null
   dot?: string | null
+  batchCode?: string | null
+  expiryDate?: string | null
   availableQty: number
   allocated: string
   receivedDate?: string
@@ -40,13 +43,15 @@ const dotWeek = (dot: string | null | undefined): number => {
 }
 
 /**
- * FIFO rule check: returns true when a specific (newer) batch is being
- * allocated while an OLDER batch — ranked by DOT (year then week) — still has
- * available stock that is not fully allocated. The auto (FIFO) row is ignored.
+ * FIFO / FEFO rule check: returns true when a specific (newer) batch is being
+ * allocated while an OLDER batch — ranked by ExpiryDate for batteries or DOT for tyres —
+ * still has available stock that is not fully allocated. The auto row is ignored.
  */
 export const isUsingNewerLotWhileOlderAvailable = (
   rows: NewestStockCheckInput[],
 ): boolean => {
+  const isBatteryBatch = rows.some((r) => r.expiryDate || r.batchCode)
+
   const batches = rows
     .filter((row) => row.StorageManagerBatchID !== null)
     .map((row) => ({
@@ -55,11 +60,23 @@ export const isUsingNewerLotWhileOlderAvailable = (
       allocatedQty: parseIntegerQty(row.allocated),
       year: dotYear(row.dot),
       week: dotWeek(row.dot),
+      expiryDate: row.expiryDate ?? "",
       id: row.StorageManagerBatchID as number,
     }))
     .sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year
-      if (a.week !== b.week) return a.week - b.week
+      if (isBatteryBatch && (a.expiryDate || b.expiryDate)) {
+        if (a.expiryDate && b.expiryDate) {
+          const comp = a.expiryDate.localeCompare(b.expiryDate)
+          if (comp !== 0) return comp
+        } else if (a.expiryDate) {
+          return -1
+        } else {
+          return 1
+        }
+      } else {
+        if (a.year !== b.year) return a.year - b.year
+        if (a.week !== b.week) return a.week - b.week
+      }
       return a.id - b.id
     })
     .map((row) => ({
@@ -114,8 +131,8 @@ export const parseLineDiscountOverride = (raw: string): number | null => {
   return val
 }
 
-export const getAvailableQuantity = (tyre?: TyreRecord | null) => {
-  return Number(tyre?.AvailableQuantity ?? 0)
+export const getAvailableQuantity = (item?: { AvailableQuantity?: number | null } | null) => {
+  return Number(item?.AvailableQuantity ?? 0)
 }
 
 export const calculateNeedToOrderQty = (qty: number, availableQty: number) => {
@@ -128,13 +145,14 @@ export const calculateRemainingAvailableQty = (qty: number, availableQty: number
 
 export const calculateRemainingAvailableForLine = (
   line: LineAvailabilityInput,
-  tyresById: ReadonlyMap<number, TyreRecord>,
+  itemsById: ReadonlyMap<number, { AvailableQuantity?: number | null }>,
 ) => {
-  if (line.TyreID === "") {
+  const itemId = line.BatteryID !== undefined && line.BatteryID !== "" ? line.BatteryID : line.TyreID
+  if (itemId === "" || itemId === undefined) {
     return 0
   }
 
-  const selectedTyre = tyresById.get(line.TyreID)
-  const availableQty = getAvailableQuantity(selectedTyre)
+  const selectedItem = itemsById.get(Number(itemId))
+  const availableQty = getAvailableQuantity(selectedItem)
   return calculateRemainingAvailableQty(line.Qty, availableQty)
 }

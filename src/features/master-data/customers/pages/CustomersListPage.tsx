@@ -3,6 +3,7 @@ import { useCustomers } from "../hooks/useCustomers"
 import { CustomersTable } from "../components/CustomersTable"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
+import { LoadingState } from "../../../../shared/ui/progress"
 import type { CustomerRecord } from "../models/customer"
 
 export default function CustomersListPage() {
@@ -58,7 +59,7 @@ export default function CustomersListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading customers...</p> : null}
+      {loading ? <LoadingState message="Loading customers…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

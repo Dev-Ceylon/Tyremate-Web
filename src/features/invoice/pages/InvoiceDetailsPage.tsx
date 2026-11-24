@@ -5,6 +5,7 @@ import { CancelInvoiceDialog } from "../components/CancelInvoiceDialog"
 import { PrinterModal } from "../../printer/components/PrinterModal"
 import { PaymentModalController } from "../../../shared/payment/ui/PaymentModalController"
 import { ReceiptPreviewModal } from "../../../shared/payment/ui/ReceiptPreviewModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import { useInvoiceDetailsPage } from "../hooks/useInvoiceDetailsPage"
 
 export default function InvoiceDetailsPage() {
@@ -45,7 +46,7 @@ export default function InvoiceDetailsPage() {
 
   const navigate = useNavigate()
 
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading invoice details...</p></main>
+  if (loading) return <main className="app-shell"><LoadingState message="Loading invoice details…" /></main>
   if (error || !record) return <main className="app-shell"><p className="hero-text error-text">{error || "Invoice not found"}</p></main>
 
   return (
@@ -176,20 +177,27 @@ export default function InvoiceDetailsPage() {
               </tr>
             </thead>
             <tbody>
-              {record.Lines?.map((line) => (
-                <tr key={line.InvoiceLineID}>
-                  <td>
-                    <span className="font-medium">
-                      {line.Description || [line.Brand, line.Size, line.Pattern].filter(Boolean).join(" / ") || "-"}
-                    </span>
-                    {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
-                  </td>
-                  <td className="text-right">{line.Qty}</td>
-                  <td className="text-right">${fmt(line.UnitPrice)}</td>
-                  <td className="text-right">{line.Discount}</td>
-                  <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
-                </tr>
-              ))}
+              {record.Lines?.map((line) => {
+                const isBatteryLine = line.LineType === "battery" || Boolean(line.BatteryID)
+                const specText = isBatteryLine
+                  ? [line.Brand, line.Model, line.Capacity, line.Voltage].filter(Boolean).join(" / ")
+                  : [line.Brand, line.Size, line.Pattern].filter(Boolean).join(" / ")
+
+                return (
+                  <tr key={line.InvoiceLineID}>
+                    <td>
+                      <span className="font-medium">
+                        {line.Description || specText || "-"}
+                      </span>
+                      {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
+                    </td>
+                    <td className="text-right">{line.Qty}</td>
+                    <td className="text-right">${fmt(line.UnitPrice)}</td>
+                    <td className="text-right">{line.Discount}</td>
+                    <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

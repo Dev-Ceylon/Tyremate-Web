@@ -11,7 +11,7 @@ export const INVOICE_STATUS_CODES = {
 
 export type InvoiceStatus = typeof INVOICE_STATUS_CODES[keyof typeof INVOICE_STATUS_CODES]
 
-export type InvoiceLineType = "tyre" | "service" | "consumable" | "other"
+export type InvoiceLineType = "tyre" | "battery" | "service" | "consumable" | "other"
 
 export type InvoiceRecord = {
   InvoiceID: number
@@ -48,11 +48,15 @@ export type InvoiceLineRecord = {
   InvoiceID: number
   LineType: InvoiceLineType
   TyreID: number | null
+  BatteryID?: number | null
   SerialNo: string | null
   Description: string | null
   Size: string | null
   Pattern: string | null
   Brand: string | null
+  Model?: string | null
+  Capacity?: string | null
+  Voltage?: string | null
   Qty: number
   UnitPrice: number
   Discount: number

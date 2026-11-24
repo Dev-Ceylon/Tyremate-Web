@@ -1,6 +1,7 @@
 import { useNavigate } from "@/lib/router"
 import { useConsumables } from "../hooks/useConsumables"
 import { ConsumablesTable } from "../components/ConsumablesTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import type { ConsumableRecord } from "../../../../shared/models/consumables/consumable"
@@ -62,7 +63,7 @@ export default function ConsumablesListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading consumables...</p> : null}
+      {loading ? <LoadingState message="Loading consumables…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

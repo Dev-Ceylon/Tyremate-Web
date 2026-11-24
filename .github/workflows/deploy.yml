@@ -80,6 +80,9 @@ jobs:
           CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
       - name: Build
         run: npm run build
+        env:
+          NEXT_PUBLIC_PROD_DB_URL: ${{ secrets.TURSO_DB_URL || vars.TURSO_DB_URL }}
+          NEXT_PUBLIC_PROD_DB_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       - run: touch out/.nojekyll
       - name: Configure Pages
         id: pages

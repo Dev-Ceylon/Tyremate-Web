@@ -13,10 +13,11 @@ export function PurchaseOrderSection({ order }: PurchaseOrderSectionProps) {
   const po = order.PO
   if (!po) return null
 
-  const tyres = po.Tyres ?? []
+  const isBattery = po.Category === "battery"
+  const items = isBattery ? (po.Batteries ?? []) : (po.Tyres ?? [])
   const hasPartialReceipt =
     po.IsPartiallyReceived ||
-    tyres.some((t) => (t.ReceivedQty ?? 0) > 0 && (t.ReceivedQty ?? 0) < t.Qty)
+    items.some((t: any) => (t.ReceivedQty ?? 0) > 0 && (t.ReceivedQty ?? 0) < t.Qty)
   const isPoCompletedOrArrived =
     po.StatusCode === STATUS_CODES.COMPLETED || po.StatusCode === STATUS_CODES.ARRIVED
 
@@ -34,7 +35,7 @@ export function PurchaseOrderSection({ order }: PurchaseOrderSectionProps) {
                 po.TotalReceived >= (po.TotalOrdered ?? 0) ? "status-completed" : "text-accent"
               }`}
             >
-              {po.TotalReceived} / {po.TotalOrdered ?? 0} Tyres Received
+              {po.TotalReceived} / {po.TotalOrdered ?? 0} {isBattery ? "Batteries" : "Tyres"} Received
             </span>
           )}
           <span
@@ -54,7 +55,7 @@ export function PurchaseOrderSection({ order }: PurchaseOrderSectionProps) {
         <table className="product-table">
           <thead>
             <tr>
-              <th>Tyre (Size - Pattern)</th>
+              <th>{isBattery ? "Battery (Brand / Model - Specs)" : "Tyre (Size - Pattern)"}</th>
               <th className="text-right">Ordered Qty</th>
               <th className="text-right">Received Qty</th>
               <th className="text-right">Pending Qty</th>
@@ -62,20 +63,22 @@ export function PurchaseOrderSection({ order }: PurchaseOrderSectionProps) {
             </tr>
           </thead>
           <tbody>
-            {tyres.map((pTyre) => {
-              const received = pTyre.ReceivedQty ?? 0
-              const pending = pTyre.PendingQty ?? Math.max(0, pTyre.Qty - received)
-              const isLineFullyArrived = received >= pTyre.Qty
-              const isLinePartiallyArrived = received > 0 && received < pTyre.Qty
+            {items.map((pItem: any) => {
+              const received = pItem.ReceivedQty ?? 0
+              const pending = pItem.PendingQty ?? Math.max(0, pItem.Qty - received)
+              const isLineFullyArrived = received >= pItem.Qty
+              const isLinePartiallyArrived = received > 0 && received < pItem.Qty
 
               return (
-                <tr key={pTyre.ID}>
+                <tr key={pItem.ID}>
                   <td>
                     <span className="font-medium">
-                      {pTyre.Size} - {pTyre.Pattern}
+                      {isBattery
+                        ? `${pItem.Brand || "NA"} / ${pItem.Model || "NA"} (${pItem.Capacity || "NA"} ${pItem.Voltage || "NA"})`
+                        : `${pItem.Size} - ${pItem.Pattern}`}
                     </span>
                   </td>
-                  <td className="text-right">{pTyre.Qty}</td>
+                  <td className="text-right">{pItem.Qty}</td>
                   <td className="text-right font-bold">
                     <span className={received > 0 ? "text-success" : ""}>
                       {received}
@@ -94,10 +97,10 @@ export function PurchaseOrderSection({ order }: PurchaseOrderSectionProps) {
                     ) : (
                       <span
                         className={`status-badge ${getStatusColorClass(
-                          pTyre.StatusCode ?? po.StatusCode ?? ""
+                          pItem.StatusCode ?? po.StatusCode ?? ""
                         )}`}
                       >
-                        {getStatusName(pTyre.StatusCode ?? po.StatusCode ?? "")}
+                        {getStatusName(pItem.StatusCode ?? po.StatusCode ?? "")}
                       </span>
                     )}
                   </td>

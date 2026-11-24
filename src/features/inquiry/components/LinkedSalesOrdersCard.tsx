@@ -21,7 +21,7 @@ export function LinkedSalesOrdersCard({ inquiryId }: Props) {
 
       {error ? <p className="hero-text error-text">{error}</p> : null}
 
-      <div className="table-scroll">
+      <div className="table-scroll tm-table-scroll">
         <table className="product-table">
           <thead>
             <tr>

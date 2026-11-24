@@ -19,6 +19,7 @@ type TabId = (typeof TABS)[number]["id"]
 /** Web edition admin panel: database, Cloudinary and user administration. */
 export default function AdminPage() {
   const { hasPermission } = useAuthorization()
+  const isSettingsManager = hasPermission("settings.manage")
   const [searchParams, setSearchParams] = useSearchParams()
   const visible = TABS.filter((t) => hasPermission(t.permission))
   const requested = searchParams.get("tab") as TabId | null
@@ -27,6 +28,8 @@ export default function AdminPage() {
   )
 
   if (visible.length === 0) return <Navigate to="/" replace />
+
+  const activeTab = visible.find((t) => t.id === active)?.id ?? visible[0]?.id
 
   const select = (id: TabId) => {
     setActive(id)
@@ -39,37 +42,43 @@ export default function AdminPage() {
         <div>
           <p className="eyebrow">Administration</p>
           <h1>Admin panel</h1>
-          <p className="hero-text">Configure the database, file storage and user access for this TyreMate installation.</p>
+          <p className="hero-text">
+            {isSettingsManager
+              ? "Configure the database, file storage and user access for this TyreMate installation."
+              : "Manage user access and staff accounts for this TyreMate installation."}
+          </p>
         </div>
       </section>
 
-      <div className="tm-tabs" role="tablist" aria-label="Admin sections">
-        {visible.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`admin-tab-${tab.id}`}
-            aria-selected={active === tab.id}
-            aria-controls={`admin-panel-${tab.id}`}
-            className="tm-tab"
-            onClick={() => select(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {visible.length > 1 ? (
+        <div className="tm-tabs" role="tablist" aria-label="Admin sections">
+          {visible.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={`admin-tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`admin-panel-${tab.id}`}
+              className="tm-tab"
+              onClick={() => select(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      <div role="tabpanel" id={`admin-panel-${active}`} aria-labelledby={`admin-tab-${active}`} className="tm-admin">
-        {active === "database" ? (
+      <div role="tabpanel" id={`admin-panel-${activeTab}`} aria-labelledby={`admin-tab-${activeTab}`} className="tm-admin">
+        {activeTab === "database" ? (
           <>
             <DatabaseConnectionCard />
             <SchemaStatusCard />
             <DatabaseMaintenanceCard />
           </>
         ) : null}
-        {active === "storage" ? <CloudinarySettingsCard /> : null}
-        {active === "users" ? <UsersCard /> : null}
+        {activeTab === "storage" ? <CloudinarySettingsCard /> : null}
+        {activeTab === "users" ? <UsersCard /> : null}
       </div>
     </main>
   )

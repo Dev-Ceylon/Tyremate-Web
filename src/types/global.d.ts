@@ -1,4 +1,4 @@
-import type { SupplierPayload, SupplierRecord } from "../features/master-data/suppliers/models/supplier"
+import type { SupplierPayload, SupplierRecord, SupplierTypeRecord } from "../features/master-data/suppliers/models/supplier"
 import type { ContractorPayload, ContractorRecord } from "../features/master-data/contractors/models/contractor"
 import type { CustomerPayload, CustomerRecord } from "../features/master-data/customers/models/customer"
 import type { BranchPayload, BranchRecord } from "../features/master-data/branches/models/branch"
@@ -29,11 +29,13 @@ export type StorageLocationTypeRecord = {
   LocationTypeName: string
 }
 import type { TyrePayload, TyreRecord } from "../features/master-data/tyres/models/tyre"
+import type { BatteryPayload, BatteryRecord } from "../features/master-data/batteries/models/battery"
 import type {
   BankDetailPayload,
   BankDetailRecord,
 } from "../features/master-data/bank-details/models/bankDetail"
 import type { TyreSupplier, TyreSupplierApiRecord } from "../features/tyre-suppliers/models/tyreSupplier"
+import type { BatterySupplier, BatterySupplierApiRecord } from "../features/battery-suppliers/models/batterySupplier"
 import type { User } from "../features/auth/models/user"
 import type {
   SalesOrderPaymentPayload,
@@ -68,8 +70,17 @@ import type {
   StorageManagerLocationRecord,
   StorageManagerRecord,
 } from "../features/storage-manager/models/storageManager"
+import type {
+  BatteryStorageManagerPayload,
+  BatteryStorageManagerBatchPayload,
+  BatteryStorageManagerBatchRecord,
+  BatteryStorageManagerLocationBatchRecord,
+  BatteryStorageManagerLocationRecord,
+  BatteryStorageManagerRecord,
+} from "../features/storage-manager/models/batteryStorageManager"
 import type { ConsumablePayload, ConsumableRecord } from "../shared/models/consumables/consumable"
 import type { ConsumableLocationPayload, ConsumableLocationRecord } from "../shared/models/consumables/consumableLocation"
+import type { BatteryLocationPayload, BatteryLocationRecord } from "../features/master-data/battery-locations/models/batteryLocation"
 import type { ConsumableStorageManagerPayload, ConsumableStorageManagerRecord } from "../shared/models/consumables/consumableStorageManager"
 import type { StockSnapshotRecord } from "../features/stock-snapshot/models/stockSnapshot"
 import type {
@@ -201,6 +212,7 @@ declare global {
         suggest: (field: string, query: string) => Promise<string[]>
         getSuppliers: () => Promise<SupplierRecord[]>
         getSupplierById: (supplierId: number) => Promise<SupplierRecord>
+        getSupplierTypes: () => Promise<SupplierTypeRecord[]>
         createSupplier: (data: SupplierPayload) => Promise<SupplierRecord>
         updateSupplier: (supplierId: number, data: SupplierPayload) => Promise<SupplierRecord>
         deleteSupplier: (supplierId: number) => Promise<{ success: true }>
@@ -265,6 +277,8 @@ declare global {
         markReminderCompleted: (reminderId: number, isCompleted: boolean) => Promise<ReminderRecord>
         deleteReminder: (reminderId: number) => Promise<{ success: true }>
         getSoIdBySOReminderId: (reminderId: number) => Promise<number | null>
+        syncBatteryReminders: () => Promise<any>
+        syncTyreExpiryReminders: () => Promise<any>
       }
 
       notifications: {
@@ -365,6 +379,16 @@ declare global {
         deleteConsumableLocation: (id: number) => Promise<{ success: true }>
       }
 
+      batteryLocations: {
+        suggest: (field: string, query: string) => Promise<string[]>
+        getBatteryLocations: () => Promise<BatteryLocationRecord[]>
+        getBatteryLocationsByBranch: (branchId: number) => Promise<BatteryLocationRecord[]>
+        getBatteryLocationById: (id: number) => Promise<BatteryLocationRecord>
+        createBatteryLocation: (data: BatteryLocationPayload) => Promise<BatteryLocationRecord>
+        updateBatteryLocation: (id: number, data: BatteryLocationPayload) => Promise<BatteryLocationRecord>
+        deleteBatteryLocation: (id: number) => Promise<{ success: true }>
+      }
+
       consumableStorageManagers: {
         getConsumableStorageManagers: () => Promise<ConsumableStorageManagerRecord[]>
         getConsumableStorageManagersByLocation: (locationId: number) => Promise<ConsumableStorageManagerRecord[]>
@@ -372,6 +396,24 @@ declare global {
         createConsumableStorageManager: (data: ConsumableStorageManagerPayload) => Promise<ConsumableStorageManagerRecord>
         updateConsumableStorageManager: (id: number, data: ConsumableStorageManagerPayload) => Promise<ConsumableStorageManagerRecord>
         deleteConsumableStorageManager: (id: number) => Promise<{ success: true }>
+      }
+
+      batteryStorageManagers: {
+        getBatteryStorageManagers: () => Promise<BatteryStorageManagerRecord[]>
+        getBatteryStorageManagersByLocation: (locationId: number) => Promise<BatteryStorageManagerLocationRecord[]>
+        getBatteryStorageManagerById: (id: number) => Promise<BatteryStorageManagerRecord>
+        getBatteryStorageManagersByBatteryId: (batteryId: number) => Promise<BatteryStorageManagerRecord[]>
+        getBatchesByBatteryId: (batteryId: number) => Promise<BatteryStorageManagerBatchRecord[]>
+        getBatchesByStorageManagerId: (id: number) => Promise<BatteryStorageManagerBatchRecord[]>
+        getBatchesByLocation: (locationId: number) => Promise<BatteryStorageManagerLocationBatchRecord[]>
+        getStorageLocationsByBranch: (branchId: number) => Promise<StorageLocationRecord[]>
+        getStorageLocationById: (id: number) => Promise<StorageLocationRecord>
+        createBatteryStorageManager: (data: BatteryStorageManagerPayload) => Promise<BatteryStorageManagerRecord>
+        updateBatteryStorageManager: (id: number, data: BatteryStorageManagerPayload) => Promise<BatteryStorageManagerRecord>
+        deleteBatteryStorageManager: (id: number) => Promise<{ success: true }>
+        createBatch: (storageManagerId: number, data: BatteryStorageManagerBatchPayload) => Promise<BatteryStorageManagerBatchRecord>
+        updateBatch: (id: number, data: BatteryStorageManagerBatchPayload) => Promise<BatteryStorageManagerBatchRecord>
+        deleteBatch: (id: number) => Promise<{ success: true }>
       }
 
       otherServices: {
@@ -421,12 +463,31 @@ declare global {
         getAll: () => Promise<TyreSupplierApiRecord[]>
       }
 
+      batteries: {
+        suggest: (field: string, query: string) => Promise<string[]>
+        getBatteries: () => Promise<BatteryRecord[]>
+        getBatteriesWithAvailableQuantity: () => Promise<BatteryRecord[]>
+        getLowStockCount: () => Promise<CountRecord>
+        getBatteryById: (batteryId: number) => Promise<BatteryRecord>
+        getBatteryByIdWithAvailableQuantity: (batteryId: number) => Promise<BatteryRecord>
+        createBattery: (data: BatteryPayload) => Promise<BatteryRecord>
+        updateBattery: (batteryId: number, data: BatteryPayload) => Promise<BatteryRecord>
+        deleteBattery: (batteryId: number) => Promise<{ success: true }>
+      }
+
+      batterySuppliers: {
+        getSuppliersByBatteryId: (batteryId: number) => Promise<BatterySupplierApiRecord[]>
+        createBatterySupplier?: (data: { batteryId: number; supplierId: number; price: number }) => Promise<unknown>
+        getAll?: () => Promise<BatterySupplierApiRecord[]>
+      }
+
       so: {
-        getSOs: () => Promise<SoDetailedRecord[]>
+        getSOs: (category?: string) => Promise<SoDetailedRecord[]>
         getTodaySalesSummary: (date: string) => Promise<SoTodaySalesSummary>
         getSalesTrendSummary: (fromDate: string, toDate: string) => Promise<SalesTrendPoint[]>
         getSOById: (soId: number) => Promise<SoDetailedRecord>
         getTyresBySoId: (soId: number) => Promise<SoTyreRecord[]>
+        getBatteriesBySoId: (soId: number) => Promise<any[]>
         getWarehouseDispatch: (soId: number) => Promise<SoWarehouseDispatch>
         getDeliveryWarehouseDispatch: (soId: number, deliveryId: number) => Promise<SoWarehouseDispatch>
         getDeliveryProgress: (soId: number) => Promise<SoDeliveryProgress>
@@ -452,6 +513,7 @@ declare global {
         createReturn: (soId: number, data: SoReturnTyresPayload) => Promise<SoTyreRecord>
         getReturnsBySoId: (soId: number) => Promise<any[]>
         getAllocationsBySoTyreId: (soTyreId: number) => Promise<SoTyreStorageAllocationRecord[]>
+        getAllocationsBySoBatteryId: (soBatteryId: number) => Promise<any[]>
       }
 
       paymentReceipt: {
@@ -498,8 +560,8 @@ declare global {
       }
 
       po: {
-        getPOs: () => Promise<PoRecord[]>
-        getPendingPOCount: () => Promise<PoPendingCount>
+        getPOs: (category?: string) => Promise<PoRecord[]>
+        getPendingPOCount: (category?: string) => Promise<PoPendingCount>
         getPOById: (id: number) => Promise<PoRecord>
         createPO: (data: PoPayload) => Promise<PoRecord>
         createStandalonePO: (data: CreatePoPayload | any) => Promise<PoRecord>
@@ -700,6 +762,7 @@ declare global {
         getBySoId: (soId: number) => Promise<any[]>
         getByTyreId: (soTyreId: number) => Promise<any[]>
         getAll: (filters?: any) => Promise<any[]>
+        getPending: () => Promise<any[]>
         getById: (violationId: number) => Promise<any>
         approve: (violationId: number, payload: any) => Promise<any>
         reject: (violationId: number, rejectReason: string) => Promise<any>

@@ -1,8 +1,12 @@
 import { useMemo, useState, type FormEvent } from "react"
 import type { TyreRecord } from "../../tyres/models/tyre"
+import type { BatteryRecord } from "../../batteries/models/battery"
 import type { SupplierPayload, SupplierContact, SupplierEmail, SupplierAddress } from "../models/supplier"
 import { formatTyreLabel } from "../../../../shared/tyre/models/tyreDisplay"
+import { formatBatteryLabel } from "../../../../shared/battery/models/batteryDisplay"
+import { SUPPLIER_TYPE_CODES, SUPPLIER_TYPE_OPTIONS } from "../constants/supplierTypeConstants"
 import { SupplierTyrePickerModal } from "./SupplierTyrePickerModal"
+import { SupplierBatteryPickerModal } from "./SupplierBatteryPickerModal"
 import { AddMobileDialog } from "./AddDataPopupModals/AddMobileDialog"
 import { AddEmailDialog } from "./AddDataPopupModals/AddEmailDialog"
 import { AddAddressDialog } from "./AddDataPopupModals/AddAddressDialog"
@@ -15,6 +19,11 @@ type SupplierFormProps = {
   tyresError?: string | null
   onOpenTyrePicker?: () => Promise<void> | void
   onTyreCreated?: (tyre: TyreRecord) => void
+  availableBatteries?: BatteryRecord[]
+  batteriesLoading?: boolean
+  batteriesError?: string | null
+  onOpenBatteryPicker?: () => Promise<void> | void
+  onBatteryCreated?: (battery: BatteryRecord) => void
   onChange: <K extends keyof SupplierPayload>(
     field: K,
     value: SupplierPayload[K],
@@ -33,6 +42,11 @@ export function SupplierForm({
   tyresError = null,
   onOpenTyrePicker,
   onTyreCreated,
+  availableBatteries = [],
+  batteriesLoading = false,
+  batteriesError = null,
+  onOpenBatteryPicker,
+  onBatteryCreated,
   onChange,
   onSubmit,
   onCancel,
@@ -41,14 +55,21 @@ export function SupplierForm({
   fetchSuggestions,
 }: SupplierFormProps) {
   const [isTyrePickerOpen, setTyrePickerOpen] = useState(false)
+  const [isBatteryPickerOpen, setBatteryPickerOpen] = useState(false)
   const [isAddMobileOpen, setIsAddMobileOpen] = useState(false)
   const [isAddEmailOpen, setIsAddEmailOpen] = useState(false)
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false)
+
+  const supplierType = formData.SupplierTypeCode ?? SUPPLIER_TYPE_CODES.TYRES
+
   const selectedTyres = useMemo(() => formData.Tyres ?? [], [formData.Tyres])
   const tyreLabelMap = useMemo(
     () =>
       new Map(
-        availableTyres.map((tyre) => [tyre.Id, formatTyreLabel(tyre, { preset: "full", showId: true })]),
+        availableTyres.map((tyre) => [
+          tyre.Id,
+          formatTyreLabel(tyre, { preset: "full", showId: true }),
+        ]),
       ),
     [availableTyres],
   )
@@ -61,11 +82,47 @@ export function SupplierForm({
     return `${selectedTyres.length} tyre${selectedTyres.length === 1 ? "" : "s"} selected`
   }, [selectedTyres])
 
-  const selectedTyreTags = useMemo(() => selectedTyres.slice(0, 6), [selectedTyres])
+  const selectedTyreTags = useMemo(
+    () => selectedTyres.slice(0, 6),
+    [selectedTyres],
+  )
 
   const handleOpenTyrePicker = () => {
     setTyrePickerOpen(true)
     void onOpenTyrePicker?.()
+  }
+
+  const selectedBatteries = useMemo(
+    () => formData.Batteries ?? [],
+    [formData.Batteries],
+  )
+  const batteryLabelMap = useMemo(
+    () =>
+      new Map(
+        availableBatteries.map((battery) => [
+          battery.Id,
+          formatBatteryLabel(battery, { preset: "full", showId: true }),
+        ]),
+      ),
+    [availableBatteries],
+  )
+
+  const selectedBatterySummary = useMemo(() => {
+    if (selectedBatteries.length === 0) {
+      return "No batteries selected"
+    }
+
+    return `${selectedBatteries.length} batter${selectedBatteries.length === 1 ? "y" : "ies"} selected`
+  }, [selectedBatteries])
+
+  const selectedBatteryTags = useMemo(
+    () => selectedBatteries.slice(0, 6),
+    [selectedBatteries],
+  )
+
+  const handleOpenBatteryPicker = () => {
+    setBatteryPickerOpen(true)
+    void onOpenBatteryPicker?.()
   }
 
   const handleAddContacts = (contacts: SupplierContact[]) => {
@@ -131,6 +188,21 @@ export function SupplierForm({
           ) : (
             <input className="text-input" value={formData.Name} onChange={(event) => onChange("Name", event.target.value)} required />
           )}
+        </label>
+
+        <label className="field-label">
+          Supplier Type
+          <select
+            className="text-input"
+            value={formData.SupplierTypeCode ?? SUPPLIER_TYPE_CODES.TYRES}
+            onChange={(event) => onChange("SupplierTypeCode", event.target.value)}
+          >
+            {SUPPLIER_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="field-label">
@@ -274,36 +346,80 @@ export function SupplierForm({
           onAdd={handleAddAddresses}
         />
 
-        <div className="field-label contractor-tyre-field login-form-full-span">
-          <div className="contractor-tyre-field-header">
-            <span>Assign Tyres</span>
-            <button
-              type="button"
-              className="contractor-tyre-add-button"
-              onClick={handleOpenTyrePicker}
-              aria-label="Open supplier tyre picker"
-              disabled={submitting}
-            >
-              <span aria-hidden>+</span>
-            </button>
-          </div>
-          <p className="hero-text contractor-tyre-summary">{selectedTyreSummary}</p>
-          {selectedTyreTags.length > 0 ? (
-            <div className="contractor-tyre-tags">
-              {selectedTyreTags.map((tyre) => (
-                <span key={tyre.TyreID} className="contractor-tyre-tag">
-                  {tyreLabelMap.get(tyre.TyreID) ??
-                    formatTyreLabel(tyre, { preset: "full", showId: true })}
-                </span>
-              ))}
-              {selectedTyres.length > selectedTyreTags.length ? (
-                <span className="contractor-tyre-tag">
-                  +{selectedTyres.length - selectedTyreTags.length} more
-                </span>
-              ) : null}
+        {supplierType === SUPPLIER_TYPE_CODES.BATTERIES ? (
+          <div className="field-label contractor-tyre-field login-form-full-span">
+            <div className="contractor-tyre-field-header">
+              <span>Assign Batteries</span>
+              <button
+                type="button"
+                className="contractor-tyre-add-button"
+                onClick={handleOpenBatteryPicker}
+                aria-label="Open supplier battery picker"
+                disabled={submitting}
+              >
+                <span aria-hidden>+</span>
+              </button>
             </div>
-          ) : null}
-        </div>
+            <p className="hero-text contractor-tyre-summary">{selectedBatterySummary}</p>
+            {selectedBatteryTags.length > 0 ? (
+              <div className="contractor-tyre-tags">
+                {selectedBatteryTags.map((battery) => (
+                  <span key={battery.BatteryID} className="contractor-tyre-tag">
+                    {batteryLabelMap.get(battery.BatteryID) ??
+                      formatBatteryLabel(battery, { preset: "full", showId: true })}
+                  </span>
+                ))}
+                {selectedBatteries.length > selectedBatteryTags.length ? (
+                  <span className="contractor-tyre-tag">
+                    +{selectedBatteries.length - selectedBatteryTags.length} more
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : supplierType === SUPPLIER_TYPE_CODES.TYRES ? (
+          <div className="field-label contractor-tyre-field login-form-full-span">
+            <div className="contractor-tyre-field-header">
+              <span>Assign Tyres</span>
+              <button
+                type="button"
+                className="contractor-tyre-add-button"
+                onClick={handleOpenTyrePicker}
+                aria-label="Open supplier tyre picker"
+                disabled={submitting}
+              >
+                <span aria-hidden>+</span>
+              </button>
+            </div>
+            <p className="hero-text contractor-tyre-summary">{selectedTyreSummary}</p>
+            {selectedTyreTags.length > 0 ? (
+              <div className="contractor-tyre-tags">
+                {selectedTyreTags.map((tyre) => (
+                  <span key={tyre.TyreID} className="contractor-tyre-tag">
+                    {tyreLabelMap.get(tyre.TyreID) ??
+                      formatTyreLabel(tyre, { preset: "full", showId: true })}
+                  </span>
+                ))}
+                {selectedTyres.length > selectedTyreTags.length ? (
+                  <span className="contractor-tyre-tag">
+                    +{selectedTyres.length - selectedTyreTags.length} more
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="field-label contractor-tyre-field login-form-full-span">
+            <div className="contractor-tyre-field-header">
+              <span>Product Assignment</span>
+            </div>
+            <p className="hero-text contractor-tyre-summary" style={{ fontStyle: "italic" }}>
+              {supplierType === SUPPLIER_TYPE_CODES.CONSUMABLES
+                ? "No catalog assignment needed for consumables suppliers. Items are managed directly in inventory."
+                : "No product catalog assignment needed for general suppliers."}
+            </p>
+          </div>
+        )}
 
         <div className="header-actions">
           <button className="primary-action" type="submit" disabled={submitting}>
@@ -327,6 +443,19 @@ export function SupplierForm({
           onClose={() => setTyrePickerOpen(false)}
           onApply={(tyres) => onChange("Tyres", tyres)}
           onTyreCreated={onTyreCreated}
+        />
+      ) : null}
+
+      {isBatteryPickerOpen ? (
+        <SupplierBatteryPickerModal
+          isOpen={isBatteryPickerOpen}
+          selectedBatteries={selectedBatteries}
+          availableBatteries={availableBatteries}
+          loading={batteriesLoading}
+          error={batteriesError}
+          onClose={() => setBatteryPickerOpen(false)}
+          onApply={(batteries) => onChange("Batteries", batteries)}
+          onBatteryCreated={onBatteryCreated}
         />
       ) : null}
     </>

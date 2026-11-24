@@ -19,17 +19,17 @@ import { poClient } from "./poClient"
  */
 export const purchaseOrderService = {
   /**
-   * Retrieves a list of all purchase orders.
+   * Retrieves a list of all purchase orders, optionally filtered by category.
    */
-  async getPurchaseOrders(): Promise<PoDetailedRecord[]> {
-    return poClient.getPOs()
+  async getPurchaseOrders(category?: string): Promise<PoDetailedRecord[]> {
+    return poClient.getPOs(category)
   },
 
   /**
-   * Retrieves the count of pending (open) purchase orders.
+   * Retrieves the count of pending (open) purchase orders, optionally filtered by category.
    */
-  async getPendingPOCount(): Promise<PoPendingCount> {
-    return poClient.getPendingPOCount()
+  async getPendingPOCount(category?: string): Promise<PoPendingCount> {
+    return poClient.getPendingPOCount(category)
   },
 
   /**

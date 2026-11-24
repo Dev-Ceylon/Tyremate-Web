@@ -3,6 +3,8 @@ const { registerIpcHandler, registerServiceHandler } = require("./errorMiddlewar
 
 registerIpcHandler("suppliers:getAll", {}, () => supplierService.getSuppliers())
 
+registerIpcHandler("suppliers:getTypes", {}, () => supplierService.getSupplierTypes())
+
 registerIpcHandler("suppliers:getById", {}, (_event, supplierId) => supplierService.getSupplierById(supplierId))
 
 registerServiceHandler("suppliers:create", {}, supplierService, "createSupplier")

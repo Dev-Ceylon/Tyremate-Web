@@ -1,5 +1,7 @@
 const reminderService = require("../../../packages/services/reminderService")
 const soReminderService = require("../../../packages/services/soReminderService")
+const batteryExpiryReminderService = require("../../../packages/services/batteryExpiryReminderService")
+const tyreExpiryReminderService = require("../../../packages/services/tyreExpiryReminderService")
 const { registerIpcHandler } = require("./errorMiddleware")
 
 registerIpcHandler("reminders:getAll", {}, () => reminderService.getReminders())
@@ -21,3 +23,7 @@ registerIpcHandler("reminders:delete", {}, (_event, reminderId) => reminderServi
 registerIpcHandler("reminders:getDetails", {}, (_event, reminderId) => reminderService.getReminderDetails(reminderId))
 
 registerIpcHandler("reminders:getSoIdBySOReminderId", {}, (_event, reminderId) => soReminderService.getSoIdByReminderId(reminderId))
+
+registerIpcHandler("reminders:syncBatteryReminders", {}, () => batteryExpiryReminderService.syncBatteryReminders())
+
+registerIpcHandler("reminders:syncTyreExpiryReminders", {}, () => tyreExpiryReminderService.syncTyreExpiryReminders())

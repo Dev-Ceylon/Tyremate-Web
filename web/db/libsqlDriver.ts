@@ -193,9 +193,10 @@ export class LibsqlDriver implements SqlDriver {
   }
 
   private exec(sql: string, params: SqlValue[]): HranaStmtResult {
+    const cleanSql = sql.replace(/^\uFEFF/, "")
     const execute: StreamRequest = {
       type: "execute",
-      stmt: { sql, args: params.map(encodeValue), want_rows: true },
+      stmt: { sql: cleanSql, args: params.map(encodeValue), want_rows: true },
     }
     if (this.inTx) {
       const results = this.pipeline([execute], true)
@@ -224,13 +225,14 @@ export class LibsqlDriver implements SqlDriver {
   }
 
   execScript(sql: string): void {
-    if (!sql.trim()) return
+    const cleanSql = sql.replace(/^\uFEFF/, "").trim()
+    if (!cleanSql) return
     if (this.inTx) {
-      LibsqlDriver.unwrap(this.pipeline([{ type: "sequence", sql }], true)[0])
+      LibsqlDriver.unwrap(this.pipeline([{ type: "sequence", sql: cleanSql }], true)[0])
       return
     }
     const results = this.pipeline(
-      [{ type: "execute", stmt: { sql: "PRAGMA foreign_keys = ON", args: [], want_rows: false } }, { type: "sequence", sql }],
+      [{ type: "execute", stmt: { sql: "PRAGMA foreign_keys = ON", args: [], want_rows: false } }, { type: "sequence", sql: cleanSql }],
       false,
     )
     LibsqlDriver.unwrap(results[1])

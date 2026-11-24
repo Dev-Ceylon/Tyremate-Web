@@ -4,6 +4,7 @@ import { getStatusName, getStatusColorClass } from "../../../shared/constants/st
 interface OrderSummaryCardProps {
   order: {
     Date: string;
+    Category?: string;
     StatusCode?: string;
     SoID?: number | null;
     SupplierFeedback?: boolean;
@@ -15,6 +16,14 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({ order }) => 
   <div className="info-panel panel panel-strong">
     <p className="section-label">PO Summary</p>
     <div className="detail-card-grid">
+      <div className="detail-card-row">
+        <span className="detail-card-key">Category</span>
+        <span className="detail-card-val">
+          <span className={`status-badge ${order.Category === "battery" ? "status-pending" : "status-approved"}`}>
+            {order.Category === "battery" ? "Batteries" : "Tyres"}
+          </span>
+        </span>
+      </div>
       <div className="detail-card-row">
         <span className="detail-card-key">Date</span>
         <span className="detail-card-val">{order.Date}</span>

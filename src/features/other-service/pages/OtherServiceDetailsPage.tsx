@@ -6,6 +6,7 @@ import { PaymentTypeModal } from "../../../shared/payment/ui/PaymentTypeModal"
 import { usePaymentSettlement } from "../../../shared/payment/hooks/usePaymentSettlement"
 import { PaymentCard } from "../components/Payments/PaymentCard"
 import { useConfirm } from "../../../shared/ui/confirm/ConfirmProvider"
+import { LoadingState } from "../../../shared/ui/progress"
 import { useGenerateInvoice } from "../../invoice/hooks/useGenerateInvoice"
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 })
@@ -59,7 +60,7 @@ export default function OtherServiceDetailsPage() {
     id: record?.OSID ?? null,
   })
 
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading service details...</p></main>
+  if (loading) return <main className="app-shell"><LoadingState message="Loading service details…" /></main>
   if (error || !record) return <main className="app-shell"><p className="hero-text error-text">{error || "Service not found"}</p></main>
 
   const remainingAmount = record.RemainingAmount ?? 0

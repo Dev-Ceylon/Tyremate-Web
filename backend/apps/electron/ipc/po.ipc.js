@@ -2,9 +2,9 @@ const poService = require("../../../packages/services/poService")
 const poTyresSuppliersService = require("../../../packages/services/poTyresSuppliersService")
 const { registerIpcHandler, registerServiceHandler } = require("./errorMiddleware")
 
-registerIpcHandler("po:getAll", { permission: "po.view" }, () => poService.getPOs())
+registerIpcHandler("po:getAll", { permission: "po.view" }, (_event, category) => poService.getPOs(category))
 
-registerIpcHandler("po:getPendingPOCount", { permission: "po.view" }, () => poService.getPendingPOCount())
+registerIpcHandler("po:getPendingPOCount", { permission: "po.view" }, (_event, category) => poService.getPendingPOCount(category))
 
 registerIpcHandler("po:getById", { permission: "po.view" }, (_event, id) => poService.getPOById(id))
 

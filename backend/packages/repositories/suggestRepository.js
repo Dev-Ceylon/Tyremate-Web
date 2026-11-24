@@ -2,7 +2,9 @@ const db = require("../database/connection")
 
 const TABLE_FIELDS = {
   TyreM: new Set(["Brand", "Size", "Pattern", "LL_SR", "PR", "SideWall"]),
+  BatteryM: new Set(["Brand", "Model", "Series", "Capacity", "Voltage", "Technology", "Application"]),
   SupplierM: new Set(["Name"]),
+  SupplierTypeM: new Set(["TypeCode", "TypeName"]),
   CustomerM: new Set(["Name"]),
   ContractorM: new Set(["Name"]),
   BranchM: new Set(["BranchName"]),
@@ -10,6 +12,7 @@ const TABLE_FIELDS = {
   StorageLocationM: new Set(["LocationName"]),
   StorageLocationTypeM: new Set(["LocationTypeCode", "LocationTypeName"]),
   ConsumableLocationM: new Set(["LocationName"]),
+  BatteryLocationM: new Set(["LocationName", "LocationCode"]),
   Bankdetails: new Set(["BankName", "AccountName", "Branch"]),
 }
 

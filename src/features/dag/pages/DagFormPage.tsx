@@ -5,6 +5,7 @@ import { CreateCustomerDialog } from "../../master-data/customers/components/Cre
 import type { CustomerRecord } from "../../master-data/customers/models/customer"
 import { DagForm } from "../components/DagForm"
 import { useDagForm } from "../hooks/useDagForm"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function DagFormPage() {
   const navigate = useNavigate()
@@ -85,7 +86,7 @@ export default function DagFormPage() {
       </section>
 
       <section className="table-panel panel panel-strong">
-        {initializing ? <p className="hero-text">Loading form options...</p> : null}
+        {initializing ? <LoadingState message="Loading form options…" /> : null}
         {error ? <p className="hero-text">{error}</p> : null}
         {!initializing ? (
           <DagForm
