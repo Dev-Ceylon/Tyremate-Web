@@ -21,6 +21,7 @@ import type { DatabaseConfig } from "../shared/protocol"
 // Toggle to temporarily lock or unlock manual setup in the UI
 export const IS_DATABASE_CONFIG_LOCKED = true
 
+
 // ----------------------------------------------------------------------------
 // 1. DEVELOPMENT DATABASE CONFIGURATION (used during `npm run dev`)
 // ----------------------------------------------------------------------------

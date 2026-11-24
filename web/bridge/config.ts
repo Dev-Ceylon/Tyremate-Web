@@ -63,15 +63,20 @@ export function validateDatabaseConfig(value: unknown): DatabaseConfig {
 }
 
 export function loadDatabaseConfig(): DatabaseConfig {
+  const codeConfig = getActiveCodeDatabaseConfig()
   if (isDatabaseConfigLocked()) {
-    return getActiveCodeDatabaseConfig()
+    return codeConfig
   }
   const raw = readStorage(STORAGE_KEY)
-  if (!raw) return defaultDatabaseConfig()
+  if (!raw) return codeConfig
   try {
-    return validateDatabaseConfig(JSON.parse(raw))
+    const parsed = validateDatabaseConfig(JSON.parse(raw))
+    if (parsed.driver === "local" && codeConfig.driver === "libsql") {
+      return codeConfig
+    }
+    return parsed
   } catch {
-    return defaultDatabaseConfig()
+    return codeConfig
   }
 }
 
