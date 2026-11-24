@@ -5,6 +5,7 @@ import { InquiryTable } from "../components/InquiryTable"
 import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
 import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 import PermissionGate from "../../../shared/components/PermissionGate"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { InquiryCategory } from "../models/inquiry"
 
 export type InquiryConversionFilter = "all" | "converted" | "unconverted"
@@ -257,7 +258,7 @@ export default function InquiryListPage() {
         )}
 
         {loading ? (
-          <p className="hero-text">Loading inquiries...</p>
+          <LoadingState message="Loading inquiries…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (

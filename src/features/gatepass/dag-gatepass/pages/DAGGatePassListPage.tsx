@@ -1,5 +1,6 @@
 import { useNavigate } from "@/lib/router"
 import { DAGGatePassTable } from "../components/DAGGatePassTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useDAGGatePassActions } from "../hooks/useDAGGatePassActions"
 import { useExpandedRow } from "../../../../shared/hooks/useExpandedRow"
 
@@ -43,7 +44,7 @@ export default function DAGGatePassListPage() {
       </section>
 
       <section className="table-panel panel panel-strong">
-        {loading ? <p className="hero-text">Loading DAG gate pass records...</p> : null}
+        {loading ? <LoadingState message="Loading DAG gate pass records…" /> : null}
         {error ? <p className="hero-text">{error}</p> : null}
         {!loading && !error ? (
           <div className="table-scroll table-scroll-wide">

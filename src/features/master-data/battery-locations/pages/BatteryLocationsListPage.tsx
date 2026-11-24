@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { BatteryLocationsTable } from "../components/BatteryLocationsTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useBatteryLocations } from "../hooks/useBatteryLocations"
 import type { BatteryLocationRecord } from "../models/batteryLocation"
 
@@ -66,7 +67,7 @@ export default function BatteryLocationsListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading battery locations...</p> : null}
+      {loading ? <LoadingState message="Loading battery locations…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

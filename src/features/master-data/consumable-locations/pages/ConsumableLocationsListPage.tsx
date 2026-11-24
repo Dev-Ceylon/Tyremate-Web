@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { ConsumableLocationsTable } from "../components/ConsumableLocationsTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useConsumableLocations } from "../hooks/useConsumableLocations"
 import type { ConsumableLocationRecord } from "../../../../shared/models/consumables/consumableLocation"
 
@@ -66,7 +67,7 @@ export default function ConsumableLocationsListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading consumable locations...</p> : null}
+      {loading ? <LoadingState message="Loading consumable locations…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

@@ -4,6 +4,7 @@ import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 import PermissionGate from "../../../shared/components/PermissionGate"
 import { WALKIN_CUSTOMER_FIELDS } from "../../../shared/walkinCustomer/models/walkinCustomer"
 import { StatusBadge } from "../../../shared/ui/StatusBadge"
+import { LoadingState } from "../../../shared/ui/progress"
 import { LinkedSalesOrdersCard } from "../components/LinkedSalesOrdersCard"
 
 export default function InquiryDetailsPage() {
@@ -12,7 +13,7 @@ export default function InquiryDetailsPage() {
   const { inquiry, loading, error } = useInquiryDetails()
 
   if (!hasPermission("inquiry.view")) return <Navigate to="/inquiries" replace />
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading inquiry details...</p></main>
+  if (loading) return <main className="app-shell"><LoadingState message="Loading inquiry details…" /></main>
   if (error || !inquiry) return <main className="app-shell"><p className="hero-text error-text">{error || "Inquiry not found"}</p></main>
 
   const isBattery = (inquiry.Category || "tyre").toLowerCase() === "battery"

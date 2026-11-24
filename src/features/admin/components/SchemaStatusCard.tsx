@@ -1,6 +1,7 @@
 "use client"
 import { useCallback, useEffect, useId, useState } from "react"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
+import { LoadingState } from "../../../shared/ui/progress"
 import { adminApi, type SchemaStatus } from "../services/adminClient"
 
 export function SchemaStatusCard() {
@@ -63,7 +64,7 @@ export function SchemaStatusCard() {
           ) : null}
         </dl>
       ) : (
-        <p className="tm-note">Loading…</p>
+        <LoadingState message="Loading schema status…" size="sm" />
       )}
 
       <div className="tm-grid">

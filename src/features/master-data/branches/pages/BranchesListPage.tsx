@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { BranchesTable } from "../components/BranchesTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useBranches } from "../hooks/useBranches"
 import type { BranchRecord } from "../models/branch"
 
@@ -58,7 +59,7 @@ export default function BranchesListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading branches...</p> : null}
+      {loading ? <LoadingState message="Loading branches…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

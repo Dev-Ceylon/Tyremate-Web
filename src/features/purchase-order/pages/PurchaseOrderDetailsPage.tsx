@@ -12,6 +12,7 @@ import { PurchaseOrderLineRow } from "../components/PurchaseOrderLineRow"
 import { GoodsReceiptModal } from "../../goods-receipt/components/GoodsReceiptModal"
 import { LinkedInquiriesCard } from "../../inquiry/components/LinkedInquiriesCard"
 import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { PurchaseOrderDisplayRow } from "../hooks/usePurchaseOrderDetails"
 
 export default function PurchaseOrderDetailsPage() {
@@ -33,7 +34,7 @@ export default function PurchaseOrderDetailsPage() {
   const { isDeleting, handleDelete: handleDeletePoClick } = useDeletePurchaseOrder(order?.ID ?? null)
   const { isPrinting, isDownloadingPdf, isPrinterModalOpen, handlePrint, handleDownloadPdf, handleClosePrinterModal } = usePrintPurchaseOrder(order?.ID ?? null)
 
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading order details...</p></main>
+  if (loading) return <main className="app-shell"><LoadingState message="Loading order details…" /></main>
   if (error || !order) return <main className="app-shell"><p className="hero-text error-text">{error || "Purchase order not found"}</p></main>
 
   const statusCode = (order.StatusCode as StatusCode) ?? STATUS_CODES.PENDING

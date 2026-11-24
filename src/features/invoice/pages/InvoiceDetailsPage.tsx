@@ -5,6 +5,7 @@ import { CancelInvoiceDialog } from "../components/CancelInvoiceDialog"
 import { PrinterModal } from "../../printer/components/PrinterModal"
 import { PaymentModalController } from "../../../shared/payment/ui/PaymentModalController"
 import { ReceiptPreviewModal } from "../../../shared/payment/ui/ReceiptPreviewModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import { useInvoiceDetailsPage } from "../hooks/useInvoiceDetailsPage"
 
 export default function InvoiceDetailsPage() {
@@ -45,7 +46,7 @@ export default function InvoiceDetailsPage() {
 
   const navigate = useNavigate()
 
-  if (loading) return <main className="app-shell"><p className="hero-text">Loading invoice details...</p></main>
+  if (loading) return <main className="app-shell"><LoadingState message="Loading invoice details…" /></main>
   if (error || !record) return <main className="app-shell"><p className="hero-text error-text">{error || "Invoice not found"}</p></main>
 
   return (

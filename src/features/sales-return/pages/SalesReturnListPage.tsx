@@ -4,6 +4,7 @@ import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
 import { SalesReturnQueue } from "../components/SalesReturnQueue"
 import { SALES_RETURN_STATUS_OPTIONS } from "../constants/salesReturnStatusConstants"
 import { useSalesReturnList } from "../hooks/useSalesReturnList"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function SalesReturnListPage() {
   const navigate = useNavigate()
@@ -98,7 +99,7 @@ export default function SalesReturnListPage() {
 
         {isFiltering && <div className="search-results-info"><p className="hero-text">Showing {filteredReturns.length} of {salesReturns.returns.length} sales returns</p></div>}
 
-        {salesReturns.loading ? <p className="hero-text">Loading sales returns...</p> : salesReturns.error ? (
+        {salesReturns.loading ? <LoadingState message="Loading sales returns…" /> : salesReturns.error ? (
           <p className="hero-text error-text">{salesReturns.error}</p>
         ) : (
           <SalesReturnQueue returns={filteredReturns} onSelect={(id) => navigate(`/sales-returns/${id}`)} />

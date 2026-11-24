@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { StorageLocationsTable } from "../components/StorageLocationsTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useStorageLocations } from "../hooks/useStorageLocations"
 import type { StorageLocationRecord } from "../models/storageLocation"
 
@@ -66,7 +67,7 @@ export default function StorageLocationsListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading storage locations...</p> : null}
+      {loading ? <LoadingState message="Loading storage locations…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

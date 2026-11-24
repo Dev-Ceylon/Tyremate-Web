@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useState } from "react"
 import { useAuthContext } from "../../auth/hooks/AuthProvider"
 import { useToast } from "../../../shared/ui/toast/ToastProvider"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import { adminApi, type AdminRole, type AdminUser } from "../services/adminClient"
 
 function errorText(error: unknown) {
@@ -125,7 +126,9 @@ export function UsersCard() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>Loading…</td>
+                <td colSpan={5}>
+                  <LoadingState message="Loading users…" size="sm" />
+                </td>
               </tr>
             ) : (
               users.map((user) => {

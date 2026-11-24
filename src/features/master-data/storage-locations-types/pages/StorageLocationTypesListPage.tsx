@@ -2,6 +2,7 @@ import { useNavigate } from "@/lib/router"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
 import { StorageLocationTypesTable } from "../components/StorageLocationTypesTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useStorageLocationTypes } from "../hooks/useStorageLocationTypes"
 import type { StorageLocationTypeRecord } from "../models/storageLocationType"
 
@@ -67,7 +68,7 @@ export default function StorageLocationTypesListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading storage location types...</p> : null}
+      {loading ? <LoadingState message="Loading storage location types…" /> : null}
       {error ? <p className="hero-text">{error}</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

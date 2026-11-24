@@ -3,6 +3,7 @@ import { useBatteries } from "../hooks/useBatteries"
 import { BatteriesTable } from "../components/BatteriesTable"
 import { useToast } from "../../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../../shared/ui/confirm/ConfirmProvider"
+import { LoadingState } from "../../../../shared/ui/progress"
 import type { BatteryRecord } from "../models/battery"
 
 export default function BatteriesListPage() {
@@ -62,7 +63,7 @@ export default function BatteriesListPage() {
         </div>
       </div>
 
-      {loading ? <p className="hero-text">Loading batteries...</p> : null}
+      {loading ? <LoadingState message="Loading batteries…" /> : null}
       {error ? <p className="hero-text">Oops! Something went wrong.</p> : null}
       {!loading && !error ? (
         <div className="table-scroll table-scroll-wide">

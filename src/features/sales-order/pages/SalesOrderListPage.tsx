@@ -4,6 +4,7 @@ import { useSalesOrderList } from "../hooks/useSalesOrderList"
 import { SalesOrderTable } from "../components/SalesOrderTable"
 import { useSalesOrderDeliveryProgresses } from "../hooks/useSalesOrderDeliveryProgresses"
 import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
+import { LoadingState } from "../../../shared/ui/progress"
 import type { SOCategory } from "../../../shared/constants/soCategoryConstants"
 
 export default function SalesOrderListPage() {
@@ -57,7 +58,7 @@ export default function SalesOrderListPage() {
         </div>
 
         {loading ? (
-          <p className="hero-text">Loading sales orders...</p>
+          <LoadingState message="Loading sales orders…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (

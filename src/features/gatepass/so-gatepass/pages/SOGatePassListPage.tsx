@@ -1,6 +1,7 @@
 import { useNavigate } from "@/lib/router"
 import { useExpandedRow } from "../../../../shared/hooks/useExpandedRow"
 import { SOGatePassTable } from "../components/SOGatePassTable"
+import { LoadingState } from "../../../../shared/ui/progress"
 import { useSOGatePassList } from "../hooks/useSOGatePassList"
 
 export default function SOGatePassListPage() {
@@ -33,7 +34,7 @@ export default function SOGatePassListPage() {
             <h2>Issued Gate Passes</h2>
           </div>
         </div>
-        {loading ? <p className="hero-text">Loading SO gate pass records...</p> : null}
+        {loading ? <LoadingState message="Loading SO gate pass records…" /> : null}
         {!loading && !error ? (
           <div className="table-scroll table-scroll-wide">
             <SOGatePassTable
@@ -53,7 +54,7 @@ export default function SOGatePassListPage() {
           </div>
           <span className="stat-badge">{pendingGatePasses.length}</span>
         </div>
-        {loading ? <p className="hero-text">Loading withheld gate passes...</p> : null}
+        {loading ? <LoadingState message="Loading withheld gate passes…" /> : null}
         {!loading && !error && pendingGatePasses.length === 0 ? (
           <p className="secondary-text">Every recorded delivery has a gate pass.</p>
         ) : null}

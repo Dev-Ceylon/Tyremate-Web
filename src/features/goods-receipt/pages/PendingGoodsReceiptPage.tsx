@@ -5,6 +5,7 @@ import { usePendingDagGoodsReceipts } from "../hooks/usePendingDagGoodsReceipts"
 import { PendingGoodsReceiptTable } from "../components/PendingGoodsReceiptTable"
 import { PendingDagGoodsReceiptTable } from "../components/PendingDagGoodsReceiptTable"
 import { GoodsReceiptModal } from "../components/GoodsReceiptModal"
+import { LoadingState } from "../../../shared/ui/progress"
 import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
 import { TyreIcon, BatteryIcon } from "../../../shared/ui/icons"
 import { formatOrderItemLabel } from "../../../shared/item/models/itemDisplay"
@@ -241,7 +242,7 @@ export default function PendingGoodsReceiptPage() {
 
         {source === "po" ? (
           poLoading ? (
-            <p className="hero-text">Loading pending goods receipts...</p>
+            <LoadingState message="Loading pending goods receipts…" />
           ) : poError ? (
             <p className="hero-text error-text">{poError}</p>
           ) : (
@@ -252,7 +253,7 @@ export default function PendingGoodsReceiptPage() {
             />
           )
         ) : dagLoading ? (
-          <p className="hero-text">Loading quarantine stock...</p>
+          <LoadingState message="Loading quarantine stock…" />
         ) : dagError ? (
           <p className="hero-text error-text">{dagError}</p>
         ) : (

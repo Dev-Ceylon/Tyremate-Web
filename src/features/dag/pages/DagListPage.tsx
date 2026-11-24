@@ -6,6 +6,7 @@ import { DagTable } from "../components/DagTable"
 import { useDagList } from "../hooks/useDagList"
 import type { DagRecord } from "../models/dag"
 import { IssueGatePassDialog } from "../components/IssueGatePassDialog"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function DagListPage() {
   const navigate = useNavigate()
@@ -96,7 +97,7 @@ export default function DagListPage() {
       </section>
 
       <section className="table-panel panel panel-strong">
-        {loading ? <p className="hero-text">Loading DAG records...</p> : null}
+        {loading ? <LoadingState message="Loading DAG records…" /> : null}
         {error ? <p className="hero-text">{error}</p> : null}
         {!loading && !error ? (
           <div className="table-scroll table-scroll-wide">

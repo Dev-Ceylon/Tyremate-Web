@@ -4,6 +4,7 @@ import { FilterTabs } from "../../../shared/ui/filterTabs/FilterTabs"
 import { STATUS_METADATA } from "../../../shared/constants/statusConstants"
 import { usePurchaseOrderList } from "../hooks/usePurchaseOrderList"
 import { PurchaseOrderTable } from "../components/PurchaseOrderTable"
+import { LoadingState } from "../../../shared/ui/progress"
 
 export default function PurchaseOrderListPage() {
   const navigate = useNavigate()
@@ -147,7 +148,7 @@ export default function PurchaseOrderListPage() {
         )}
 
         {loading ? (
-          <p className="hero-text">Loading purchase orders...</p>
+          <LoadingState message="Loading purchase orders…" />
         ) : error ? (
           <p className="hero-text error-text">{error}</p>
         ) : (
