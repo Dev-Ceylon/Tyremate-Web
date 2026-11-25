@@ -8,12 +8,26 @@ import { useReceiptViewer } from "../../sales-order/hooks/useReceiptViewer"
 
 const fmt = (n: number) => (n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })
 
-const SOURCE_LABELS: Record<string, string> = {
+export const SOURCE_LABELS: Record<string, string> = {
   so: "Sales Order",
   other_service: "Other Service",
   direct: "Direct",
   delivery: "Delivery",
   dag: "DAG Retreading",
+}
+
+export function getInvoiceSourceLink(sourceType: string, sourceId: number | null): string | null {
+  if (!sourceId) return null
+  switch (sourceType) {
+    case "dag":
+      return `/dag/${sourceId}`
+    case "so":
+      return `/sales-orders/${sourceId}`
+    case "other_service":
+      return `/other-service/${sourceId}`
+    default:
+      return null
+  }
 }
 
 export function useInvoiceDetailsPage() {
@@ -47,6 +61,7 @@ export function useInvoiceDetailsPage() {
 
   const sourceLabel = record ? SOURCE_LABELS[record.SourceType] || record.SourceType : ""
   const sourceText = record && record.SourceID !== null ? `${sourceLabel} #${record.SourceID}` : sourceLabel
+  const sourceLink = record ? getInvoiceSourceLink(record.SourceType, record.SourceID) : null
   const isCancelled = record?.Status === "can"
   const isCreditNote = record?.IsCreditNote === 1
   const canCreditNote = record ? !isCreditNote && !isCancelled : false
@@ -143,6 +158,8 @@ export function useInvoiceDetailsPage() {
     invoicePayments,
     receiptViewer,
     sourceText,
+    sourceLabel,
+    sourceLink,
     isCancelled,
     isCreditNote,
     canCreditNote,
@@ -160,5 +177,3 @@ export function useInvoiceDetailsPage() {
     fmt,
   }
 }
-
-export { SOURCE_LABELS }

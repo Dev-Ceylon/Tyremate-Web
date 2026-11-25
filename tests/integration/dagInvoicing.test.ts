@@ -4,6 +4,8 @@ import {
   buildDAGPaymentReceiptPrintData,
   buildDAGPaymentSummaryReceiptPrintData,
 } from "../../src/features/dag/services/dagPaymentReceiptPrintService"
+import { buildInvoicePrintData } from "../../src/features/invoice/services/invoicePrintService"
+import { getInvoiceSourceLink, SOURCE_LABELS } from "../../src/features/invoice/components/InvoiceTable"
 
 const printTemplateService = require("../../backend/apps/electron/services/PrintTemplateService")
 
@@ -688,5 +690,119 @@ describe("DAG Invoicing Engine & Payment Parity", () => {
     expect(finalInvoice.BalanceDue).toBe(0)
     expect(finalInvoice.Status).toBe("paid")
     expect(finalInvoice.PaymentLinks).toHaveLength(2)
+  })
+
+  it("verifies central invoices module parity, source navigation links, and invoice details print data for DAG", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    // 1. Setup Branch, Location, Contractor, Customer, Tyre
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-INV-1",
+      BranchName: "Invoicing Main Branch",
+    })
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const location = await backend.invoke("storageLocations:create", {
+      LocationCode: "LOC-INV-01",
+      LocationName: "Invoicing Test Rack",
+      BranchId: branch.Id,
+      LocationTypeId: locationTypes[0].Id,
+      Capacity: 50,
+    })
+    const contractor = await backend.invoke("contractors:create", {
+      ContractorCode: "CONT-INV",
+      Name: "Apex Retreads",
+      Phone: "+94771122334",
+      Address: "Peliyagoda Industrial Park",
+    })
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-INV-01",
+      Name: "Dharmadasa Haulage Ltd",
+      Phone: "+94775566778",
+      Address: "Kandy Road, Kiribathgoda",
+      Email: "accounts@dharmadasa.lk",
+      VatNo: "VAT-55443322",
+    })
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Goodyear",
+      Size: "12R22.5",
+      Pattern: "KMAX S",
+      DAGCost: 18500,
+      PurchasedPrice: 42000,
+      ActualSellingPrice: 54000,
+    })
+
+    // 2. Create DAG with 2 tyres and advance payment
+    const result = await backend.invoke("dag:createWithTyres", {
+      CustomerID: customer.CustomerID,
+      ContractorID: contractor.ID,
+      Date: "2026-11-25",
+      Comment: "Retread 2 steer tyres",
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 2,
+          Serials: [
+            { SerialNumber: "GY-DAG-01", DAGCost: 18500 },
+            { SerialNumber: "GY-DAG-02", DAGCost: 18500 },
+          ],
+        },
+      ],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 10000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+    const dag = result.dag || result
+
+    // 3. Central Invoices Module Query: invoice:getAll
+    const allInvoices = await backend.invoke("invoice:getAll")
+    const dagInvoice = allInvoices.find((inv: any) => inv.SourceType === "dag" && inv.SourceID === dag.ID)
+    expect(dagInvoice).toBeDefined()
+    expect(dagInvoice.InvoiceNumber).toMatch(/^INV-\d{4}-\d{5}$/)
+    expect(dagInvoice.CustomerName).toBe("Dharmadasa Haulage Ltd")
+    expect(dagInvoice.Total).toBe(37000)
+    expect(dagInvoice.AmountPaid).toBe(10000)
+    expect(dagInvoice.BalanceDue).toBe(27000)
+    expect(dagInvoice.Status).toBe("par")
+
+    // 4. Test Navigation Link Generator
+    expect(getInvoiceSourceLink("dag", dag.ID)).toBe(`/dag/${dag.ID}`)
+    expect(getInvoiceSourceLink("so", 42)).toBe("/sales-orders/42")
+    expect(getInvoiceSourceLink("other_service", 99)).toBe("/other-service/99")
+    expect(getInvoiceSourceLink("direct", null)).toBeNull()
+    expect(SOURCE_LABELS.dag).toBe("DAG Retreading")
+
+    // 5. Query detailed invoice
+    const detailedInvoice = await backend.invoke("invoice:getById", dagInvoice.InvoiceID)
+    expect(detailedInvoice.Lines).toHaveLength(2)
+    expect(detailedInvoice.Lines[0].Description).toContain("DAG Retreading Goodyear 12R22.5")
+    const serials = detailedInvoice.Lines.map((l: any) => l.SerialNo)
+    expect(serials).toContain("GY-DAG-01")
+    expect(serials).toContain("GY-DAG-02")
+
+    // 6. Test Invoice Print Data Builder
+    const printData = buildInvoicePrintData(detailedInvoice)
+    expect(printData.invoiceNumber).toBe(dagInvoice.InvoiceNumber)
+    expect(printData.customerName).toBe("Dharmadasa Haulage Ltd")
+    expect(printData.customerVatNo).toBe("VAT-55443322")
+    expect(printData.sourceType).toBe("DAG Retreading")
+    expect(printData.sourceId).toBe(String(dag.ID))
+    expect(printData.lines).toHaveLength(2)
+    const printDescriptions = printData.lines.map((l: any) => l.description).join(" ")
+    expect(printDescriptions).toContain("GY-DAG-01")
+    expect(printDescriptions).toContain("GY-DAG-02")
+
+    // 7. Test rendering invoice-details.html print template
+    const renderedInvoiceHtml = printTemplateService.render("invoice-details.html", printData)
+    expect(renderedInvoiceHtml).toContain(dagInvoice.InvoiceNumber)
+    expect(renderedInvoiceHtml).toContain("Dharmadasa Haulage Ltd")
+    expect(renderedInvoiceHtml).toContain("DAG Retreading")
+    expect(renderedInvoiceHtml).toContain(`#${dag.ID}`)
+    expect(renderedInvoiceHtml).toContain("GY-DAG-01")
   })
 })

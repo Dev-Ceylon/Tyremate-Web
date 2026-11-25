@@ -1,4 +1,4 @@
-import { useNavigate } from "@/lib/router"
+import { Link, useNavigate } from "@/lib/router"
 import { InvoiceStatusBadge } from "../components/InvoiceStatusBadge"
 import { CreditNoteDialog } from "../components/CreditNoteDialog"
 import { CancelInvoiceDialog } from "../components/CancelInvoiceDialog"
@@ -27,6 +27,8 @@ export default function InvoiceDetailsPage() {
     paymentForm,
     receiptViewer,
     sourceText,
+    sourceLabel,
+    sourceLink,
     isCancelled,
     isCreditNote,
     canCreditNote,
@@ -61,6 +63,15 @@ export default function InvoiceDetailsPage() {
           </p>
         </div>
         <div className="header-actions">
+          {sourceLink && (
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={() => navigate(sourceLink)}
+            >
+              View {sourceLabel}
+            </button>
+          )}
           {canRecordPayment && (
             <button className="primary-action" onClick={openPaymentModal}>
               Record Payment
@@ -116,7 +127,15 @@ export default function InvoiceDetailsPage() {
           <div className="detail-card-grid">
             <div className="detail-card-row">
               <span className="detail-card-key">Source</span>
-              <span className="detail-card-val">{sourceText}</span>
+              <span className="detail-card-val">
+                {sourceLink ? (
+                  <Link to={sourceLink} className="invoice-source-link">
+                    {sourceText}
+                  </Link>
+                ) : (
+                  sourceText
+                )}
+              </span>
             </div>
             <div className="detail-card-row">
               <span className="detail-card-key">Status</span>

@@ -6874,6 +6874,63 @@
   cursor: not-allowed;
 }
 
+/* Central Invoices Module Styles */
+.invoice-table-link {
+  font-weight: 600;
+  color: var(--action-primary);
+  text-decoration: underline;
+  transition: color 120ms ease;
+}
+
+.invoice-table-link:hover {
+  color: var(--action-primary-hover, var(--action-primary));
+}
+
+.invoice-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  color: var(--action-primary);
+  text-decoration: underline;
+  transition: color 120ms ease;
+}
+
+.invoice-source-link:hover {
+  color: var(--action-primary-hover, var(--action-primary));
+}
+
+.invoice-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.invoice-search-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 260px;
+  flex: 1;
+  max-width: 400px;
+}
+
+.invoice-search-input {
+  width: 100%;
+  padding-right: 28px;
+}
+
+.invoice-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+
 
 
 
