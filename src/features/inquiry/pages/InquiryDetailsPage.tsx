@@ -118,7 +118,7 @@ export default function InquiryDetailsPage() {
                 ) : inquiry.IsAdminApproved ? (
                   <span className="status-badge status-approved">Approved</span>
                 ) : (
-                  <span className="status-badge status-pending">Draft</span>
+                  <span className="status-badge status-pending">Pending</span>
                 )}
               </span>
             </div>
@@ -126,7 +126,7 @@ export default function InquiryDetailsPage() {
               <span className="detail-card-key">Approval</span>
               <span className="detail-card-val">
                 <span className={`status-badge ${inquiry.IsAdminApproved ? 'status-completed' : 'status-pending'}`}>
-                  {inquiry.IsAdminApproved ? 'Approved' : 'Draft'}
+                  {inquiry.IsAdminApproved ? 'Approved' : 'Pending'}
                 </span>
               </span>
             </div>

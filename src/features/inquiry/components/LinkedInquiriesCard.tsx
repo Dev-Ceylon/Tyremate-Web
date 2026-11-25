@@ -55,7 +55,7 @@ export function LinkedInquiriesCard({ inquiries }: Props) {
                     ) : inquiry.IsAdminApproved ? (
                       <span className="status-badge status-approved">Approved</span>
                     ) : (
-                      <span className="status-badge status-pending">Draft</span>
+                      <span className="status-badge status-pending">Pending</span>
                     )}
                   </td>
                   <td>

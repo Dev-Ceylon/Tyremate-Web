@@ -70,7 +70,7 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
                   ) : inquiry.IsAdminApproved ? (
                     <span className="status-badge status-approved">Approved</span>
                   ) : (
-                    <span className="status-badge status-pending">Draft</span>
+                    <span className="status-badge status-pending">Pending</span>
                   )}
                 </td>
                 <td className="text-center">

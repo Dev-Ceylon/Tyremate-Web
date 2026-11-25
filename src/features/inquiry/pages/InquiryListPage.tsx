@@ -196,7 +196,7 @@ export default function InquiryListPage() {
               <option value="all">All Statuses</option>
               <option value="completed">Completed</option>
               <option value="approved">Approved</option>
-              <option value="draft">Draft / Pending</option>
+              <option value="draft">Pending</option>
             </select>
           </div>
 
