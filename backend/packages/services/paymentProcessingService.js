@@ -127,7 +127,7 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
 
   const payment = {
     CashPayment: rawPaymentPayload.CashPayment ? {
-      PaymentTypeCode: String(rawPaymentPayload.CashPayment.PaymentTypeCode || "").trim(),
+      PaymentTypeCode: String(rawPaymentPayload.CashPayment.PaymentTypeCode || PAYMENT_TYPE_CODES.CASH).trim(),
       AmountReceived: normalizeNumber(rawPaymentPayload.CashPayment.AmountReceived, "AmountReceived"),
       BalanceToReturn: normalizeNumber(rawPaymentPayload.CashPayment.BalanceToReturn, "BalanceToReturn"),
       ReceiptPath: rawPaymentPayload.CashPayment.ReceiptPath
@@ -144,7 +144,7 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
         : null,
     } : null,
     ChequePayment: rawPaymentPayload.ChequePayment ? {
-          PaymentTypeCode: String(rawPaymentPayload.ChequePayment.PaymentTypeCode || "").trim(),
+          PaymentTypeCode: String(rawPaymentPayload.ChequePayment.PaymentTypeCode || PAYMENT_TYPE_CODES.CHEQUE).trim(),
           ChequeNumber: String(rawPaymentPayload.ChequePayment.ChequeNumber || "").trim(),
           ChequeDate: normalizeDate(rawPaymentPayload.ChequePayment.ChequeDate, "ChequeDate"),
           BankName: String(rawPaymentPayload.ChequePayment.BankName || "").trim(),
@@ -161,7 +161,7 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
             : [],
         } : null,
     BankTransferPayment: rawPaymentPayload.BankTransferPayment ? {
-      PaymentTypeCode: String(rawPaymentPayload.BankTransferPayment.PaymentTypeCode || "").trim(),
+      PaymentTypeCode: String(rawPaymentPayload.BankTransferPayment.PaymentTypeCode || PAYMENT_TYPE_CODES.BANK_TRANSFER).trim(),
       BankDetailsID: normalizePositiveId(rawPaymentPayload.BankTransferPayment.BankDetailsID, "BankDetailsID"),
       BankName: rawPaymentPayload.BankTransferPayment.BankName ? String(rawPaymentPayload.BankTransferPayment.BankName).trim() : undefined,
       AccountNumber: rawPaymentPayload.BankTransferPayment.AccountNumber ? String(rawPaymentPayload.BankTransferPayment.AccountNumber).trim() : undefined,

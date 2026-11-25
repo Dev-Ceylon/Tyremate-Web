@@ -6,6 +6,7 @@ import { invoiceService } from "../services/invoiceService"
 export type InvoiceSource =
   | { type: "salesOrder"; id: number | null }
   | { type: "otherService"; id: number | null }
+  | { type: "dag"; id: number | null }
 
 export function useGenerateInvoice(source: InvoiceSource) {
   const navigate = useNavigate()
@@ -17,10 +18,14 @@ export function useGenerateInvoice(source: InvoiceSource) {
 
     setIsGenerating(true)
     try {
-      const invoice =
-        source.type === "salesOrder"
-          ? await invoiceService.generateFromSO(source.id)
-          : await invoiceService.generateFromOtherService(source.id)
+      let invoice
+      if (source.type === "salesOrder") {
+        invoice = await invoiceService.generateFromSO(source.id)
+      } else if (source.type === "otherService") {
+        invoice = await invoiceService.generateFromOtherService(source.id)
+      } else {
+        invoice = await invoiceService.generateFromDAG(source.id)
+      }
       navigate(`/invoices/${invoice.InvoiceID}`)
     } catch (err) {
       showToast({

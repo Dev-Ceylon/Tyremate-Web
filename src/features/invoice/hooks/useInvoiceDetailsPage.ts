@@ -13,6 +13,7 @@ const SOURCE_LABELS: Record<string, string> = {
   other_service: "Other Service",
   direct: "Direct",
   delivery: "Delivery",
+  dag: "DAG Retreading",
 }
 
 export function useInvoiceDetailsPage() {

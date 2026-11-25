@@ -63,3 +63,6 @@ CREATE TABLE IF NOT EXISTS DAGWalkinLink (
 );
 
 CREATE INDEX IF NOT EXISTS idx_dag_walkin_link_wc ON DAGWalkinLink(WalkinCustomerID);
+
+-- Backfill DAG invoice source if missing on older DBs
+INSERT OR IGNORE INTO InvoiceSourceM (SourceCode, SourceName) VALUES ('dag', 'DAG Retreading');

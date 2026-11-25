@@ -24,6 +24,7 @@ const chequePaymentReceiptRepo = require("../repositories/chequePaymentReceiptRe
 const cashPaymentService = require("./cashPaymentService")
 const chequePaymentService = require("./chequePaymentService")
 const bankTransferPaymentService = require("./bankTransferPaymentService")
+const invoiceSettlementService = require("./invoiceSettlementService")
 const { PAYMENT_TYPE_CODES, PAYMENT_TYPE_NAMES, getPaymentTypeIdByCode } = require("../constants/paymentTypeConstants")
 const { STATUS_CODES, getStatusId } = require("../constants/statusConstants")
 const { getStorageSourceId } = require("../constants/storageSourceConstants")
@@ -176,12 +177,12 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
 
   const payment = {
     CashPayment: rawPaymentPayload.CashPayment ? {
-      PaymentTypeCode: String(rawPaymentPayload.CashPayment.PaymentTypeCode || "").trim(),
+      PaymentTypeCode: String(rawPaymentPayload.CashPayment.PaymentTypeCode || PAYMENT_TYPE_CODES.CASH).trim(),
       AmountReceived: normalizeNumber(rawPaymentPayload.CashPayment.AmountReceived, "AmountReceived"),
       BalanceToReturn: normalizeNumber(rawPaymentPayload.CashPayment.BalanceToReturn, "BalanceToReturn")
     } : null,
     ChequePayment: rawPaymentPayload.ChequePayment ? {
-          PaymentTypeCode: String(rawPaymentPayload.ChequePayment.PaymentTypeCode || "").trim(),
+          PaymentTypeCode: String(rawPaymentPayload.ChequePayment.PaymentTypeCode || PAYMENT_TYPE_CODES.CHEQUE).trim(),
           ChequeNumber: String(rawPaymentPayload.ChequePayment.ChequeNumber || "").trim(),
           ChequeDate: normalizeRequiredDate(rawPaymentPayload.ChequePayment.ChequeDate, "ChequeDate"),
           BankName: String(rawPaymentPayload.ChequePayment.BankName || "").trim(),
@@ -189,7 +190,7 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
           Collected: normalizeBooleanFlag(rawPaymentPayload.ChequePayment.Collected, "Collected"),
         } : null,
     BankTransferPayment: rawPaymentPayload.BankTransferPayment ? {
-      PaymentTypeCode: String(rawPaymentPayload.BankTransferPayment.PaymentTypeCode || "").trim(),
+      PaymentTypeCode: String(rawPaymentPayload.BankTransferPayment.PaymentTypeCode || PAYMENT_TYPE_CODES.BANK_TRANSFER).trim(),
       BankDetailsID: normalizeId(rawPaymentPayload.BankTransferPayment.BankDetailsID, "BankDetailsID"),
       Amount: normalizeNumber(rawPaymentPayload.BankTransferPayment.Amount, "Amount")
     } : null
@@ -1689,7 +1690,9 @@ exports.sellDAGTyres = (id, payload = {}, ctx) => {
     }
   })
 
-  return sellTransaction()
+  const result = sellTransaction()
+  invoiceSettlementService.syncInvoiceSettlementsForDAG(normalizedId)
+  return result
 }
 
 /**
@@ -1741,7 +1744,9 @@ exports.completeChequePayment = (dagId, paymentId, ctx) => {
     }
   })
 
-  return completePaymentTransaction()
+  const result = completePaymentTransaction()
+  invoiceSettlementService.syncInvoiceSettlementsForDAG(dagId)
+  return result
 }
 
 exports.processPayments = processPayments

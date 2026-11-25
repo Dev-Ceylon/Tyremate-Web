@@ -25,6 +25,10 @@ export const invoiceService = {
     return invoiceClient.generateFromSO(soId)
   },
 
+  generateFromDAG(dagId: number): Promise<InvoiceDetailedRecord> {
+    return invoiceClient.generateFromDAG(dagId)
+  },
+
   generateFromOtherService(osId: number): Promise<InvoiceDetailedRecord> {
     return invoiceClient.generateFromOtherService(osId)
   },

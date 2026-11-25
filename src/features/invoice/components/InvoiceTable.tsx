@@ -10,6 +10,8 @@ const SOURCE_LABELS: Record<string, string> = {
   so: "Sales Order",
   other_service: "Other Service",
   direct: "Direct",
+  delivery: "Delivery",
+  dag: "DAG Retreading",
 }
 
 const fmt = (n: number) => (n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })

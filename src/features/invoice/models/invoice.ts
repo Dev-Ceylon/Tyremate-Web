@@ -1,4 +1,4 @@
-export type InvoiceSourceType = "so" | "delivery" | "other_service" | "direct"
+export type InvoiceSourceType = "so" | "delivery" | "other_service" | "direct" | "dag"
 
 export const INVOICE_STATUS_CODES = {
   DRAFT: "dft",

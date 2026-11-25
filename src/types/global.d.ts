@@ -438,6 +438,7 @@ declare global {
         getOutstandingInvoices: () => Promise<InvoiceRecord[]>
         getInvoiceById: (invoiceId: number) => Promise<InvoiceDetailedRecord>
         generateFromSO: (soId: number) => Promise<InvoiceDetailedRecord>
+        generateFromDAG: (dagId: number) => Promise<InvoiceDetailedRecord>
         generateFromOtherService: (osId: number) => Promise<InvoiceDetailedRecord>
         generateFromDelivery: (deliveryId: number) => Promise<InvoiceDetailedRecord>
         createDirect: (data: DirectInvoicePayload) => Promise<InvoiceDetailedRecord>

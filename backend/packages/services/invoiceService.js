@@ -6,9 +6,13 @@ const invoiceCounterRepo = require("../repositories/invoiceCounterRepository")
 const customerRepo = require("../repositories/customerRepository")
 const soService = require("./soService")
 const otherServiceService = require("./otherServiceService")
+const dagService = require("./dagService")
 const paymentProcessingService = require("./paymentProcessingService")
 const soPaymentRepo = require("../repositories/soPaymentRepository")
 const soDeliveryRepo = require("../repositories/soDeliveryRepository")
+const dagPaymentRepo = require("../repositories/dagPaymentRepository")
+const dagWalkinLinkRepo = require("../repositories/dagWalkinLinkRepository")
+const tyreRepo = require("../repositories/tyreRepository")
 const { PAYMENT_TYPE_CODES } = require("../constants/paymentTypeConstants")
 const { round2, deriveStatus, findInvoiceBySource, settleInvoicePayment } = require("./invoiceSettlementService")
 const {
@@ -612,6 +616,195 @@ exports.generateInvoiceFromOtherService = (osId, ctx) => {
 }
 
 // ─────────────────────────────────────────────
+// SOURCE: DAG Retreading
+// ─────────────────────────────────────────────
+const buildCustomerFromDAG = (dag) => {
+  const customer = dag?.Customer ?? {}
+  let customerId = null
+  let walkinCustomerId = null
+  let customerName = dag?.CustomerName ?? customer.CustomerName ?? null
+  let address = customer.CustomerAddress ?? null
+  let phone = customer.CustomerPhone ?? null
+  let vatNo = customer.VatNo ?? null
+
+  if (customer.IsWalkinCustomer) {
+    const walkin = dagWalkinLinkRepo.getWalkinCustomerForDag(dag.ID)
+    if (walkin) {
+      walkinCustomerId = walkin.ID
+      customerName = walkin.CustomerName || customerName
+      phone = walkin.CustomerPhone || phone
+      address = walkin.CustomerAddress || address
+      vatNo = walkin.VatNo || walkin.TinNo || vatNo
+    }
+  } else if (dag?.CustomerID) {
+    customerId = dag.CustomerID
+    const record = customerRepo.getCustomerById(dag.CustomerID)
+    if (record) {
+      customerName = record.Name || customerName
+      vatNo = record.VatNo ?? vatNo
+      const addresses = customerRepo.getCustomerAddressesByCustomerId(record.CustomerID) || []
+      if (addresses.length > 0) {
+        const primary = addresses.find((a) => a.IsPrimary) || addresses[0]
+        const parts = [
+          primary.AddressLine1,
+          primary.AddressLine2,
+          primary.City,
+          primary.State,
+          primary.PostalCode,
+        ].filter(Boolean)
+        if (parts.length > 0) address = parts.join(", ")
+      }
+      const contacts = customerRepo.getCustomerContactsByCustomerId(record.CustomerID) || []
+      if (contacts.length > 0) {
+        const primary = contacts.find((c) => c.IsPrimary) || contacts[0]
+        phone = primary.PhoneNumber ?? phone
+      }
+    }
+  }
+
+  return {
+    CustomerID: customerId,
+    WalkinCustomerID: walkinCustomerId,
+    CustomerName: customerName,
+    CustomerAddress: address,
+    CustomerPhone: phone,
+    CustomerVatNo: vatNo,
+  }
+}
+
+exports.generateInvoiceFromDAG = (dagId, ctx) => {
+  const normalizedId = normalizeId(dagId, "DAG id")
+
+  const existing = invoiceRepo.getInvoiceBySource(
+    getInvoiceSourceIdByCode(SOURCE_TYPES.DAG),
+    normalizedId
+  )
+  if (existing) {
+    return exports.getInvoiceById(existing.InvoiceID)
+  }
+
+  const dag = dagService.getDetailedDAGById(normalizedId)
+  if (!dag) {
+    throw new Error("DAG not found")
+  }
+
+  const tyres = Array.isArray(dag.Tyres) ? dag.Tyres : []
+  if (tyres.length === 0) {
+    throw new Error("Cannot invoice a DAG with no tyre lines")
+  }
+
+  const customer = buildCustomerFromDAG(dag)
+  const payments = Array.isArray(dag.Payments) ? dag.Payments : []
+  const settledAmount = paymentProcessingService.calculateSettledAmountFromAggregatedPaymentsArray(payments)
+
+  const calculatedTotal = round2(
+    tyres.reduce((sum, tyre) => {
+      const serials = Array.isArray(tyre.Serials) && tyre.Serials.length > 0 ? tyre.Serials : null
+      if (serials) {
+        return sum + serials.reduce((sSum, s) => sSum + (Number(s.DAGCost) || 0), 0)
+      }
+      return sum + (Number(tyre.DAGCost) || (Number(tyre.Price) || 0) * (Number(tyre.Qty) || 1))
+    }, 0)
+  )
+
+  const totalCost = Number(dag.TotalDAGCost) > 0 ? round2(dag.TotalDAGCost) : calculatedTotal
+  const subtotal = totalCost
+  const total = totalCost
+  const amountPaid = round2(Math.min(settledAmount, total))
+
+  const createTransaction = db.transaction(() => {
+    const invoiceId = insertInvoiceHeader({
+      invoiceDate: localToday(),
+      dueDate: dag.DeliveryDate || null,
+      sourceType: SOURCE_TYPES.DAG,
+      sourceId: normalizedId,
+      customer,
+      subtotal,
+      discountTotal: 0,
+      taxLabel: null,
+      taxAmount: 0,
+      total,
+      amountPaid,
+      notes: dag.Comment || null,
+      isCreditNote: 0,
+      creditNoteOf: null,
+      createdBy: ctx?.user?.id ?? null,
+    })
+
+    tyres.forEach((tyre) => {
+      const tyreDetails = tyre.TyreID ? tyreRepo.getTyreById(tyre.TyreID) : null
+      const brand = tyreDetails?.Brand || tyre.Brand || null
+      const size = tyreDetails?.Size || tyre.TyreCode || tyre.Size || null
+      const pattern = tyreDetails?.Pattern || tyre.TyreName || tyre.Pattern || null
+      const serials = Array.isArray(tyre.Serials) && tyre.Serials.length > 0 ? tyre.Serials : null
+
+      if (serials) {
+        serials.forEach((serial) => {
+          const serialNo = serial.SerialNumber ? String(serial.SerialNumber).trim() : null
+          const unitPrice = round2(serial.DAGCost ?? 0)
+          const descParts = ["DAG Retreading", brand, size]
+          if (pattern) descParts.push(`(${pattern})`)
+          if (serialNo) descParts.push(`[Serial: ${serialNo}]`)
+          const desc = descParts.filter(Boolean).join(" ")
+
+          invoiceLineRepo.createInvoiceLine({
+            InvoiceID: invoiceId,
+            LineType: "tyre",
+            TyreID: tyre.TyreID ?? null,
+            SerialNo: serialNo,
+            Description: desc,
+            Brand: brand,
+            Size: size,
+            Pattern: pattern,
+            Qty: 1,
+            UnitPrice: unitPrice,
+            Discount: 0,
+            LineTotal: unitPrice,
+          })
+        })
+      } else {
+        const qty = Number(tyre.Qty) || 1
+        const unitPrice = round2((Number(tyre.DAGCost) || 0) / qty)
+        const lineTotal = round2(unitPrice * qty)
+        const descParts = ["DAG Retreading", brand, size]
+        if (pattern) descParts.push(`(${pattern})`)
+        const desc = descParts.filter(Boolean).join(" ")
+
+        invoiceLineRepo.createInvoiceLine({
+          InvoiceID: invoiceId,
+          LineType: "tyre",
+          TyreID: tyre.TyreID ?? null,
+          SerialNo: null,
+          Description: desc,
+          Brand: brand,
+          Size: size,
+          Pattern: pattern,
+          Qty: qty,
+          UnitPrice: unitPrice,
+          Discount: 0,
+          LineTotal: lineTotal,
+        })
+      }
+    })
+
+    payments.forEach((payment) => {
+      if (payment?.PaymentID) {
+        invoiceLinkRepo.createInvoicePaymentLink({
+          InvoiceID: invoiceId,
+          PaymentID: payment.PaymentID,
+          AmountApplied: round2(payment.Amount ?? 0),
+        })
+      }
+    })
+
+    return invoiceId
+  })
+
+  const invoiceId = createTransaction()
+  return exports.getInvoiceById(invoiceId)
+}
+
+// ─────────────────────────────────────────────
 // SOURCE: Direct / counter sale
 // ─────────────────────────────────────────────
 exports.createDirectInvoice = (payload = {}, ctx) => {
@@ -813,14 +1006,17 @@ exports.recordPaymentForInvoice = (invoiceId, payload = {}, ctx) => {
       throw new Error("Payment payload is required")
     }
 
-    // Payments on SO- and delivery-sourced invoices also count towards the
-    // parent sales order's balance.
+    // Payments on SO-, delivery-, and DAG-sourced invoices also count towards the
+    // parent document's balance.
     let soId = null
+    let dagId = null
     if (invoice.SourceTypeId === getInvoiceSourceIdByCode(SOURCE_TYPES.SO)) {
       soId = invoice.SourceID
     } else if (invoice.SourceTypeId === getInvoiceSourceIdByCode(SOURCE_TYPES.DELIVERY)) {
       const delivery = soService.getDeliveryById(invoice.SourceID)
       soId = delivery?.SoID ?? null
+    } else if (invoice.SourceTypeId === getInvoiceSourceIdByCode(SOURCE_TYPES.DAG)) {
+      dagId = invoice.SourceID
     }
 
     const createdPayments = paymentProcessingService.createPaymentsForPaymentData(
@@ -838,6 +1034,12 @@ exports.recordPaymentForInvoice = (invoiceId, payload = {}, ctx) => {
             IsAdvance: 0,
           })
         }
+        if (dagId) {
+          dagPaymentRepo.createDAGPayment({
+            DAGID: dagId,
+            PaymentID: payment.PaymentID,
+          })
+        }
       }
     )
 
@@ -849,6 +1051,10 @@ exports.recordPaymentForInvoice = (invoiceId, payload = {}, ctx) => {
       // Invoice payments settle the parent SO too, so they can release a
       // gate pass that was withheld when the delivery was recorded.
       soService.tryIssuePendingGatePasses(soId, ctx)
+    }
+
+    if (dagId) {
+      dagService.getDetailedDAGById(dagId)
     }
 
     return exports.getInvoiceById(normalizedId)
