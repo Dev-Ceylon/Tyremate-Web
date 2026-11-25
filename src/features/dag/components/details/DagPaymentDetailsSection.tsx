@@ -126,18 +126,18 @@ export function DagPaymentDetailsSection({
                   </div>
                   <div className="detail-card-row">
                     <span className="detail-card-key">Settled Amount</span>
-                    <span className="detail-card-val font-bold">${formatCurrency(payment.Amount)}</span>
+                    <span className="detail-card-val font-bold">Rs {formatCurrency(payment.Amount)}</span>
                   </div>
                   {payment.AmountReceived !== undefined && payment.AmountReceived !== null && (
                     <div className="detail-card-row">
                       <span className="detail-card-key">Received</span>
-                      <span className="detail-card-val">${formatCurrency(payment.AmountReceived)}</span>
+                      <span className="detail-card-val">Rs {formatCurrency(payment.AmountReceived)}</span>
                     </div>
                   )}
                   {payment.BalanceToReturn !== undefined && payment.BalanceToReturn !== null && (
                     <div className="detail-card-row">
                       <span className="detail-card-key">Balance Return</span>
-                      <span className="detail-card-val">${formatCurrency(payment.BalanceToReturn)}</span>
+                      <span className="detail-card-val">Rs {formatCurrency(payment.BalanceToReturn)}</span>
                     </div>
                   )}
                   {payment.ChequeNumber && (

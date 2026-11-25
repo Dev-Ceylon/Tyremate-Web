@@ -41,7 +41,7 @@ export const OtherServiceTable = ({ data, deletingId, onDelete }: OtherServiceTa
                   <span className="font-medium">{customerLabel}</span>
                 </td>
                 <td className="text-right font-bold">
-                  ${(os.TotalAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  Rs {(os.TotalAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td className="text-center">
                   {os.IsCompleted ? (

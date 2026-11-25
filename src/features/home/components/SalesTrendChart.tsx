@@ -39,7 +39,7 @@ export default function SalesTrendChart() {
       </div>
 
       <div className="trend-plot">
-        <span className="trend-max-label">${formatCurrency(max)}</span>
+        <span className="trend-max-label">Rs {formatCurrency(max)}</span>
         <div className="trend-bars">
           {points.map((point) => {
             const height = max > 0 ? (point.TotalSale / max) * 100 : 0
@@ -48,7 +48,7 @@ export default function SalesTrendChart() {
                 <div
                   className="trend-bar"
                   style={{ height: `${height}%` }}
-                  title={`${point.Date} - $${formatCurrency(point.TotalSale)} (${point.OrderCount} ${
+                  title={`${point.Date} - Rs ${formatCurrency(point.TotalSale)} (${point.OrderCount} ${
                     point.OrderCount === 1 ? "order" : "orders"
                   })`}
                 />

@@ -39,8 +39,8 @@
   </div>
   <div class="summary-box">
     <h2>Financial Summary</h2>
-    <div class="summary-row"><span class="label">Total Amount</span><span class="value">${{totalAmount}}</span></div>
-    <div class="summary-row"><span class="label">Amount Due</span><span class="value">${{remainingAmount}}</span></div>
+    <div class="summary-row"><span class="label">Total Amount</span><span class="value">Rs {{totalAmount}}</span></div>
+    <div class="summary-row"><span class="label">Amount Due</span><span class="value">Rs {{remainingAmount}}</span></div>
   </div>
 </div>
 
@@ -58,9 +58,9 @@
 {{#each consumables}}
     <tr>
       <td>{{displayName}}</td>
-      <td class="right">${{price}}</td>
+      <td class="right">Rs {{price}}</td>
       <td class="right">{{qty}}</td>
-      <td class="right">${{lineTotal}}</td>
+      <td class="right">Rs {{lineTotal}}</td>
     </tr>
 {{/each}}
   </tbody>
@@ -70,7 +70,7 @@
 {{#each payments}}
 <div class="payment-box">
   <div class="row"><span class="label">Type</span><span class="value">{{typeName}}</span></div>
-  <div class="row"><span class="label">Amount</span><span class="value">${{amount}}</span></div>
+  <div class="row"><span class="label">Amount</span><span class="value">Rs {{amount}}</span></div>
   <div class="row"><span class="label">Reference</span><span class="value">{{reference}}</span></div>
   <div class="row"><span class="label">Date</span><span class="value">{{paymentDate}}</span></div>
   <div class="row"><span class="label">Bank</span><span class="value">{{bankName}}</span></div>

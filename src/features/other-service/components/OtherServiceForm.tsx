@@ -157,7 +157,7 @@ export function OtherServiceForm({ state, actions }: OtherServiceFormProps) {
                 </td>
                 <td>
                   <span className="table-count">
-                    ${lineTotal(line).toFixed(2)}
+                    Rs {lineTotal(line).toFixed(2)}
                   </span>
                 </td>
                 <td>
@@ -179,7 +179,7 @@ export function OtherServiceForm({ state, actions }: OtherServiceFormProps) {
       <div className="table-panel-header login-form-full-span">
         <div>
           <p className="hero-text">Estimated Total</p>
-          <h3>${state.totalAmount.toFixed(2)}</h3>
+          <h3>Rs {state.totalAmount.toFixed(2)}</h3>
         </div>
       </div>
 

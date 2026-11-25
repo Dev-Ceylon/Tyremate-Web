@@ -46,7 +46,7 @@ export const PurchaseOrderLineExpandedDetails: React.FC<PurchaseOrderLineExpande
       <div className="expanded-summary-grid">
         <div className="expanded-summary-card">
           <span className="expanded-summary-label">Line total</span>
-          <strong className="expanded-summary-value">${row.lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+          <strong className="expanded-summary-value">Rs {row.lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
           <span className="expanded-summary-meta">Location: {row.LocationName || "Not allocated"}</span>
         </div>
         <div className="expanded-summary-card">

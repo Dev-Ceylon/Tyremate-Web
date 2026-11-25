@@ -274,7 +274,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
                               {line.Suppliers.map((s) => (
                                 <tr key={s.id}>
                                   <td>{s.SupplierName || `ID: ${s.SupplierID}`}</td>
-                                  <td className="text-center">{s.Price > 0 ? `$${s.Price.toFixed(2)}` : "-"}</td>
+                                  <td className="text-center">{s.Price > 0 ? `Rs ${s.Price.toFixed(2)}` : "-"}</td>
                                   <td className="text-center">{s.Discount > 0 ? `${s.Discount}%` : "-"}</td>
                                   <td className="text-center">{s.Qty}</td>
                                 </tr>
@@ -295,15 +295,15 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
       <div className="po-form-summary po-form-full-span">
         <div className="po-form-summary-row">
           <span className="po-form-summary-key">Subtotal</span>
-          <span className="po-form-summary-val">${totals.subtotal.toFixed(2)}</span>
+          <span className="po-form-summary-val">Rs {totals.subtotal.toFixed(2)}</span>
         </div>
         <div className="po-form-summary-row">
           <span className="po-form-summary-key">Applied Discounts</span>
-          <span className="po-form-summary-val">-${totals.totalDiscount.toFixed(2)}</span>
+          <span className="po-form-summary-val">-Rs {totals.totalDiscount.toFixed(2)}</span>
         </div>
         <div className="po-form-summary-row po-form-summary-net">
           <span className="po-form-summary-key">Net Payable</span>
-          <span className="po-form-summary-val">${totals.netTotal.toFixed(2)}</span>
+          <span className="po-form-summary-val">Rs {totals.netTotal.toFixed(2)}</span>
         </div>
       </div>
 

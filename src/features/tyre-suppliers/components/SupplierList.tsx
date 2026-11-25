@@ -62,7 +62,7 @@ export function SupplierList({ tyreId, onSelect, isSelectable = false }: Supplie
               <td>{supplier.supplierName}</td>
               <td>{supplier.supplierContact}</td>
               {/* <td className="supplier-list-price">
-                {supplier.price !== undefined ? `$${supplier.price.toFixed(2)}` : "N/A"}
+                {supplier.price !== undefined ? `Rs ${supplier.price.toFixed(2)}` : "N/A"}
               </td>
               <td className="supplier-list-quantity">{supplier.quantity ?? "N/A"}</td>
               <td>{supplier.leadTime || "N/A"}</td> */}

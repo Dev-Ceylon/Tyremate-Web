@@ -51,7 +51,7 @@ export const PurchaseOrderLineRow: React.FC<PurchaseOrderLineRowProps> = ({
             <strong>{formatOrderItemLabel(row)}</strong>
           </div>
         </td>
-        <td className="text-right">${row.Price.toLocaleString()}</td>
+        <td className="text-right">Rs {row.Price.toLocaleString()}</td>
         <td className="text-right">{row.Discount}%</td>
         <td className="text-right font-bold">{row.Qty}</td>
         <td>
@@ -71,7 +71,7 @@ export const PurchaseOrderLineRow: React.FC<PurchaseOrderLineRowProps> = ({
         <td>
           {row.LocationName || <span className="secondary-text">Not allocated</span>}
         </td>
-        <td className="text-right font-bold">${row.lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+        <td className="text-right font-bold">Rs {row.lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
         {poStatusCode !== STATUS_CODES.COMPLETED && (
           <td>
             {row.displaySupplier ? (

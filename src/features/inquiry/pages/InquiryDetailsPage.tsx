@@ -147,7 +147,7 @@ export default function InquiryDetailsPage() {
               {totalQty} {isBattery ? `batter${totalQty !== 1 ? "ies" : "y"}` : `tyre${totalQty !== 1 ? "s" : ""}`}
             </span>
             <span className="stat-badge">
-              ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Rs {totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function InquiryDetailsPage() {
                     <td>
                       <span className="font-medium">{specText}</span>
                     </td>
-                    <td className="text-right">${item.Price.toLocaleString()}</td>
+                    <td className="text-right">Rs {item.Price.toLocaleString()}</td>
                     <td className="text-right">{item.Discount}%</td>
                     <td className="text-right font-bold">{item.Qty}</td>
                     <td className="text-right">{available}</td>
@@ -191,7 +191,7 @@ export default function InquiryDetailsPage() {
                       />
                     </td>
                     <td className="text-right font-medium">
-                      ${lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      Rs {lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 )

@@ -14,15 +14,15 @@ export const ProcurementValueCard: React.FC<ProcurementValueCardProps> = ({ tota
     <div className="detail-card-grid">
       <div className="detail-card-row">
         <span className="detail-card-key">Subtotal</span>
-        <span className="detail-card-val">${totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        <span className="detail-card-val">Rs {totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
       </div>
       <div className="detail-card-row">
         <span className="detail-card-key">Applied Discounts</span>
-        <span className="detail-card-val">-${totals.totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        <span className="detail-card-val">-Rs {totals.totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
       </div>
       <div className="detail-card-row">
         <span className="detail-card-key">Net Payable</span>
-        <span className="detail-card-val font-bold">${totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        <span className="detail-card-val font-bold">Rs {totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
       </div>
     </div>
   </div>

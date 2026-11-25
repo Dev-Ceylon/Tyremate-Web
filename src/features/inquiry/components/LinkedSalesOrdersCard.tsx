@@ -68,7 +68,7 @@ export function LinkedSalesOrdersCard({ inquiryId }: Props) {
                   </td>
                   <td className="text-right">
                     {so.TotalSale !== undefined && so.TotalSale !== null
-                      ? `$${(so.TotalSale - (so.TotalDiscount ?? 0)).toLocaleString(undefined, {
+                      ? `Rs ${(so.TotalSale - (so.TotalDiscount ?? 0)).toLocaleString(undefined, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}`
