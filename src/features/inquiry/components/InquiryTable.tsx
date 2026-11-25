@@ -1,4 +1,4 @@
-import { useNavigate } from "@/lib/router"
+import { Link, useNavigate } from "@/lib/router"
 import PermissionGate from "../../../shared/components/PermissionGate"
 import type { InquiryRecord } from "../models/inquiry"
 
@@ -65,15 +65,19 @@ export const InquiryTable = ({ data, deletingId, onDelete }: InquiryTableProps) 
                   )}
                 </td>
                 <td className="text-center">
-                  {inquiry.IsAdminApproved ? (
+                  {inquiry.IsCompleted ? (
+                    <span className="status-badge status-completed">Completed</span>
+                  ) : inquiry.IsAdminApproved ? (
                     <span className="status-badge status-approved">Approved</span>
                   ) : (
-                    <span className="status-badge status-pending">Draft</span>
+                    <span className="status-badge status-pending">Pending</span>
                   )}
                 </td>
                 <td className="text-center">
                   {inquiry.ConvertedSOID ? (
-                    <span className="status-badge status-completed">SO #{inquiry.ConvertedSOID}</span>
+                    <Link className="link" to={`/sales-orders/${inquiry.ConvertedSOID}`}>
+                      <span className="status-badge status-completed">SO #{inquiry.ConvertedSOID}</span>
+                    </Link>
                   ) : (
                     <span className="secondary-text text-xs">-</span>
                   )}

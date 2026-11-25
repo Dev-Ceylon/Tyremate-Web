@@ -1,4 +1,4 @@
-import { Navigate, useNavigate } from "@/lib/router"
+import { Link, Navigate, useNavigate } from "@/lib/router"
 import { useInquiryDetails } from "../hooks/useInquiryDetails"
 import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 import PermissionGate from "../../../shared/components/PermissionGate"
@@ -111,10 +111,22 @@ export default function InquiryDetailsPage() {
               <span className="detail-card-val">{inquiry.RequestedDate || "-"}</span>
             </div>
             <div className="detail-card-row">
+              <span className="detail-card-key">Status</span>
+              <span className="detail-card-val">
+                {inquiry.IsCompleted ? (
+                  <span className="status-badge status-completed">Completed</span>
+                ) : inquiry.IsAdminApproved ? (
+                  <span className="status-badge status-approved">Approved</span>
+                ) : (
+                  <span className="status-badge status-pending">Pending</span>
+                )}
+              </span>
+            </div>
+            <div className="detail-card-row">
               <span className="detail-card-key">Approval</span>
               <span className="detail-card-val">
                 <span className={`status-badge ${inquiry.IsAdminApproved ? 'status-completed' : 'status-pending'}`}>
-                  {inquiry.IsAdminApproved ? 'Approved' : 'Draft'}
+                  {inquiry.IsAdminApproved ? 'Approved' : 'Pending'}
                 </span>
               </span>
             </div>
@@ -122,7 +134,9 @@ export default function InquiryDetailsPage() {
               <span className="detail-card-key">Conversion</span>
               <span className="detail-card-val">
                 {inquiry.ConvertedSOID ? (
-                  <span className="status-badge status-completed">SO #{inquiry.ConvertedSOID}</span>
+                  <Link className="link" to={`/sales-orders/${inquiry.ConvertedSOID}`}>
+                    <span className="status-badge status-completed">SO #{inquiry.ConvertedSOID}</span>
+                  </Link>
                 ) : (
                   <span className="status-badge status-pending">Not Converted</span>
                 )}

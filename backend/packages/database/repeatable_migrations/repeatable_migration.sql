@@ -9,6 +9,9 @@ ALTER TABLE SO ADD COLUMN Category TEXT NOT NULL DEFAULT 'tyre';
 -- Backfill Category column on Inquiry
 ALTER TABLE Inquiry ADD COLUMN Category TEXT NOT NULL DEFAULT 'tyre';
 
+-- Backfill IsCompleted column on Inquiry
+ALTER TABLE Inquiry ADD COLUMN IsCompleted INTEGER NOT NULL DEFAULT 0;
+
 -- Backfill InquiryBatteries table & indexes if missing on older DBs
 CREATE TABLE IF NOT EXISTS InquiryBatteries (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,

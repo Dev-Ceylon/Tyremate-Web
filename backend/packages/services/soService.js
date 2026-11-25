@@ -39,6 +39,7 @@ const soTyreReturnRepo = require("../repositories/soTyreReturnRepository")
 const salesReturnRepo = require("../repositories/salesReturnRepository")
 const soReminderRepo = require("../repositories/soReminderRepository")
 const inquiryRepo = require("../repositories/inquiryRepository")
+const inquirySoRepo = require("../repositories/inquirySoRepository")
 const { PAYMENT_TYPE_CODES, PAYMENT_TYPE_NAMES } = require("../constants/paymentTypeConstants")
 const { STATUS_CODES, getStatusId, getStatusIdByCode } = require("../constants/statusConstants")
 const reminderRepo = require("../repositories/reminderRepository");
@@ -2308,6 +2309,15 @@ exports.completeSO = (soId, ctx) => {
       throw new Error("Failed to mark SO as completed");
     }
 
+    // Auto-Close / Complete linked Inquiries and ensure approval
+    const linkedInquiries = inquirySoRepo.getLinkedInquiriesBySoId(normalizedSoId);
+    linkedInquiries.forEach((inq) => {
+      inquiryRepo.updateCompletionStatus(inq.InquiryID, 1);
+      inquiryRepo.updateApprovalStatus(inq.InquiryID, 1);
+      inquiryRepo.approveAllTyresForInquiry(inq.InquiryID);
+      inquiryRepo.approveAllBatteriesForInquiry(inq.InquiryID);
+    });
+
     const after = exports.getSOById(normalizedSoId);
 
     soAuditLogService.recordSOAction({
@@ -2344,6 +2354,27 @@ exports.updateSO = (soId, payload, ctx) => {
 
   if (!updatedSO) {
     throw new Error("SO not found")
+  }
+
+  // Auto-cascade approval to linked inquiries if SO is approved
+  if (so.IsAdminApproved === 1) {
+    const linkedInquiries = inquirySoRepo.getLinkedInquiriesBySoId(normalizedId)
+    linkedInquiries.forEach((inq) => {
+      inquiryRepo.updateApprovalStatus(inq.InquiryID, 1)
+      inquiryRepo.approveAllTyresForInquiry(inq.InquiryID)
+      inquiryRepo.approveAllBatteriesForInquiry(inq.InquiryID)
+    })
+  }
+
+  // Auto-cascade completion to linked inquiries if SO is completed
+  if (so.IsCompleted === 1) {
+    const linkedInquiries = inquirySoRepo.getLinkedInquiriesBySoId(normalizedId)
+    linkedInquiries.forEach((inq) => {
+      inquiryRepo.updateCompletionStatus(inq.InquiryID, 1)
+      inquiryRepo.updateApprovalStatus(inq.InquiryID, 1)
+      inquiryRepo.approveAllTyresForInquiry(inq.InquiryID)
+      inquiryRepo.approveAllBatteriesForInquiry(inq.InquiryID)
+    })
   }
 
   const after = exports.getSOById(normalizedId)
@@ -2483,7 +2514,21 @@ exports.deleteSO = (soId, ctx) => {
 
     manufactureOrderRepo.deleteManufactureOrdersBySoId(normalizedId)
     soReminderRepo.deleteSORemindersBySoId(normalizedId)
+    const linkedInquiriesForDelete = inquirySoRepo.getLinkedInquiriesBySoId(normalizedId)
     inquiryRepo.clearConvertedSOIDBySoId(normalizedId)
+    linkedInquiriesForDelete.forEach((inq) => {
+      const remainingLinkedSos = inquirySoRepo.getLinkedSosByInquiryId(inq.InquiryID).filter((s) => s.SoID !== normalizedId)
+      const anyCompleted = remainingLinkedSos.some((s) => s.IsCompleted === 1)
+      inquiryRepo.updateCompletionStatus(inq.InquiryID, anyCompleted ? 1 : 0)
+      if (inq.ConvertedSOID === normalizedId) {
+        const nextConvertedSoId = remainingLinkedSos.length > 0 ? remainingLinkedSos[0].SoID : null
+        inquiryRepo.updateInquiry(inq.InquiryID, {
+          ...inq,
+          ConvertedSOID: nextConvertedSoId,
+          IsCompleted: anyCompleted ? 1 : 0,
+        })
+      }
+    })
     soCustomerRepo.deleteSoCustomersBySoId(normalizedId)
     soWalkinLinkRepo.unlinkSoWalkin(normalizedId)
     soTyreReturnRepo.deleteReturnsBySoId(normalizedId)
