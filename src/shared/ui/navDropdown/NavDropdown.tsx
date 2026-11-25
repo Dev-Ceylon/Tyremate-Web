@@ -17,6 +17,10 @@ export const NavDropdown = ({ label, items }: NavDropdownProps) => {
   const rootRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
 
+  if (!items || items.length === 0) {
+    return null
+  }
+
   const isActive = items.some((item) => {
     const path = location.pathname
     return path === item.to || path.startsWith(`${item.to}/`)

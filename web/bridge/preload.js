@@ -743,6 +743,16 @@ const api = {
   },
 
   // Web edition additions -------------------------------------------------
+  salesTarget: {
+    getAll: (filters) => ipcRenderer.invoke("salesTarget:getAll", filters),
+    getById: (id) => ipcRenderer.invoke("salesTarget:getById", id),
+    getMyActiveTargets: () => ipcRenderer.invoke("salesTarget:getMyActiveTargets"),
+    create: (payload) => ipcRenderer.invoke("salesTarget:create", payload),
+    update: (id, payload) => ipcRenderer.invoke("salesTarget:update", id, payload),
+    delete: (id) => ipcRenderer.invoke("salesTarget:delete", id),
+    getSalesReps: () => ipcRenderer.invoke("salesTarget:getSalesReps"),
+  },
+
   admin: {
     getCloudinaryConfig: () => ipcRenderer.invoke("admin:getCloudinaryConfig"),
     setCloudinaryConfig: (config) => ipcRenderer.invoke("admin:setCloudinaryConfig", config),

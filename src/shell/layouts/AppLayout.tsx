@@ -80,7 +80,7 @@ export default function AppLayout() {
           <NavLink className="ghost-link" to="/">
             Home
           </NavLink>
-          {hasPermission("inquiry.view") && !hasAnyPermission("so.view", "dag.view", "violations.view") ? (
+          {hasPermission("inquiry.view") && !hasAnyPermission("so.view", "dag.view", "violations.view", "targets.manage", "targets.view_own") ? (
             <NavLink className="ghost-link" to="/inquiries">
               Inquiries
             </NavLink>
@@ -96,6 +96,8 @@ export default function AppLayout() {
                 hasPermission("dag.view") && { label: "DAG", to: "/dag" },
                 hasPermission("so.view") && { label: "Used Tyre Sales", to: "/used-tyres" },
                 hasPermission("reports.view") && { label: "Sales Reports", to: "/reports/sales" },
+                hasPermission("targets.manage") && { label: "Sales Targets", to: "/sales-targets" },
+                hasPermission("targets.view_own") && { label: "My Targets", to: "/my-targets" },
               ].filter(Boolean) as any[]}
             />
           )}

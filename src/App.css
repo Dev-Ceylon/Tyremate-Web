@@ -6930,6 +6930,511 @@
   gap: var(--space-2, 8px);
 }
 
+/* ============================================================================
+   SALES TARGETS
+   ============================================================================ */
+
+.tm-target-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4, 1rem);
+}
+
+.target-filters-card {
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.target-filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 0.75rem);
+  align-items: flex-end;
+  flex: 1;
+}
+
+.target-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+}
+
+.target-filter-item-rep {
+  min-width: 180px;
+}
+
+.target-filter-item-period {
+  min-width: 140px;
+}
+
+.target-filter-item-category {
+  min-width: 140px;
+}
+
+.target-filter-label {
+  display: block;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.target-filter-select {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.target-filter-checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding-bottom: 0.45rem;
+}
+
+.target-filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.4rem);
+  cursor: pointer;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-default, inherit);
+  user-select: none;
+}
+
+.target-filter-actions {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
+  margin-top: var(--space-2, 0.5rem);
+}
+
+.target-btn-content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 0.4rem);
+}
+
+/* Target Form & Modal */
+.target-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+}
+
+.target-form-error {
+  padding: 0.75rem 1rem;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md, 6px);
+  color: #b91c1c;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.target-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.target-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4, 1rem);
+}
+
+@media (max-width: 640px) {
+  .target-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.target-form-label {
+  display: block;
+  font-size: var(--text-sm, 0.85rem);
+  font-weight: 600;
+  margin-bottom: var(--space-1, 0.3rem);
+  color: var(--text-default, inherit);
+}
+
+.target-form-input {
+  width: 100%;
+}
+
+.target-form-input-disabled {
+  width: 100%;
+  opacity: 0.7;
+}
+
+.target-form-textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.target-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3, 0.75rem);
+  margin-top: var(--space-4, 1rem);
+}
+
+/* Target Table Styles */
+.target-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted, #64748b);
+}
+
+.target-empty-title {
+  font-size: var(--text-base, 1.1rem);
+  font-weight: 500;
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.target-empty-desc {
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.target-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.target-cell-center {
+  text-align: center;
+}
+
+.target-cell-right {
+  text-align: right;
+}
+
+.target-th-progress {
+  min-width: 180px;
+}
+
+.target-rep-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.6rem);
+}
+
+.target-rep-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-accent-subtle, #e0e7ff);
+  color: var(--color-accent-text, #3730a3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--text-xs, 0.8rem);
+  flex-shrink: 0;
+}
+
+.target-rep-name {
+  font-weight: 600;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.target-rep-username {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+}
+
+.target-date-window {
+  font-size: var(--text-xs, 0.8rem);
+}
+
+.target-date-meta {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+}
+
+.target-meta-ending-today {
+  color: var(--color-warning-text, #d97706);
+  font-weight: 600;
+}
+
+.target-meta-expired {
+  color: var(--text-muted, #94a3b8);
+}
+
+.target-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 0.3rem);
+  font-size: var(--text-sm, 0.85rem);
+}
+
+.target-progress-block {
+  font-size: var(--text-sm, 0.85rem);
+}
+
+.target-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-1, 0.2rem);
+}
+
+.target-progress-val {
+  font-weight: 600;
+}
+
+.target-progress-rate {
+  font-weight: 700;
+  font-size: var(--text-xs, 0.8rem);
+  color: var(--color-primary, #2563eb);
+}
+
+.target-progress-rate.is-achieved {
+  color: var(--color-success, #16a34a);
+}
+
+.target-progress-track {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--space-1, 0.2rem);
+}
+
+.target-progress-fill {
+  height: 100%;
+  background-color: var(--color-primary, #2563eb);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.target-progress-fill.is-achieved {
+  background-color: var(--color-success, #16a34a);
+}
+
+.target-progress-meta {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+}
+
+.target-volume-block {
+  font-size: var(--text-sm, 0.85rem);
+}
+
+.target-volume-val {
+  font-weight: 600;
+}
+
+.target-volume-meta {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+}
+
+.target-orders-count {
+  font-weight: 600;
+  font-size: var(--text-sm, 0.85rem);
+}
+
+.target-row-actions {
+  display: inline-flex;
+  gap: var(--space-1, 0.4rem);
+}
+
+.target-delete-btn {
+  color: var(--color-danger, #ef4444);
+}
+
+/* Target Stat Card Styles */
+.target-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: var(--space-1, 0.25rem) 0;
+}
+
+.target-stat-value-md {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: var(--space-1, 0.25rem) 0;
+}
+
+.target-stat-value-sm {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: var(--space-1, 0.25rem) 0;
+}
+
+.target-stat-unit-suffix {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted, #64748b);
+}
+
+.target-stat-badges {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  margin-top: var(--space-2, 0.5rem);
+}
+
+.target-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.target-stat-rate {
+  font-size: var(--text-sm, 0.9rem);
+  font-weight: 700;
+  color: var(--color-primary, #2563eb);
+}
+
+.target-stat-rate.is-achieved {
+  color: var(--color-success, #16a34a);
+}
+
+.target-stat-meta {
+  font-size: var(--text-xs, 0.8rem);
+  color: var(--text-muted, #64748b);
+  margin: 0 0 var(--space-2, 0.5rem) 0;
+}
+
+.target-stat-meta-sm {
+  font-size: var(--text-xs, 0.8rem);
+  color: var(--text-muted, #64748b);
+  margin: 0;
+}
+
+.target-stat-track {
+  height: 8px;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.target-stat-fill {
+  height: 100%;
+  background-color: var(--color-primary, #2563eb);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.target-stat-fill.is-achieved {
+  background-color: var(--color-success, #16a34a);
+}
+
+.target-stat-progress-bar {
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+}
+
+.target-stat-progress-bar::-webkit-progress-bar {
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+
+.target-stat-progress-bar::-webkit-progress-value {
+  background-color: var(--color-primary, #2563eb);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.target-stat-progress-bar::-moz-progress-bar {
+  background-color: var(--color-primary, #2563eb);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.target-stat-progress-bar.is-achieved::-webkit-progress-value {
+  background-color: var(--color-success, #16a34a);
+}
+
+.target-stat-progress-bar.is-achieved::-moz-progress-bar {
+  background-color: var(--color-success, #16a34a);
+}
+
+.target-table-progress-bar {
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  margin-bottom: var(--space-1, 0.2rem);
+  display: block;
+}
+
+.target-table-progress-bar::-webkit-progress-bar {
+  background-color: rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+}
+
+.target-table-progress-bar::-webkit-progress-value {
+  background-color: var(--color-primary, #2563eb);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.target-table-progress-bar::-moz-progress-bar {
+  background-color: var(--color-primary, #2563eb);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.target-table-progress-bar.is-achieved::-webkit-progress-value {
+  background-color: var(--color-success, #16a34a);
+}
+
+.target-table-progress-bar.is-achieved::-moz-progress-bar {
+  background-color: var(--color-success, #16a34a);
+}
+
+
+.target-performer-sub {
+  font-size: var(--text-sm, 0.85rem);
+  margin: var(--space-1, 0.25rem) 0;
+  color: var(--color-success, #16a34a);
+  font-weight: 600;
+}
+
+.target-performer-empty {
+  font-size: var(--text-sm, 0.85rem);
+  color: var(--text-muted, #64748b);
+  margin: var(--space-2, 0.5rem) 0;
+}
+
+.target-section-mb {
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.target-error-card {
+  padding: 1.5rem;
+  color: #b91c1c;
+  background-color: rgba(239, 68, 68, 0.08);
+  border-radius: var(--radius-md, 6px);
+}
+
+.target-error-card-title {
+  font-weight: 600;
+}
+
+.target-error-card-desc {
+  font-size: var(--text-sm, 0.875rem);
+  margin: var(--space-1, 0.25rem) 0 0 0;
+}
+
+
+
+
+
+
+
 
 
 
