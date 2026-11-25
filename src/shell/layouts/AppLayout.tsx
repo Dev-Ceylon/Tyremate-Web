@@ -194,6 +194,7 @@ export default function AppLayout() {
               items={[
                 { label: "Sales Reports", to: "/reports/sales" },
                 { label: "Purchase Order Reports", to: "/reports/purchase-orders" },
+                { label: "Battery Reports", to: "/reports/batteries" },
                 { label: "Daily Cash Flow Reports", to: "/reports/cash-flow" },
               ]}
             />

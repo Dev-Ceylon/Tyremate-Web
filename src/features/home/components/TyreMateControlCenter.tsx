@@ -78,6 +78,9 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
             <Link className="secondary-action" to="/reports/purchase-orders">
               PO Reports
             </Link>
+            <Link className="secondary-action" to="/reports/batteries">
+              Battery Reports
+            </Link>
           </PermissionGate>
           <PermissionGate permission="po.view">
             <Link className="secondary-action" to="/purchase-orders/overview">
