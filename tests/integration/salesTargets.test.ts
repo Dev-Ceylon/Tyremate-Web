@@ -107,6 +107,13 @@ describe("Sales Targets & Performance Calculation Engine", () => {
       expect(t.SalesRepID).toBe(salesRepUser.id)
     })
 
+    // Rep attempts parameter tampering by injecting another rep's ID in filter
+    const spoofedTargets = await backend.invoke("salesTarget:getAll", { repId: userAdmin.id })
+    expect(spoofedTargets.length).toBe(3)
+    spoofedTargets.forEach((t: any) => {
+      expect(t.SalesRepID).toBe(salesRepUser.id) // Enforced to self
+    })
+
     // 4. PRIVACY / RBAC ENFORCEMENT:
     // Sales rep attempts to fetch rep 2's target by ID -> rejected with ForbiddenError
     await expect(
@@ -246,5 +253,220 @@ describe("Sales Targets & Performance Calculation Engine", () => {
     await expect(
       backend.invoke("salesTarget:getById", batteryTarget.TargetID)
     ).rejects.toThrow(/not found/i)
+  })
+
+  it("enforces that unapproved draft SOs do not count towards targets, and decrements upon SO deletion", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login("admin", "1234")
+
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+
+    const reps = await backend.invoke("salesTarget:getSalesReps")
+    const rep = reps[0]
+
+    const target = await backend.invoke("salesTarget:create", {
+      SalesRepID: rep.id,
+      PeriodType: "daily",
+      TargetAmount: 100000,
+      TargetQty: 4,
+      Category: "all",
+    })
+    expect(target.ActualAmount).toBe(0)
+
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-REV-01",
+      Name: "Reversion Test Customer",
+    })
+
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Yokohama",
+      Size: "215/60R16",
+    })
+
+    // 1. Create a DRAFT unapproved SO (IsAdminApproved = 0)
+    const draftSo = await backend.invoke("so:create", {
+      Date: today,
+      Category: "tyre",
+      CustomerID: customer.CustomerID,
+      SalesRepID: rep.id,
+      IsAdminApproved: 0,
+      IsCompleted: 0,
+    })
+    await backend.invoke("soTyres:create", {
+      SoID: draftSo.SoID,
+      TyreID: tyre.Id,
+      Price: 40000,
+      Discount: 0,
+      Qty: 2,
+      IsAdminApproved: 0,
+    })
+
+    // Unapproved SO must NOT count towards target
+    const targetWithDraft = await backend.invoke("salesTarget:getById", target.TargetID)
+    expect(targetWithDraft.ActualAmount).toBe(0)
+    expect(targetWithDraft.ActualQty).toBe(0)
+
+    // 2. Admin approves the SO -> Target actuals now increase
+    await backend.invoke("so:update", draftSo.SoID, {
+      Date: today,
+      Category: "tyre",
+      IsAdminApproved: 1,
+      IsCompleted: 0,
+    })
+
+    const targetWithApproved = await backend.invoke("salesTarget:getById", target.TargetID)
+    expect(targetWithApproved.ActualAmount).toBe(80000)
+    expect(targetWithApproved.ActualQty).toBe(2)
+    expect(targetWithApproved.RemainingAmount).toBe(20000)
+
+    // 3. Admin deletes the SO -> Target actuals must immediately revert to 0!
+    await backend.invoke("so:delete", draftSo.SoID)
+
+    const targetAfterDelete = await backend.invoke("salesTarget:getById", target.TargetID)
+    expect(targetAfterDelete.ActualAmount).toBe(0)
+    expect(targetAfterDelete.ActualQty).toBe(0)
+    expect(targetAfterDelete.RemainingAmount).toBe(100000)
+    expect(targetAfterDelete.IsAchieved).toBe(0)
+  })
+
+  it("handles category isolation: tyre sales do not count towards battery target and vice versa", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login("admin", "1234")
+
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+
+    const reps = await backend.invoke("salesTarget:getSalesReps")
+    const rep = reps[0]
+
+    // Create a Tyre-only target and a Battery-only target for the same rep
+    const tyreTarget = await backend.invoke("salesTarget:create", {
+      SalesRepID: rep.id,
+      PeriodType: "daily",
+      TargetAmount: 80000,
+      TargetQty: 2,
+      Category: "tyre",
+    })
+
+    const batteryTarget = await backend.invoke("salesTarget:create", {
+      SalesRepID: rep.id,
+      PeriodType: "daily",
+      TargetAmount: 40000,
+      TargetQty: 1,
+      Category: "battery",
+    })
+
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-CAT-01",
+      Name: "Category Separation Logistics",
+    })
+
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Goodyear",
+      Size: "205/65R15",
+    })
+
+    const battery = await backend.invoke("batteries:create", {
+      Brand: "Exide",
+      Model: "Matrix 45Ah",
+      Voltage: "12V",
+      Capacity: "45Ah",
+      Technology: "Lead-Acid",
+      Application: "Automotive",
+      ActualSellingPrice: 42000,
+    })
+
+    // Create an approved Tyre SO
+    const tyreSo = await backend.invoke("so:create", {
+      Date: today,
+      Category: "tyre",
+      CustomerID: customer.CustomerID,
+      SalesRepID: rep.id,
+      IsAdminApproved: 1,
+      IsCompleted: 0,
+    })
+    await backend.invoke("soTyres:create", {
+      SoID: tyreSo.SoID,
+      TyreID: tyre.Id,
+      Price: 40000,
+      Discount: 0,
+      Qty: 2,
+      IsAdminApproved: 1,
+    })
+
+    // Check Tyre target: achieved (80,000 Rs, 2 tyres)
+    const checkedTyreTarget = await backend.invoke("salesTarget:getById", tyreTarget.TargetID)
+    expect(checkedTyreTarget.ActualAmount).toBe(80000)
+    expect(checkedTyreTarget.ActualQty).toBe(2)
+    expect(checkedTyreTarget.IsAchieved).toBe(1)
+
+    // Check Battery target: MUST STILL BE 0! (Tyre sales must not leak into battery target)
+    const checkedBatteryTarget = await backend.invoke("salesTarget:getById", batteryTarget.TargetID)
+    expect(checkedBatteryTarget.ActualAmount).toBe(0)
+    expect(checkedBatteryTarget.ActualQty).toBe(0)
+    expect(checkedBatteryTarget.IsAchieved).toBe(0)
+  })
+
+  it("enforces role boundaries: Manager can manage targets while Cashier is completely blocked", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login("admin", "1234")
+
+    // Create a Manager user (Role 2)
+    await backend.invoke("admin:createUser", {
+      username: "manager_user",
+      password: "password123",
+      displayName: "Branch Manager",
+      roleIds: [2],
+    })
+
+    // Create a Cashier user (Role 3)
+    await backend.invoke("admin:createUser", {
+      username: "cashier_user",
+      password: "password123",
+      displayName: "Front Desk Cashier",
+      roleIds: [3],
+    })
+
+    const reps = await backend.invoke("salesTarget:getSalesReps")
+    const rep = reps[0]
+
+    // 1. Manager Login: can manage targets
+    await backend.login("manager_user", "password123")
+    const managerCreatedTarget = await backend.invoke("salesTarget:create", {
+      SalesRepID: rep.id,
+      PeriodType: "daily",
+      TargetAmount: 30000,
+      Category: "all",
+      Notes: "Target assigned by Branch Manager",
+    })
+    expect(managerCreatedTarget.TargetID).toBeDefined()
+    expect(managerCreatedTarget.TargetAmount).toBe(30000)
+
+    // 2. Cashier Login: completely blocked with ForbiddenError from all target endpoints
+    await backend.login("cashier_user", "password123")
+
+    await expect(
+      backend.invoke("salesTarget:getAll")
+    ).rejects.toThrow(/do not have permission.*targets/i)
+
+    await expect(
+      backend.invoke("salesTarget:getMyActiveTargets")
+    ).rejects.toThrow(/do not have permission.*targets/i)
+
+    await expect(
+      backend.invoke("salesTarget:create", {
+        SalesRepID: rep.id,
+        PeriodType: "daily",
+        TargetAmount: 20000,
+      })
+    ).rejects.toThrow(/do not have permission.*targets/i)
+
+    await expect(
+      backend.invoke("salesTarget:delete", managerCreatedTarget.TargetID)
+    ).rejects.toThrow(/do not have permission.*targets/i)
   })
 })
