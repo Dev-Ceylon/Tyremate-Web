@@ -5,8 +5,12 @@ CREATE TABLE IF NOT EXISTS SO (
   CreatedDateTime DATETIME DEFAULT (datetime('now', 'localtime')),
   IsAdminApproved INTEGER NOT NULL DEFAULT 0 CHECK (IsAdminApproved IN (0, 1)),
   IsCompleted INTEGER NOT NULL DEFAULT 0 CHECK (IsCompleted IN (0, 1)),
-  IsPaymentCompleted INTEGER NOT NULL DEFAULT 0 CHECK (IsPaymentCompleted IN (0, 1))
+  IsPaymentCompleted INTEGER NOT NULL DEFAULT 0 CHECK (IsPaymentCompleted IN (0, 1)),
+  SalesRepID INTEGER,
+  FOREIGN KEY (SalesRepID) REFERENCES users(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_so_sales_rep ON SO (SalesRepID);
 
 CREATE TABLE IF NOT EXISTS SoCustomer (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,

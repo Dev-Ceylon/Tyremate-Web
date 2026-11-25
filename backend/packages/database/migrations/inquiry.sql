@@ -7,9 +7,13 @@ CREATE TABLE IF NOT EXISTS Inquiry (
   Notes TEXT,
   ConvertedSOID INTEGER,
   IsCompleted INTEGER NOT NULL DEFAULT 0 CHECK (IsCompleted IN (0, 1)),
+  SalesRepID INTEGER,
   FOREIGN KEY (CustomerID) REFERENCES CustomerM(CustomerID),
-  FOREIGN KEY (ConvertedSOID) REFERENCES SO(SoID)
+  FOREIGN KEY (ConvertedSOID) REFERENCES SO(SoID),
+  FOREIGN KEY (SalesRepID) REFERENCES users(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_inquiry_sales_rep ON Inquiry (SalesRepID);
 
 CREATE TABLE IF NOT EXISTS InquiryWalkinCustomer (
   ID INTEGER PRIMARY KEY AUTOINCREMENT,

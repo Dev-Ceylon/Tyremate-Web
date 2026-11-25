@@ -69,3 +69,33 @@ CREATE INDEX IF NOT EXISTS idx_dag_walkin_link_wc ON DAGWalkinLink(WalkinCustome
 
 -- Backfill DAG invoice source if missing on older DBs
 INSERT OR IGNORE INTO InvoiceSourceM (SourceCode, SourceName) VALUES ('dag', 'DAG Retreading');
+
+-- Backfill SalesRepID on SO
+ALTER TABLE SO ADD COLUMN SalesRepID INTEGER;
+CREATE INDEX IF NOT EXISTS idx_so_sales_rep ON SO (SalesRepID);
+
+-- Backfill SalesRepID on Inquiry
+ALTER TABLE Inquiry ADD COLUMN SalesRepID INTEGER;
+CREATE INDEX IF NOT EXISTS idx_inquiry_sales_rep ON Inquiry (SalesRepID);
+
+-- Backfill SalesTargets table & indexes for existing DBs
+CREATE TABLE IF NOT EXISTS SalesTargets (
+  TargetID INTEGER PRIMARY KEY AUTOINCREMENT,
+  SalesRepID INTEGER NOT NULL,
+  PeriodType TEXT NOT NULL CHECK (PeriodType IN ('daily', 'weekly', 'monthly', 'annually')),
+  StartDate TEXT NOT NULL,
+  EndDate TEXT NOT NULL,
+  TargetAmount REAL NOT NULL DEFAULT 0,
+  TargetQty INTEGER NOT NULL DEFAULT 0,
+  Category TEXT NOT NULL DEFAULT 'all' CHECK (Category IN ('all', 'tyre', 'battery')),
+  Notes TEXT,
+  CreatedBy INTEGER,
+  CreatedAt DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+  UpdatedAt DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+  FOREIGN KEY (SalesRepID) REFERENCES users(id),
+  FOREIGN KEY (CreatedBy) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sales_targets_rep ON SalesTargets (SalesRepID, PeriodType, StartDate);
+CREATE INDEX IF NOT EXISTS idx_sales_targets_period ON SalesTargets (PeriodType, StartDate, EndDate);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_sales_targets_rep_period ON SalesTargets (SalesRepID, PeriodType, StartDate, Category);
