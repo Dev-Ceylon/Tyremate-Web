@@ -20,5 +20,6 @@ export interface SoLinkedInquiryRecord {
   CustomerName?: string | null
   IsWalkinCustomer?: number
   IsAdminApproved?: number
+  IsCompleted?: number
   ConvertedSOID?: number | null
 }

@@ -9,7 +9,7 @@ import { LoadingState } from "../../../shared/ui/progress"
 import type { InquiryCategory } from "../models/inquiry"
 
 export type InquiryConversionFilter = "all" | "converted" | "unconverted"
-export type InquiryStatusFilter = "all" | "approved" | "draft"
+export type InquiryStatusFilter = "all" | "approved" | "draft" | "completed"
 
 export default function InquiryListPage() {
   const navigate = useNavigate()
@@ -50,11 +50,13 @@ export default function InquiryListPage() {
         if (inquiry.ConvertedSOID) return false
       }
 
-      // 3. Approval Status Filter
-      if (statusFilter === "approved") {
-        if (Number(inquiry.IsAdminApproved) !== 1) return false
+      // 3. Status Filter
+      if (statusFilter === "completed") {
+        if (Number(inquiry.IsCompleted) !== 1) return false
+      } else if (statusFilter === "approved") {
+        if (Number(inquiry.IsAdminApproved) !== 1 || Number(inquiry.IsCompleted) === 1) return false
       } else if (statusFilter === "draft") {
-        if (Number(inquiry.IsAdminApproved) === 1) return false
+        if (Number(inquiry.IsAdminApproved) === 1 || Number(inquiry.IsCompleted) === 1) return false
       }
 
       // 4. Date Filter
@@ -98,6 +100,7 @@ export default function InquiryListPage() {
           isWalkin,
           customerIdStr,
           inquiry.Notes,
+          inquiry.IsCompleted ? "completed closed" : "",
           inquiry.IsAdminApproved ? "approved" : "draft pending",
           inquiry.ConvertedSOID ? "converted has so" : "open unconverted not converted",
           tyreSpecs,
@@ -191,6 +194,7 @@ export default function InquiryListPage() {
               onChange={(e) => setStatusFilter(e.target.value as InquiryStatusFilter)}
             >
               <option value="all">All Statuses</option>
+              <option value="completed">Completed</option>
               <option value="approved">Approved</option>
               <option value="draft">Draft / Pending</option>
             </select>

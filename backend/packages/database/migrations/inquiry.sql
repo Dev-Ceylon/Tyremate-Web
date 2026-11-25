@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS Inquiry (
   IsAdminApproved INTEGER NOT NULL DEFAULT 0 CHECK (IsAdminApproved IN (0, 1)),
   Notes TEXT,
   ConvertedSOID INTEGER,
+  IsCompleted INTEGER NOT NULL DEFAULT 0 CHECK (IsCompleted IN (0, 1)),
   FOREIGN KEY (CustomerID) REFERENCES CustomerM(CustomerID),
   FOREIGN KEY (ConvertedSOID) REFERENCES SO(SoID)
 );

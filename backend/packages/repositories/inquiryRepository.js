@@ -15,7 +15,7 @@ const AVAILABLE_STOCK_SQL = `
 
 exports.getAllInquiries = () => {
   return db.prepare(`
-    SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, c.Name AS CustomerName, c.CustomerCode
+    SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, COALESCE(i.IsCompleted, 0) AS IsCompleted, c.Name AS CustomerName, c.CustomerCode
     FROM Inquiry i
     LEFT JOIN CustomerM c ON c.CustomerID = i.CustomerID
   `).all()
@@ -23,7 +23,7 @@ exports.getAllInquiries = () => {
 
 exports.getInquiryById = (id) => {
   return db.prepare(`
-    SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, c.Name AS CustomerName, c.CustomerCode
+    SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, COALESCE(i.IsCompleted, 0) AS IsCompleted, c.Name AS CustomerName, c.CustomerCode
     FROM Inquiry i
     LEFT JOIN CustomerM c ON c.CustomerID = i.CustomerID
     WHERE i.InquiryID = ?
@@ -33,7 +33,7 @@ exports.getInquiryById = (id) => {
 exports.getInquiryByReminderId = (reminderId) => {
   return db
     .prepare(`
-      SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, c.Name AS CustomerName, c.CustomerCode, i.Notes AS InquiryNotes
+      SELECT i.*, COALESCE(i.Category, 'tyre') AS Category, COALESCE(i.IsCompleted, 0) AS IsCompleted, c.Name AS CustomerName, c.CustomerCode, i.Notes AS InquiryNotes
       FROM Inquiry i
       INNER JOIN InquiryReminder ir ON ir.InquiryID = i.InquiryID
       LEFT JOIN CustomerM c ON c.CustomerID = i.CustomerID
@@ -66,12 +66,13 @@ exports.getInquiryBatteriesByInquiryId = (inquiryId) => {
 
 exports.createInquiry = (data) => {
   const category = (data.Category || "tyre").toLowerCase()
+  const isCompleted = data.IsCompleted ? 1 : 0
   const result = db
     .prepare(
-      `INSERT INTO Inquiry (Date, Category, CustomerID, Notes, IsAdminApproved, ConvertedSOID)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO Inquiry (Date, Category, CustomerID, Notes, IsAdminApproved, ConvertedSOID, IsCompleted)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(data.Date, category, data.CustomerID, data.Notes, data.IsAdminApproved, data.ConvertedSOID)
+    .run(data.Date, category, data.CustomerID, data.Notes, data.IsAdminApproved, data.ConvertedSOID, isCompleted)
   return result.lastInsertRowid
 }
 
@@ -97,10 +98,11 @@ exports.createInquiryBattery = (data) => {
 
 exports.updateInquiry = (id, data) => {
   const category = (data.Category || "tyre").toLowerCase()
+  const isCompleted = data.IsCompleted ? 1 : 0
   const result = db
     .prepare(
       `UPDATE Inquiry
-       SET Date = ?, Category = ?, CustomerID = ?, Notes = ?, IsAdminApproved = ?, ConvertedSOID = ?
+       SET Date = ?, Category = ?, CustomerID = ?, Notes = ?, IsAdminApproved = ?, ConvertedSOID = ?, IsCompleted = ?
        WHERE InquiryID = ?`
     )
     .run(
@@ -110,6 +112,7 @@ exports.updateInquiry = (id, data) => {
       data.Notes,
       data.IsAdminApproved,
       data.ConvertedSOID,
+      isCompleted,
       id
     )
   return result.changes > 0
@@ -136,7 +139,13 @@ exports.deleteInquiryBatteriesByInquiryId = (inquiryId) => {
 exports.updateApprovalStatus = (id, isApproved) => {
   return db
     .prepare("UPDATE Inquiry SET IsAdminApproved = ? WHERE InquiryID = ?")
-    .run(isApproved, id)
+    .run(isApproved ? 1 : 0, id)
+}
+
+exports.updateCompletionStatus = (id, isCompleted) => {
+  return db
+    .prepare("UPDATE Inquiry SET IsCompleted = ? WHERE InquiryID = ?")
+    .run(isCompleted ? 1 : 0, id)
 }
 
 exports.approveAllTyresForInquiry = (inquiryId) => {

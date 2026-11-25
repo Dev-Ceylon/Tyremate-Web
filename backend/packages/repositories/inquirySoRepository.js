@@ -65,6 +65,7 @@ exports.getLinkedInquiriesBySoId = (soId) => {
         i.Date,
         i.CustomerID,
         i.IsAdminApproved,
+        COALESCE(i.IsCompleted, 0) AS IsCompleted,
         i.ConvertedSOID,
         COALESCE(c.Name, wc.CustomerName) AS CustomerName,
         CASE WHEN wcl.InquiryID IS NOT NULL THEN 1 ELSE 0 END AS IsWalkinCustomer

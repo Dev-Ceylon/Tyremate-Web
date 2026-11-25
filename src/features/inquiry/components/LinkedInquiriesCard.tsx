@@ -50,11 +50,13 @@ export function LinkedInquiriesCard({ inquiries }: Props) {
                   </td>
                   <td>{inquiry.Date || "-"}</td>
                   <td>
-                    <span
-                      className={`status-badge ${inquiry.IsAdminApproved ? "status-completed" : "status-pending"}`}
-                    >
-                      {inquiry.IsAdminApproved ? "Approved" : "Draft"}
-                    </span>
+                    {inquiry.IsCompleted ? (
+                      <span className="status-badge status-completed">Completed</span>
+                    ) : inquiry.IsAdminApproved ? (
+                      <span className="status-badge status-approved">Approved</span>
+                    ) : (
+                      <span className="status-badge status-pending">Draft</span>
+                    )}
                   </td>
                   <td>
                     {inquiry.ConvertedSOID ? (
