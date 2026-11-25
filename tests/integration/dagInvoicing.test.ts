@@ -520,4 +520,173 @@ describe("DAG Invoicing Engine & Payment Parity", () => {
     expect(renderedSummaryHtml).toContain(`PR-${takePayment.PaymentID}`)
     expect(renderedSummaryHtml).toContain(`PIR-DAG-777`)
   })
+
+  it("resolves invoice via invoice:getBySource, auto-invoicing on advance creation, and auto-invoicing on take", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    // 1. Setup Branch & Storage Location
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-SRC-1",
+      BranchName: "Auto Invoicing Branch",
+    })
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const defaultType = locationTypes[0]
+
+    const location = await backend.invoke("storageLocations:create", {
+      LocationCode: "LOC-SRC-01",
+      LocationName: "Source Test Location",
+      BranchId: branch.Id,
+      LocationTypeId: defaultType.Id,
+      Capacity: 100,
+    })
+
+    const contractor = await backend.invoke("contractors:create", {
+      ContractorCode: "CONT-SRC",
+      Name: "Quick Tread Workshop",
+      Phone: "+94770009988",
+      Address: "Kandy Road, Kelaniya",
+    })
+
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Dunlop",
+      Size: "11R22.5",
+      Pattern: "SP344",
+      DAGCost: 14000,
+      PurchasedPrice: 38000,
+      ActualSellingPrice: 48000,
+    })
+
+    // Test invoice:getBySource returns null for non-existent source
+    const nonExistent = await backend.invoke("invoice:getBySource", "dag", 999999)
+    expect(nonExistent).toBeNull()
+
+    // A. Test Auto-Invoicing on DAG creation with Advance Payment
+    const createdWithAdvance = await backend.invoke("dag:createWithTyres", {
+      Date: "2026-11-25",
+      ContractorID: contractor.ID,
+      Comment: "Advance auto-invoice test",
+      WalkinCustomer: {
+        CustomerName: "Kamal Auto Spares",
+        CustomerPhone: "+94771122334",
+        CustomerAddress: "Negombo Rd, Peliyagoda",
+      },
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 2,
+          Serials: [
+            { SerialNumber: "ADV-SER-001", DAGCost: 14000 },
+            { SerialNumber: "ADV-SER-002", DAGCost: 14000 },
+          ],
+        },
+      ],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 8000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+
+    const dag1 = createdWithAdvance.dag || createdWithAdvance
+    expect(dag1.ID).toBeDefined()
+
+    // Query invoice by source via invoice:getBySource
+    const autoInvoice1 = await backend.invoke("invoice:getBySource", "dag", dag1.ID)
+    expect(autoInvoice1).toBeDefined()
+    expect(autoInvoice1.InvoiceID).toBeDefined()
+    expect(autoInvoice1.InvoiceNumber).toMatch(/^INV-\d{4}-\d{5}$/)
+    expect(autoInvoice1.SourceType).toBe("dag")
+    expect(autoInvoice1.SourceID).toBe(dag1.ID)
+    expect(autoInvoice1.CustomerName).toBe("Kamal Auto Spares")
+    expect(autoInvoice1.Total).toBe(28000)
+    expect(autoInvoice1.AmountPaid).toBe(8000)
+    expect(autoInvoice1.BalanceDue).toBe(20000)
+    expect(autoInvoice1.Status).toBe("par") // Partially paid
+    expect(autoInvoice1.Lines).toHaveLength(2)
+    expect(autoInvoice1.PaymentLinks).toHaveLength(1)
+    expect(autoInvoice1.PaymentLinks[0].AmountApplied).toBe(8000)
+
+    // B. Test Auto-Invoicing on Tyre Take when DAG was created WITHOUT advance payment
+    const createdNoAdvance = await backend.invoke("dag:createWithTyres", {
+      Date: "2026-11-25",
+      ContractorID: contractor.ID,
+      Comment: "No advance DAG - invoice on take",
+      WalkinCustomer: {
+        CustomerName: "Sunil Transport Service",
+        CustomerPhone: "+94778899001",
+        CustomerAddress: "High Level Rd, Nugegoda",
+      },
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 2,
+          Serials: [
+            { SerialNumber: "TAKE-SER-001", DAGCost: 14000 },
+            { SerialNumber: "TAKE-SER-002", DAGCost: 14000 },
+          ],
+        },
+      ],
+    })
+
+    const dag2 = createdNoAdvance.dag || createdNoAdvance
+    expect(dag2.ID).toBeDefined()
+
+    // Verify initially NO invoice exists
+    const beforeTakeInvoice = await backend.invoke("invoice:getBySource", "dag", dag2.ID)
+    expect(beforeTakeInvoice).toBeNull()
+
+    // Collect first serial with 14,000 cash payment
+    const detailedDag2 = await backend.invoke("dag:getDetailedById", dag2.ID)
+    const serial1 = detailedDag2.Tyres[0].Serials.find((s: any) => s.SerialNumber === "TAKE-SER-001")
+    const serial2 = detailedDag2.Tyres[0].Serials.find((s: any) => s.SerialNumber === "TAKE-SER-002")
+
+    const takeResult1 = await backend.invoke("dag:sellTyres", dag2.ID, {
+      SerialIds: [serial1.ID],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 14000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+    expect(takeResult1.completed).toBe(false)
+    expect(takeResult1.soldCount).toBe(1)
+
+    // Verify invoice was automatically created on first take!
+    const takeInvoice1 = await backend.invoke("invoice:getBySource", "dag", dag2.ID)
+    expect(takeInvoice1).toBeDefined()
+    expect(takeInvoice1.InvoiceNumber).toMatch(/^INV-\d{4}-\d{5}$/)
+    expect(takeInvoice1.Total).toBe(28000)
+    expect(takeInvoice1.AmountPaid).toBe(14000)
+    expect(takeInvoice1.BalanceDue).toBe(14000)
+    expect(takeInvoice1.Status).toBe("par")
+    expect(takeInvoice1.PaymentLinks).toHaveLength(1)
+
+    // Collect second serial to complete the DAG
+    const takeResult2 = await backend.invoke("dag:sellTyres", dag2.ID, {
+      SerialIds: [serial2.ID],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 14000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+    expect(takeResult2.completed).toBe(true)
+    expect(takeResult2.soldCount).toBe(1)
+
+    // Verify invoice is now fully settled and marked "paid"
+    const finalInvoice = await backend.invoke("invoice:getBySource", "dag", dag2.ID)
+    expect(finalInvoice.InvoiceID).toBe(takeInvoice1.InvoiceID) // Same invoice, idempotent
+    expect(finalInvoice.Total).toBe(28000)
+    expect(finalInvoice.AmountPaid).toBe(28000)
+    expect(finalInvoice.BalanceDue).toBe(0)
+    expect(finalInvoice.Status).toBe("paid")
+    expect(finalInvoice.PaymentLinks).toHaveLength(2)
+  })
 })

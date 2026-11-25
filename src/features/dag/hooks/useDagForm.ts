@@ -4,6 +4,7 @@ import type { TyreRecord } from "../../master-data/tyres/models/tyre"
 import type { StorageLocationRecord } from "../../master-data/storage-locations/models/storageLocation"
 import type { CreateDagWithTyresPayload } from "../models/dag"
 import { dagService } from "../services/dagService"
+import { invoiceService } from "../../invoice/services/invoiceService"
 import { customerService } from "../../master-data/customers/services/customerService"
 import { tyreService } from "../../master-data/tyres/services/tyreService"
 import { storageLocationService } from "../../master-data/storage-locations/services/storageLocationService"
@@ -427,7 +428,15 @@ export function useDagForm(options?: UseDagFormOptions) {
           })),
         }
 
-        await dagService.createDAGWithTyres(payload)
+        const result = await dagService.createDAGWithTyres(payload)
+        const createdDagId = result?.dag?.ID ?? (result as any)?.ID
+        if (createdDagId && (payload as any).Payment) {
+          try {
+            await invoiceService.generateFromDAG(createdDagId)
+          } catch (invErr) {
+            console.warn("Auto-invoicing on DAG create note:", invErr)
+          }
+        }
         onSuccess?.()
         setFormData(createInitialState())
         setLines([createEmptyLine()])

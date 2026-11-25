@@ -3,6 +3,7 @@ import { useToast } from "../../../shared/ui/toast/ToastProvider"
 import { useConfirm } from "../../../shared/ui/confirm/ConfirmProvider"
 import { STATUS_CODES } from "../../../shared/constants/statusConstants"
 import { dagService } from "../services/dagService"
+import { invoiceService } from "../../invoice/services/invoiceService"
 import { useDagPaymentForm } from "./useDagPaymentForm"
 import { getDagTotals, type DagTotals } from "../utils/dagDetails"
 import type {
@@ -172,6 +173,12 @@ export function useDagDetailsActions({
           SerialIds: selectedSerialIds,
           Payment: payment,
         })
+
+        try {
+          await invoiceService.generateFromDAG(dagId)
+        } catch (invErr) {
+          console.warn("Auto-invoicing on take note:", invErr)
+        }
 
         showToast({
           variant: "success",

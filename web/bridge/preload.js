@@ -438,6 +438,7 @@ const api = {
     getInvoices: () => ipcRenderer.invoke("invoice:getAll"),
     getOutstandingInvoices: () => ipcRenderer.invoke("invoice:getOutstanding"),
     getInvoiceById: (invoiceId) => ipcRenderer.invoke("invoice:getById", invoiceId),
+    getBySource: (sourceType, sourceId) => ipcRenderer.invoke("invoice:getBySource", sourceType, sourceId),
     generateFromSO: (soId) => ipcRenderer.invoke("invoice:generateFromSO", soId),
     generateFromDAG: (dagId) => ipcRenderer.invoke("invoice:generateFromDAG", dagId),
     generateFromOtherService: (osId) => ipcRenderer.invoke("invoice:generateFromOtherService", osId),

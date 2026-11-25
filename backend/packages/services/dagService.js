@@ -24,6 +24,7 @@ const chequePaymentReceiptRepo = require("../repositories/chequePaymentReceiptRe
 const cashPaymentService = require("./cashPaymentService")
 const chequePaymentService = require("./chequePaymentService")
 const bankTransferPaymentService = require("./bankTransferPaymentService")
+const invoiceService = require("./invoiceService")
 const invoiceSettlementService = require("./invoiceSettlementService")
 const invoiceLinkRepo = require("../repositories/invoicePaymentLinkRepository")
 const bankDetailsRepo = require("../repositories/bankDetailsRepository")
@@ -843,7 +844,7 @@ exports.createDAG = (payload) => {
   })()
 }
 
-exports.createDAGWithTyres = (payload) => {
+exports.createDAGWithTyres = (payload, ctx) => {
   const data = toDAGCreateWithTyresPayload(payload)
 
   const createTransaction = db.transaction(() => {
@@ -925,7 +926,17 @@ exports.createDAGWithTyres = (payload) => {
     return { dag, tyres }
   })
 
-  return createTransaction()
+  const result = createTransaction()
+
+  if (data.Payment) {
+    try {
+      invoiceService.generateInvoiceFromDAG(result.dag.ID, ctx)
+    } catch (invoiceError) {
+      console.error(`Failed to auto-generate invoice for DAG ${result.dag.ID}:`, invoiceError)
+    }
+  }
+
+  return result
 }
 
 /**
@@ -1717,6 +1728,13 @@ exports.sellDAGTyres = (id, payload = {}, ctx) => {
 
   const result = sellTransaction()
   invoiceSettlementService.syncInvoiceSettlementsForDAG(normalizedId)
+
+  try {
+    invoiceService.generateInvoiceFromDAG(normalizedId, ctx)
+  } catch (invoiceError) {
+    console.error(`Failed to auto-generate invoice for DAG ${normalizedId}:`, invoiceError)
+  }
+
   return result
 }
 

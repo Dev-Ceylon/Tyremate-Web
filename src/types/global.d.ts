@@ -160,6 +160,7 @@ import type { GoodsReceiptPayload, GoodsReceiptLineRecord, PendingGoodsReceiptFi
 import type {
   InvoiceRecord,
   InvoiceDetailedRecord,
+  InvoiceSourceType,
   DirectInvoicePayload,
   UpdateInvoicePayload,
   CancelInvoicePayload,
@@ -437,6 +438,7 @@ declare global {
         getInvoices: () => Promise<InvoiceRecord[]>
         getOutstandingInvoices: () => Promise<InvoiceRecord[]>
         getInvoiceById: (invoiceId: number) => Promise<InvoiceDetailedRecord>
+        getBySource: (sourceType: InvoiceSourceType, sourceId: number) => Promise<InvoiceDetailedRecord | null>
         generateFromSO: (soId: number) => Promise<InvoiceDetailedRecord>
         generateFromDAG: (dagId: number) => Promise<InvoiceDetailedRecord>
         generateFromOtherService: (osId: number) => Promise<InvoiceDetailedRecord>

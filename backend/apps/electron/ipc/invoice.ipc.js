@@ -13,6 +13,10 @@ registerIpcHandler("invoice:getById", { permission: "invoice.view" }, (_event, i
   invoiceService.getInvoiceById(id)
 )
 
+registerIpcHandler("invoice:getBySource", { permission: "invoice.view" }, (_event, sourceType, sourceId) =>
+  invoiceService.getInvoiceBySource(sourceType, sourceId)
+)
+
 // registerServiceHandler so the audit ctx reaches the service and CreatedBy is
 // attributed to the logged-in operator when an invoice is raised.
 registerServiceHandler("invoice:generateFromSO", { permission: "invoice.create" }, invoiceService, "generateInvoiceFromSO")

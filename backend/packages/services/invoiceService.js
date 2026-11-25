@@ -922,6 +922,15 @@ exports.getInvoiceById = (invoiceId) => {
   }
 }
 
+exports.getInvoiceBySource = (sourceType, sourceId) => {
+  if (!sourceType || !sourceId) return null
+  const normalizedId = Number(sourceId)
+  if (!Number.isInteger(normalizedId) || normalizedId <= 0) return null
+  const invoice = findInvoiceBySource(sourceType, normalizedId)
+  if (!invoice) return null
+  return exports.getInvoiceById(invoice.InvoiceID)
+}
+
 // ─────────────────────────────────────────────
 // Mutations
 // ─────────────────────────────────────────────
