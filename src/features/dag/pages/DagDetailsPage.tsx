@@ -12,6 +12,8 @@ import { DagPaymentDetailsSection } from "../components/details/DagPaymentDetail
 import { AssignContractorDialog } from "../components/AssignContractorDialog"
 import { IssueGatePassDialog } from "../components/IssueGatePassDialog"
 import { DeliveryDateDialog } from "../components/DeliveryDateDialog"
+import { PrinterModal } from "../../printer/components/PrinterModal"
+import { usePrintDagPaymentReceipt } from "../hooks/usePrintDagPaymentReceipt"
 import { STATUS_CODES } from "../../../shared/constants/statusConstants"
 import { LoadingState } from "../../../shared/ui/progress"
 import type { DagPaymentDetail } from "../models/dag"
@@ -100,6 +102,19 @@ export function DagDetailsPage() {
     payments: dagPayments,
     onReceiptsChanged: () => void refresh(),
   })
+
+  const {
+    printingPaymentId,
+    downloadingPaymentId,
+    isPrintingSummary,
+    isDownloadingSummary,
+    isPrinterModalOpen,
+    handlePrint: handlePrintPaymentReceipt,
+    handleDownload: handleDownloadPaymentReceipt,
+    handlePrintSummary: handlePrintPaymentSummary,
+    handleDownloadSummary: handleDownloadPaymentSummary,
+    closePrinterModal,
+  } = usePrintDagPaymentReceipt(dag)
 
   if (loading) {
     return (
@@ -190,6 +205,14 @@ export function DagDetailsPage() {
           onViewReceipts={receiptViewer.openReceipt}
           onCompleteCheque={handleCompleteCheque}
           completingChequeId={completingChequeId}
+          onPrintCustomerReceipt={handlePrintPaymentReceipt}
+          onDownloadCustomerReceipt={handleDownloadPaymentReceipt}
+          printingReceiptPaymentId={printingPaymentId}
+          downloadingReceiptPaymentId={downloadingPaymentId}
+          onPrintSummaryReceipt={handlePrintPaymentSummary}
+          onDownloadSummaryReceipt={handleDownloadPaymentSummary}
+          isPrintingSummaryReceipt={isPrintingSummary}
+          isDownloadingSummaryReceipt={isDownloadingSummary}
         />
       )}
 
@@ -208,6 +231,11 @@ export function DagDetailsPage() {
         receipts={receiptViewer.previewReceipts}
         title={receiptViewer.previewTitle}
         manage={receiptViewer.manage}
+      />
+
+      <PrinterModal
+        isOpen={isPrinterModalOpen}
+        onClose={closePrinterModal}
       />
 
       <AssignContractorDialog

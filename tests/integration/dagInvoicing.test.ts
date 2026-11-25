@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { bootBackend, createSqlJsDriver, resetBackendModules } from "../helpers/backend"
+import {
+  buildDAGPaymentReceiptPrintData,
+  buildDAGPaymentSummaryReceiptPrintData,
+} from "../../src/features/dag/services/dagPaymentReceiptPrintService"
+
+const printTemplateService = require("../../backend/apps/electron/services/PrintTemplateService")
 
 describe("DAG Invoicing Engine & Payment Parity", () => {
   beforeEach(() => {
@@ -362,5 +368,156 @@ describe("DAG Invoicing Engine & Payment Parity", () => {
     expect(finalInvoice.AmountPaid).toBe(36000)
     expect(finalInvoice.BalanceDue).toBe(0)
     expect(finalInvoice.Status).toBe("paid")
+  })
+
+  it("hydrates payment receipt metadata (Invoices, IsAdvance, PR numbers) and renders official receipt templates", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-DAG-4",
+      BranchName: "Receipt Test Branch",
+    })
+
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const defaultType =
+      locationTypes.find((lt: any) => lt.LocationTypeCode?.toLowerCase() === "df") ||
+      locationTypes[0]
+
+    const location = await backend.invoke("storageLocations:create", {
+      LocationCode: "LOC-DAG-04",
+      LocationName: "Receipt Rack",
+      BranchId: branch.Id,
+      LocationTypeId: defaultType.Id,
+      Capacity: 50,
+    })
+
+    const contractor = await backend.invoke("contractors:create", {
+      ContractorCode: "CONT-004",
+      Name: "Apex Retreading Hub",
+      Phone: "+94712223344",
+      Address: "50 Apex Blvd, Katuwana",
+    })
+
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Pirelli",
+      Size: "315/80R22.5",
+      Pattern: "FH01",
+      DAGCost: 22000,
+      PurchasedPrice: 55000,
+      ActualSellingPrice: 72000,
+    })
+
+    // Create DAG with upfront advance cash payment of 5,000 and 2 tyre serials (cost 11,000 each = 22,000)
+    const createResult = await backend.invoke("dag:createWithTyres", {
+      CustomerName: "Bandara Express",
+      CustomerPhone: "+94771239876",
+      CustomerAddress: "77 High Level Rd, Maharagama",
+      VehicleNumber: "WP-ND-8899",
+      ContractorID: contractor.ID,
+      Date: "2026-11-25",
+      Comment: "Advance payment and tyre collection receipt test",
+      Payment: {
+        CashPayment: {
+          AmountReceived: 5000,
+          BalanceToReturn: 0,
+        },
+      },
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 2,
+          Serials: [
+            { SerialNumber: "PIR-DAG-777", DAGCost: 11000 },
+            { SerialNumber: "PIR-DAG-888", DAGCost: 11000 },
+          ],
+        },
+      ],
+    })
+
+    const dag = createResult.dag || createResult
+    expect(dag.ID).toBeDefined()
+
+    // Generate invoice so the advance payment is linked to an official INV number
+    const invoice = await backend.invoke("invoice:generateFromDAG", dag.ID)
+    expect(invoice.InvoiceNumber).toBeDefined()
+
+    // Fetch detailed DAG and inspect advance payment
+    let detailed = await backend.invoke("dag:getDetailedById", dag.ID)
+    expect(detailed.Payments).toHaveLength(1)
+    const advancePayment = detailed.Payments[0]
+
+    expect(advancePayment.PaymentID).toBeDefined()
+    expect(advancePayment.IsAdvance).toBe(1)
+    expect(advancePayment.Amount).toBe(5000)
+    expect(advancePayment.Invoices).toBeDefined()
+    expect(advancePayment.Invoices.length).toBeGreaterThanOrEqual(1)
+    expect(advancePayment.Invoices[0].InvoiceNumber).toBe(invoice.InvoiceNumber)
+
+    // Verify DAG payment receipt print data generation
+    const receiptData = buildDAGPaymentReceiptPrintData(detailed, advancePayment)
+    expect(receiptData.receiptNumber).toBe(`PR-${advancePayment.PaymentID}`)
+    expect(receiptData.dagNumber).toBe(String(dag.ID))
+    expect(receiptData.customerName).toBe("Bandara Express")
+    expect(receiptData.vehicleNumber).toBe("WP-ND-8899")
+    expect(receiptData.receivedAmount).toBe("LKR 5,000.00")
+    expect(receiptData.invoiceReferences).toBe(invoice.InvoiceNumber)
+    expect(receiptData.tenderNote).toContain("Advance payment received against DAG retreading order")
+
+    // Render receipt template via PrintTemplateService
+    const renderedReceiptHtml = printTemplateService.render("dag-payment-receipt.html", receiptData)
+    expect(renderedReceiptHtml).toContain(`PR-${advancePayment.PaymentID}`)
+    expect(renderedReceiptHtml).toContain("Bandara Express")
+    expect(renderedReceiptHtml).toContain(invoice.InvoiceNumber)
+    expect(renderedReceiptHtml).toContain("LKR 5,000.00")
+
+    // Now collect tyre serial 1 with 11,000 take payment
+    const serial = detailed.Tyres[0].Serials.find((s: any) => s.SerialNumber === "PIR-DAG-777")
+    await backend.invoke("dag:sellTyres", dag.ID, {
+      SerialIds: [serial.ID],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 11000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+
+    // Fetch detailed DAG after take
+    detailed = await backend.invoke("dag:getDetailedById", dag.ID)
+    expect(detailed.Payments).toHaveLength(2)
+    const takePayment = detailed.Payments.find((p: any) => p.PaymentID !== advancePayment.PaymentID)
+    expect(takePayment).toBeDefined()
+    expect(takePayment.IsAdvance).toBe(0)
+    expect(takePayment.SaleLines).toHaveLength(1)
+    expect(takePayment.SaleLines[0].SerialNumber).toBe("PIR-DAG-777")
+
+    // Verify take payment receipt print data includes collected serial
+    const takeReceiptData = buildDAGPaymentReceiptPrintData(detailed, takePayment)
+    expect(takeReceiptData.receiptNumber).toBe(`PR-${takePayment.PaymentID}`)
+    expect(takeReceiptData.receivedAmount).toBe("LKR 11,000.00")
+    expect(takeReceiptData.takenSerials).toContain("PIR-DAG-777")
+    expect(takeReceiptData.tenderNote).toContain("Payment received for DAG retreading")
+
+    // Render summary receipt data
+    const summaryData = buildDAGPaymentSummaryReceiptPrintData(detailed)
+    expect(summaryData.summaryNumber).toBe(`DAG-${dag.ID}-PAYMENTS`)
+    expect(summaryData.paymentCount).toBe("2")
+    expect(summaryData.totalCost).toBe("LKR 22,000.00")
+    expect(summaryData.settledTotal).toBe("LKR 16,000.00")
+    expect(summaryData.balanceDue).toBe("LKR 6,000.00")
+    expect(summaryData.payments).toHaveLength(2)
+
+    const renderedSummaryHtml = printTemplateService.render(
+      "dag-payment-summary-receipt.html",
+      summaryData
+    )
+    expect(renderedSummaryHtml).toContain(`CONSOLIDATED DAG PAYMENT RECEIPT`)
+    expect(renderedSummaryHtml).toContain(`DAG #${dag.ID}`)
+    expect(renderedSummaryHtml).toContain(`PR-${advancePayment.PaymentID}`)
+    expect(renderedSummaryHtml).toContain(`PR-${takePayment.PaymentID}`)
+    expect(renderedSummaryHtml).toContain(`PIR-DAG-777`)
   })
 })

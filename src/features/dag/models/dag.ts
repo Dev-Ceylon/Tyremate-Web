@@ -99,11 +99,18 @@ export type DagPaymentDetail = {
   Amount: number
   AmountReceived?: number
   BalanceToReturn?: number
+  PaidAmount?: number
+  BalanceAmount?: number
+  CreatedAt?: string | null
+  PaymentDate?: string | null
+  ReferenceNumber?: string | null
   ChequeNumber?: string
   ChequeDate?: string
   BankName?: string
   Collected?: number
   BankDetailsID?: number
+  IsAdvance?: number | boolean
+  Invoices?: Array<{ InvoiceID: number; InvoiceNumber?: string | null }>
   // Receipt fields for preview/upload
   ReceiptPath?: string | null
   ReceiptEncIV?: string | null

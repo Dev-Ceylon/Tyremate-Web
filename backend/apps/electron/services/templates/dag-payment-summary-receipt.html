@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4 portrait; margin: 14mm; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 0; }
+  .receipt { max-width: 760px; margin: 0 auto; }
+  .header { text-align: center; border-bottom: 2px solid #222; padding-bottom: 12px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0; letter-spacing: 1px; }
+  .muted { color: #666; font-size: 10px; margin-top: 5px; }
+  .summary { display: flex; gap: 18px; margin: 14px 0; }
+  .summary-box { flex: 1; border: 1px solid #ddd; padding: 10px; }
+  .row { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px solid #eee; }
+  .label { color: #666; }
+  .value { text-align: right; font-weight: 600; }
+  .section-title { font-weight: bold; text-transform: uppercase; font-size: 10px; margin: 18px 0 7px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th { background: #333; color: white; text-align: left; padding: 7px 6px; }
+  td { border-bottom: 1px solid #ddd; padding: 7px 6px; vertical-align: top; overflow-wrap: anywhere; }
+  .amount { text-align: right; white-space: nowrap; }
+  .status { font-weight: 600; }
+  .note { margin-top: 14px; padding: 10px; background: #f5f5f5; line-height: 1.45; }
+  .footer { text-align: center; color: #666; font-size: 10px; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <main class="receipt">
+    <header class="header">
+      <h1>TyreMate</h1>
+      <h2>CONSOLIDATED DAG PAYMENT RECEIPT</h2>
+      <div class="muted">DAG #{{dagNumber}} · Summary {{summaryNumber}} · Generated {{generatedAt}}</div>
+    </header>
+
+    <section class="summary">
+      <div class="summary-box">
+        <div class="section-title">Received from</div>
+        <div class="row"><span class="label">Customer</span><span class="value">{{customerName}}</span></div>
+        {{#if customerCode}}<div class="row"><span class="label">Customer Code</span><span class="value">{{customerCode}}</span></div>{{/if}}
+        {{#if customerPhone}}<div class="row"><span class="label">Phone</span><span class="value">{{customerPhone}}</span></div>{{/if}}
+        {{#if customerAddress}}<div class="row"><span class="label">Address</span><span class="value">{{customerAddress}}</span></div>{{/if}}
+        {{#if vehicleNumber}}<div class="row"><span class="label">Vehicle No.</span><span class="value">{{vehicleNumber}}</span></div>{{/if}}
+      </div>
+      <div class="summary-box">
+        <div class="section-title">Payment totals</div>
+        <div class="row"><span class="label">Payments listed</span><span class="value">{{paymentCount}}</span></div>
+        <div class="row"><span class="label">Total DAG Cost</span><span class="value">{{totalCost}}</span></div>
+        <div class="row"><span class="label">Settled payments</span><span class="value">{{settledTotal}}</span></div>
+        <div class="row"><span class="label">Cheques pending clearance</span><span class="value">{{pendingChequeTotal}}</span></div>
+        <div class="row"><span class="label">Total recorded</span><span class="value">{{recordedTotal}}</span></div>
+        <div class="row"><span class="label">DAG balance due</span><span class="value">{{balanceDue}}</span></div>
+      </div>
+    </section>
+
+    <div class="section-title">Payment transactions</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 14%">Receipt</th>
+          <th style="width: 15%">Date</th>
+          <th style="width: 14%">Method</th>
+          <th style="width: 25%">Reference / Serials / Invoice</th>
+          <th style="width: 17%">Status</th>
+          <th style="width: 15%; text-align: right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each payments}}
+        <tr>
+          <td>{{receiptNumber}}</td>
+          <td>{{date}}</td>
+          <td>{{method}}</td>
+          <td>{{referenceAndInvoices}}</td>
+          <td class="status">{{status}}</td>
+          <td class="amount">{{amount}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <div class="note">This summary lists all payment transactions recorded against this DAG retreading order. Cheques pending clearance are shown separately and are not included in settled payments.</div>
+    <footer class="footer">TyreMate · Thank you for your business.</footer>
+  </main>
+</body>
+</html>
