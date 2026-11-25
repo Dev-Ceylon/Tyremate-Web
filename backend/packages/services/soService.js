@@ -328,18 +328,32 @@ const collectInquiryIds = (payload = {}) => {
   )]
 }
 
-const toSOPayload = (payload = {}) => {
+const toSOPayload = (payload = {}, ctx = null) => {
+  let repId = payload.SalesRepID ? Number(payload.SalesRepID) : null
+  if (!repId && payload.InquiryID) {
+    const linkedInquiry = inquiryRepo.getInquiryById(Number(payload.InquiryID))
+    if (linkedInquiry && linkedInquiry.SalesRepID) {
+      repId = Number(linkedInquiry.SalesRepID)
+    }
+  }
+  if (!repId && ctx && ctx.user && ctx.user.id) {
+    const isRep = ctx.user.roles && ctx.user.roles.some((r) => Number(r.roleId) === 4 || r.roleName === "SalesRep")
+    if (isRep) {
+      repId = Number(ctx.user.id)
+    }
+  }
   return {
     Date: normalizeDate(payload.Date, "Date"),
     Category: payload.Category || "tyre",
     IsAdminApproved: normalizeBooleanFlag(payload.IsAdminApproved, "IsAdminApproved"),
     IsCompleted: normalizeBooleanFlag(payload.IsCompleted, "IsCompleted"),
-    IsPaymentCompleted: normalizeBooleanFlag(payload.IsPaymentCompleted, "IsPaymentCompleted")
+    IsPaymentCompleted: normalizeBooleanFlag(payload.IsPaymentCompleted, "IsPaymentCompleted"),
+    SalesRepID: repId || null,
   }
 }
 
-const toSalesOrderCreatePayload = (payload = {}) => {
-  const so = toSOPayload(payload)
+const toSalesOrderCreatePayload = (payload = {}, ctx = null) => {
+  const so = toSOPayload(payload, ctx)
   const isBattery = so.Category === "battery"
   const customerId = payload.CustomerID ? normalizePositiveId(payload.CustomerID, "CustomerID") : null
   const linesInput = Array.isArray(payload.Lines) ? payload.Lines : []
@@ -810,7 +824,7 @@ exports.getDeliveryWarehouseDispatch = (soId, deliveryId) => {
 }
 
 exports.createSO = (payload, ctx) => {
-  const so = toSOPayload(payload)
+  const so = toSOPayload(payload, ctx)
   const created = soRepo.createSO(so)
 
   const inquiryIds = collectInquiryIds(payload)
@@ -1447,7 +1461,7 @@ const recordSkippedOldStockViolation = ({ so, soTyre, line, violations, ctx }) =
 }
 
 exports.createSOWithAutoPO = (payload, ctx) => {
-  const data = toSalesOrderCreatePayload(payload)
+  const data = toSalesOrderCreatePayload(payload, ctx)
   const isBattery = data.Category === "battery"
   const isPaymentCompleted = deriveIsPaymentCompleted(data.Lines, data.Payment)
 
@@ -1460,6 +1474,7 @@ exports.createSOWithAutoPO = (payload, ctx) => {
       IsAdminApproved: data.IsAdminApproved,
       IsCompleted: data.IsCompleted,
       IsPaymentCompleted: isPaymentCompleted,
+      SalesRepID: data.SalesRepID,
     })
 
     const customerLink = data.CustomerID
@@ -2349,7 +2364,7 @@ exports.completeSO = (soId, ctx) => {
 exports.updateSO = (soId, payload, ctx) => {
   const normalizedId = normalizeSOId(soId)
   const before = exports.getSOById(normalizedId)
-  const so = toSOPayload(payload)
+  const so = toSOPayload(payload, ctx)
   const updatedSO = soRepo.updateSO(normalizedId, so)
 
   if (!updatedSO) {

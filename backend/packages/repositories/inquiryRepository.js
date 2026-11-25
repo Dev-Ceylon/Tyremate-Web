@@ -69,10 +69,10 @@ exports.createInquiry = (data) => {
   const isCompleted = data.IsCompleted ? 1 : 0
   const result = db
     .prepare(
-      `INSERT INTO Inquiry (Date, Category, CustomerID, Notes, IsAdminApproved, ConvertedSOID, IsCompleted)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO Inquiry (Date, Category, CustomerID, Notes, IsAdminApproved, ConvertedSOID, IsCompleted, SalesRepID)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(data.Date, category, data.CustomerID, data.Notes, data.IsAdminApproved, data.ConvertedSOID, isCompleted)
+    .run(data.Date, category, data.CustomerID, data.Notes, data.IsAdminApproved, data.ConvertedSOID, isCompleted, data.SalesRepID || null)
   return result.lastInsertRowid
 }
 
@@ -102,7 +102,7 @@ exports.updateInquiry = (id, data) => {
   const result = db
     .prepare(
       `UPDATE Inquiry
-       SET Date = ?, Category = ?, CustomerID = ?, Notes = ?, IsAdminApproved = ?, ConvertedSOID = ?, IsCompleted = ?
+       SET Date = ?, Category = ?, CustomerID = ?, Notes = ?, IsAdminApproved = ?, ConvertedSOID = ?, IsCompleted = ?, SalesRepID = COALESCE(?, SalesRepID)
        WHERE InquiryID = ?`
     )
     .run(
@@ -113,6 +113,7 @@ exports.updateInquiry = (id, data) => {
       data.IsAdminApproved,
       data.ConvertedSOID,
       isCompleted,
+      data.SalesRepID !== undefined ? data.SalesRepID : null,
       id
     )
   return result.changes > 0

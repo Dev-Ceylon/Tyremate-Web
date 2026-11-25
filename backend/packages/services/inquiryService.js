@@ -185,7 +185,7 @@ exports.getInquiryDetailsByReminderId = (reminderId) => {
   };
 };
 
-exports.createInquiry = (payload) => {
+exports.createInquiry = (payload, ctx = {}) => {
   let inquiryId;
   const customerId = normalizeOptionalCustomerId(payload.CustomerID);
   const walkinData = customerId ? null : toWalkinCustomerPayload(payload.WalkinCustomer);
@@ -204,6 +204,7 @@ exports.createInquiry = (payload) => {
       IsAdminApproved: payload.IsAdminApproved ? 1 : 0,
       ConvertedSOID: null,
       IsCompleted: 0,
+      SalesRepID: payload.SalesRepID ? Number(payload.SalesRepID) : (ctx && ctx.user && ctx.user.id ? Number(ctx.user.id) : null),
     };
 
     inquiryId = inquiryRepo.createInquiry(inquiryData);
