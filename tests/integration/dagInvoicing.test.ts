@@ -805,4 +805,398 @@ describe("DAG Invoicing Engine & Payment Parity", () => {
     expect(renderedInvoiceHtml).toContain(`#${dag.ID}`)
     expect(renderedInvoiceHtml).toContain("GY-DAG-01")
   })
+
+  it("executes the full end-to-end lifecycle: advance payment, contractor approval, gate pass, cost revision, partial takes with cheque and bank transfer, collection, and settlement", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    const bankDetailsRepo = require("../../backend/packages/repositories/bankDetailsRepository")
+    const bank = bankDetailsRepo.createBankDetails({
+      BankName: "Commercial Bank",
+      AccountNumber: "1234567890",
+      AccountName: "TyreMate Operations",
+      Branch: "Colombo City",
+    })
+
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-LC-1",
+      BranchName: "Lifecycle Test Branch",
+    })
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const location = await backend.invoke("storageLocations:create", {
+      LocationCode: "LOC-LC-01",
+      LocationName: "Lifecycle Test Rack",
+      BranchId: branch.Id,
+      LocationTypeId: locationTypes[0].Id,
+      Capacity: 50,
+    })
+    const contractor = await backend.invoke("contractors:create", {
+      ContractorCode: "CONT-LC",
+      Name: "Dunlop Retreaders",
+      Phone: "+94770003344",
+      Address: "Katuwana Industrial Estate",
+    })
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-LC-01",
+      Name: "Ceylon Haulage Express",
+      Phone: "+94771234567",
+      Address: "Peliyagoda Hub",
+      Email: "ceylon.haulage@example.com",
+      VatNo: "VAT-889977",
+    })
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Bridgestone",
+      Size: "295/80R22.5",
+      Pattern: "R168",
+      DAGCost: 20000,
+      PurchasedPrice: 45000,
+      ActualSellingPrice: 58000,
+    })
+
+    // 1. Create DAG with advance cash payment
+    const createRes = await backend.invoke("dag:createWithTyres", {
+      CustomerID: customer.CustomerID,
+      ContractorID: contractor.ID,
+      Date: "2026-11-25",
+      Comment: "Full lifecycle retreading run",
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 2,
+          Serials: [
+            { SerialNumber: "LC-SN-01", DAGCost: 20000 },
+            { SerialNumber: "LC-SN-02", DAGCost: 20000 },
+          ],
+        },
+      ],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 10000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+    const dag = createRes.dag || createRes
+    expect(dag.ID).toBeDefined()
+
+    // Verify auto-invoice generated in partial state
+    let inv = await backend.invoke("invoice:getBySource", "dag", dag.ID)
+    expect(inv).toBeDefined()
+    expect(inv.Total).toBe(40000)
+    expect(inv.AmountPaid).toBe(10000)
+    expect(inv.BalanceDue).toBe(30000)
+    expect(inv.Status).toBe("par")
+
+    // 2. Contractor Approval workflow
+    await backend.invoke("dag:assignContractor", dag.ID, { ContractorID: contractor.ID })
+    const approvals = await backend.invoke("dag:getContractorApprovals", dag.ID)
+    expect(approvals.length).toBeGreaterThan(0)
+    const pendingApproval = approvals[0]
+    await backend.invoke("dag:updateContractorApproval", pendingApproval.ID, "approved")
+
+    // 3. Issue Gate Pass
+    const gpResult = await backend.invoke("dag:issueGatePass", dag.ID)
+    expect(gpResult).toBeDefined()
+    const dagAfterGp = await backend.invoke("dag:getDetailedById", dag.ID)
+    expect(dagAfterGp.StatusCode).toBe("gpi")
+
+    // 4. Update serial cost on second tyre: 20,000 -> 25,000
+    const serial2 = dagAfterGp.Tyres[0].Serials.find((s: any) => s.SerialNumber === "LC-SN-02")
+    const serial1 = dagAfterGp.Tyres[0].Serials.find((s: any) => s.SerialNumber === "LC-SN-01")
+    expect(serial2).toBeDefined()
+    expect(serial1).toBeDefined()
+
+    await backend.invoke("dag:updateTyreSerialCost", serial2.ID, 25000)
+
+    const dagAfterCostRevision = await backend.invoke("dag:getDetailedById", dag.ID)
+    expect(dagAfterCostRevision.TotalDAGCost).toBe(45000)
+
+    // 5. Partial take: Customer takes serial 1 (cost 20,000) paying with Cheque
+    const take1Result = await backend.invoke("dag:sellTyres", dag.ID, {
+      SerialIds: [serial1.ID],
+      Payment: {
+        ChequePayment: {
+          ChequeNumber: "CHQ-889900",
+          BankName: "Commercial Bank",
+          ChequeDate: "2026-12-01",
+          Amount: 20000,
+        },
+      },
+    })
+    expect(take1Result.success).toBe(true)
+    expect(take1Result.soldCount).toBe(1)
+    expect(take1Result.completed).toBe(false)
+
+    // Cheque is pending clearance: invoice settled amount is still 10,000
+    const detailedAfterTake1 = await backend.invoke("dag:getDetailedById", dag.ID)
+    const chequePayment = detailedAfterTake1.Payments.find(
+      (p: any) => p.PaymentTypeCode === "chq" || p.ChequeNumber === "CHQ-889900"
+    )
+    expect(chequePayment).toBeDefined()
+    expect(chequePayment.Collected).toBe(0)
+
+    let invAfterTake1 = await backend.invoke("invoice:getBySource", "dag", dag.ID)
+    expect(invAfterTake1.AmountPaid).toBe(10000)
+    expect(invAfterTake1.BalanceDue).toBe(30000)
+
+    // 6. Cheque Collection & Clearance
+    const collectRes = await backend.invoke("dag:completeChequePayment", dag.ID, chequePayment.PaymentID)
+    expect(collectRes.success).toBe(true)
+
+    // Verify invoice settlement is synchronized
+    let invAfterClearance = await backend.invoke("invoice:getBySource", "dag", dag.ID)
+    expect(invAfterClearance.AmountPaid).toBe(30000)
+    expect(invAfterClearance.BalanceDue).toBe(10000)
+
+    // 7. Final take: Customer takes serial 2 (cost 25,000) paying with Bank Transfer
+    const take2Result = await backend.invoke("dag:sellTyres", dag.ID, {
+      SerialIds: [serial2.ID],
+      Payment: {
+        BankTransferPayment: {
+          BankDetailsID: bank.ID || bank.Id,
+          Amount: 25000,
+        },
+      },
+    })
+    expect(take2Result.success).toBe(true)
+    expect(take2Result.soldCount).toBe(1)
+    expect(take2Result.completed).toBe(true)
+
+    // Verify DAG is completed and payment is completed
+    const finalDag = await backend.invoke("dag:getDetailedById", dag.ID)
+    expect(finalDag.IsPaymentCompleted).toBe(1)
+    expect(finalDag.StatusCode).toBe("cmp")
+
+    // Verify invoice is fully settled to paid
+    let finalInv = await backend.invoke("invoice:getBySource", "dag", dag.ID)
+    expect(finalInv.Total).toBe(40000)
+    expect(finalInv.AmountPaid).toBe(40000)
+    expect(finalInv.BalanceDue).toBe(0)
+    expect(finalInv.Status).toBe("paid")
+
+    // 8. Consolidated Payment Summary Receipt
+    const summaryData = buildDAGPaymentSummaryReceiptPrintData(finalDag)
+    expect(summaryData.dagNumber).toBe(String(dag.ID))
+    expect(summaryData.summaryNumber).toBe(`DAG-${dag.ID}-PAYMENTS`)
+    expect(summaryData.paymentCount).toBe("3")
+    expect(summaryData.settledTotal).toBe("LKR 55,000.00")
+    expect(summaryData.balanceDue).toBe("LKR 0.00")
+    expect(summaryData.payments).toHaveLength(3)
+
+    const renderedSummary = printTemplateService.render("dag-payment-summary-receipt.html", summaryData)
+    expect(renderedSummary).toContain(`DAG #${dag.ID}`)
+    expect(renderedSummary).toContain("Ceylon Haulage Express")
+    expect(renderedSummary).toContain("CHQ-889900")
+    expect(renderedSummary).toContain("Commercial Bank")
+  })
+
+  it("handles invoice reversals: credit note generation, cancellation, and blocks payment on cancelled invoices", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+    await backend.login()
+
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-REV-1",
+      BranchName: "Reversal Branch",
+    })
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const location = await backend.invoke("storageLocations:create", {
+      LocationCode: "LOC-REV-01",
+      LocationName: "Reversal Rack",
+      BranchId: branch.Id,
+      LocationTypeId: locationTypes[0].Id,
+      Capacity: 50,
+    })
+    const contractor = await backend.invoke("contractors:create", {
+      ContractorCode: "CONT-REV",
+      Name: "Reversal Contractor",
+      Phone: "+94770005566",
+      Address: "Reversal Zone",
+    })
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-REV-01",
+      Name: "Perera Freight",
+      Phone: "+94774433221",
+      Address: "Negombo Road",
+    })
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Yokohama",
+      Size: "11R22.5",
+      Pattern: "704R",
+      DAGCost: 22000,
+    })
+
+    const createRes = await backend.invoke("dag:createWithTyres", {
+      CustomerID: customer.CustomerID,
+      ContractorID: contractor.ID,
+      Date: "2026-11-25",
+      Comment: "Cancellation test DAG",
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 1,
+          Serials: [{ SerialNumber: "REV-SN-01", DAGCost: 22000 }],
+        },
+      ],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 5000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+    const dag = createRes.dag || createRes
+    const inv = await backend.invoke("invoice:getBySource", "dag", dag.ID)
+    expect(inv).toBeDefined()
+    expect(inv.Total).toBe(22000)
+
+    // 1. Generate Credit Note
+    const creditNote = await backend.invoke("invoice:createCreditNote", inv.InvoiceID, {
+      InvoiceDate: "2026-11-25",
+      Notes: "Customer requested return / adjustment on DAG retreading",
+    })
+    expect(creditNote).toBeDefined()
+    expect(creditNote.IsCreditNote).toBe(1)
+    expect(creditNote.CreditNoteOf).toBe(inv.InvoiceID)
+    expect(creditNote.Total).toBe(22000)
+
+    // Cannot credit a credit note
+    await expect(
+      backend.invoke("invoice:createCreditNote", creditNote.InvoiceID, {
+        InvoiceDate: "2026-11-25",
+        Notes: "Invalid credit note of credit note",
+      }),
+    ).rejects.toThrow(/Cannot raise a credit note against another credit note/)
+
+    // Cannot record payment against a credit note
+    await expect(
+      backend.invoke("invoice:recordPayment", creditNote.InvoiceID, {
+        Payment: {
+          CashPayment: {
+            AmountReceived: 5000,
+            BalanceToReturn: 0,
+          },
+        },
+      }),
+    ).rejects.toThrow(/Cannot record a payment against a credit note/)
+
+    // 2. Cancel Invoice
+    const cancelledInv = await backend.invoke("invoice:cancel", inv.InvoiceID, {
+      Reason: "Customer voided DAG order before processing",
+    })
+    expect(cancelledInv.Status).toBe("can")
+
+    // Cannot record payment against a cancelled invoice
+    await expect(
+      backend.invoke("invoice:recordPayment", inv.InvoiceID, {
+        Payment: {
+          CashPayment: {
+            AmountReceived: 5000,
+            BalanceToReturn: 0,
+          },
+        },
+      }),
+    ).rejects.toThrow(/Cannot record a payment against a cancelled invoice/)
+
+    // Cannot raise credit note against cancelled invoice
+    await expect(
+      backend.invoke("invoice:createCreditNote", inv.InvoiceID, {
+        InvoiceDate: "2026-11-25",
+        Notes: "Should fail",
+      }),
+    ).rejects.toThrow(/Cannot credit a cancelled invoice/)
+  })
+
+  it("enforces strict RBAC: non-admin users without invoice and DAG permissions are blocked with ForbiddenError", async () => {
+    const driver = await createSqlJsDriver()
+    const backend = await bootBackend(driver)
+
+    // Seed master data as admin first
+    await backend.login("admin", "1234")
+    const branch = await backend.invoke("branches:create", {
+      BranchCode: "BR-RBAC-1",
+      BranchName: "RBAC Branch",
+    })
+    const locationTypes = await backend.invoke("storageLocationTypes:getAll")
+    const location = await backend.invoke("storageLocations:create", {
+      LocationCode: "LOC-RBAC-01",
+      LocationName: "RBAC Rack",
+      BranchId: branch.Id,
+      LocationTypeId: locationTypes[0].Id,
+      Capacity: 50,
+    })
+
+    const customer = await backend.invoke("customers:create", {
+      CustomerCode: "CUST-RBAC-01",
+      Name: "RBAC Test Customer",
+    })
+    const contractor = await backend.invoke("contractors:create", {
+      ContractorCode: "CONT-RBAC",
+      Name: "RBAC Contractor",
+    })
+    const tyre = await backend.invoke("tyres:create", {
+      Brand: "Dunlop",
+      Size: "10.00R20",
+      Pattern: "SP571",
+      DAGCost: 15000,
+    })
+
+    // Create a DAG as admin with advance payment so an invoice exists
+    const createRes = await backend.invoke("dag:createWithTyres", {
+      CustomerID: customer.CustomerID,
+      ContractorID: contractor.ID,
+      Date: "2026-11-25",
+      Tyres: [
+        {
+          TyreID: tyre.Id,
+          StorageLocationID: location.Id,
+          Qty: 1,
+          Serials: [{ SerialNumber: "RBAC-SN-01", DAGCost: 15000 }],
+        },
+      ],
+      Payment: {
+        CashPayment: {
+          AmountReceived: 5000,
+          BalanceToReturn: 0,
+        },
+      },
+    })
+    const dag = createRes.dag || createRes
+    const inv = await backend.invoke("invoice:getBySource", "dag", dag.ID)
+    expect(inv).toBeDefined()
+    expect(inv.InvoiceID).toBeDefined()
+
+    // Switch session to salesrep (who has only inquiry permissions)
+    await backend.login("salesrep", "1234")
+
+    // 1. SalesRep CANNOT create DAG
+    await expect(
+      backend.invoke("dag:createWithTyres", {
+        CustomerID: customer.CustomerID,
+        ContractorID: contractor.ID,
+        Date: "2026-11-25",
+        Tyres: [{ TyreID: tyre.Id, StorageLocationID: location.Id, Qty: 1 }],
+      }),
+    ).rejects.toThrow(/do not have permission.*\(dag\.create\)/)
+
+    // 2. SalesRep CANNOT view DAG
+    await expect(backend.invoke("dag:getAll")).rejects.toThrow(/do not have permission.*\(dag\.view\)/)
+    await expect(backend.invoke("dag:getById", dag.ID)).rejects.toThrow(/do not have permission.*\(dag\.view\)/)
+
+    // 3. SalesRep CANNOT view Invoices
+    await expect(backend.invoke("invoice:getAll")).rejects.toThrow(/do not have permission.*\(invoice\.view\)/)
+    await expect(backend.invoke("invoice:getById", inv.InvoiceID)).rejects.toThrow(/do not have permission.*\(invoice\.view\)/)
+
+    // 4. SalesRep CANNOT create or cancel Invoices
+    await expect(
+      backend.invoke("invoice:cancel", inv.InvoiceID, { Reason: "Hacking" }),
+    ).rejects.toThrow(/do not have permission.*\(invoice\.edit\)/)
+
+    await expect(
+      backend.invoke("invoice:createCreditNote", inv.InvoiceID, {}),
+    ).rejects.toThrow(/do not have permission.*\(invoice\.create\)/)
+  })
 })
