@@ -50,7 +50,7 @@ export function CashPaymentForm({
               balance > 0 ? "cash-payment-balance-positive" : ""
             }`}
           >
-            ${balance.toFixed(2)}
+            Rs {balance.toFixed(2)}
           </div>
         </label>
       </div>

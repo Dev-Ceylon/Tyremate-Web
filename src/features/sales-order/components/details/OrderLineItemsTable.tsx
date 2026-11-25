@@ -16,7 +16,7 @@ export function OrderLineItemsTable({ order, netTotal, onReturn, disabled = fals
         <h2>Order Line Items</h2>
         <div className="header-actions">
           <span className="stat-badge">{lines.length} line{lines.length !== 1 ? "s" : ""}</span>
-          <span className="stat-badge">${netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="stat-badge">Rs {netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </div>
       <div className="table-scroll">
@@ -42,7 +42,7 @@ export function OrderLineItemsTable({ order, netTotal, onReturn, disabled = fals
                       : `${item.Brand || "NA"} / ${item.Size || "NA"} - ${item.Pattern || "NA"}`}
                   </span>
                 </td>
-                <td className="text-right">${item.Price.toLocaleString()}</td>
+                <td className="text-right">Rs {item.Price.toLocaleString()}</td>
                 <td className="text-right">{item.Discount}%</td>
                 <td className="text-right font-bold">{item.Qty}</td>
                 <td className="text-right">{item.returnedQty ?? 0}</td>

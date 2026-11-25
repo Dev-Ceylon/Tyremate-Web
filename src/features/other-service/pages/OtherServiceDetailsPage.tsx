@@ -136,12 +136,12 @@ export default function OtherServiceDetailsPage() {
           <div className="detail-card-grid">
             <div className="detail-card-row">
               <span className="detail-card-key">Total Amount</span>
-              <span className="detail-card-val">${fmt(totalAmount)}</span>
+              <span className="detail-card-val">Rs {fmt(totalAmount)}</span>
             </div>
             {remainingAmount > 0 && (
               <div className="detail-card-row">
                 <span className="detail-card-key">Amount Due</span>
-                <span className="detail-card-val">${fmt(remainingAmount)}</span>
+                <span className="detail-card-val">Rs {fmt(remainingAmount)}</span>
               </div>
             )}
           </div>
@@ -170,9 +170,9 @@ export default function OtherServiceDetailsPage() {
                       {c.ConsumableName}{c.ConsumableCategory ? ` (${c.ConsumableCategory})` : ""}
                     </span>
                   </td>
-                  <td className="text-right">${fmt(c.Price)}</td>
+                  <td className="text-right">Rs {fmt(c.Price)}</td>
                   <td className="text-right font-bold">{c.Qty}</td>
-                  <td className="text-right">${fmt(c.Price * c.Qty)}</td>
+                  <td className="text-right">Rs {fmt(c.Price * c.Qty)}</td>
                 </tr>
               ))}
             </tbody>

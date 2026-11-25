@@ -87,7 +87,7 @@ export function PaymentDetailCard({
         )}
         <div className="detail-card-row">
           <span className="detail-card-key">Settled Amount</span>
-          <span className="detail-card-val font-bold">${payment.Amount.toLocaleString()}</span>
+          <span className="detail-card-val font-bold">Rs {payment.Amount.toLocaleString()}</span>
         </div>
         {payment.ReferenceNumber && (
           <div className="detail-card-row">
@@ -110,13 +110,13 @@ export function PaymentDetailCard({
         {payment.PaidAmount !== undefined && (
           <div className="detail-card-row">
             <span className="detail-card-key">Received</span>
-            <span className="detail-card-val">${payment.PaidAmount.toLocaleString()}</span>
+            <span className="detail-card-val">Rs {payment.PaidAmount.toLocaleString()}</span>
           </div>
         )}
         {payment.BalanceAmount !== undefined && (
           <div className="detail-card-row">
             <span className="detail-card-key">Balance Return</span>
-            <span className="detail-card-val">${payment.BalanceAmount.toLocaleString()}</span>
+            <span className="detail-card-val">Rs {payment.BalanceAmount.toLocaleString()}</span>
           </div>
         )}
       </div>

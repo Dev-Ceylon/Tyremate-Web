@@ -162,7 +162,7 @@ export function DeliveriesSection({
                           </span>
                           <StatusBadge label={paymentStatus.label} tone={paymentStatus.tone} />
                           <span className="delivery-record-sub">
-                            Paid ${invoice.AmountPaid.toLocaleString()} | Due ${invoice.BalanceDue.toLocaleString()}
+                            Paid Rs {invoice.AmountPaid.toLocaleString()} | Due Rs {invoice.BalanceDue.toLocaleString()}
                           </span>
                         </div>
                       )}

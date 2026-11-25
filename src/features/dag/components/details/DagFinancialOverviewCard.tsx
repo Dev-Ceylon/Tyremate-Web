@@ -25,21 +25,21 @@ export function DagFinancialOverviewCard({
       <div className="detail-card-grid">
         <div className="detail-card-row">
           <span className="detail-card-key">Total Cost</span>
-          <span className="detail-card-val">${formatCurrency(totals.totalCost)}</span>
+          <span className="detail-card-val">Rs {formatCurrency(totals.totalCost)}</span>
         </div>
         <div className="detail-card-row">
           <span className="detail-card-key">Taken</span>
-          <span className="detail-card-val">${formatCurrency(totals.takenAmount)}</span>
+          <span className="detail-card-val">Rs {formatCurrency(totals.takenAmount)}</span>
         </div>
         <div className="detail-card-row">
           <span className="detail-card-key">Total Paid</span>
-          <span className="detail-card-val">${formatCurrency(totals.paidAmount)}</span>
+          <span className="detail-card-val">Rs {formatCurrency(totals.paidAmount)}</span>
         </div>
         {totals.outstanding > 0 && (
           <div className="detail-card-row">
             <span className="detail-card-key">Amount Due</span>
             <span className="detail-card-val text-danger font-bold">
-              ${formatCurrency(totals.outstanding)}
+              Rs {formatCurrency(totals.outstanding)}
             </span>
           </div>
         )}

@@ -102,7 +102,7 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
         <PermissionGate permission="so.view">
           <article className="metric-card panel">
             <span className="metric-label">Today's sales</span>
-            <strong>${summary.TotalSale.toFixed(2)}</strong>
+            <strong>Rs {summary.TotalSale.toFixed(2)}</strong>
             <p>{summary.OrderCount} {summary.OrderCount === 1 ? "order" : "orders"} created today.</p>
           </article>
         </PermissionGate>
@@ -140,13 +140,13 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
 
           <article className="metric-card panel">
             <span className="metric-label">Average price</span>
-            <strong>${averagePrice.toFixed(2)}</strong>
+            <strong>Rs {averagePrice.toFixed(2)}</strong>
             <p>A quick pricing snapshot across all listed products.</p>
           </article>
 
           <article className="metric-card panel">
             <span className="metric-label">Highest price</span>
-            <strong>${highestPrice.toFixed(2)}</strong>
+            <strong>Rs {highestPrice.toFixed(2)}</strong>
             <p>The most premium item currently in your product table.</p>
           </article>
         </PermissionGate>

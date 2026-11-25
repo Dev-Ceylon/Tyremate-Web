@@ -27,8 +27,8 @@ export function buildSalesOrderPrintData(so: any) {
     reference: p.ReferenceNumber || "",
     paymentDate: p.PaymentDate || "",
     bankName: p.BankName || "",
-    paidAmount: p.PaidAmount !== undefined ? `$${Number(p.PaidAmount).toLocaleString()}` : "",
-    balanceAmount: p.BalanceAmount !== undefined ? `$${Number(p.BalanceAmount).toLocaleString()}` : "",
+    paidAmount: p.PaidAmount !== undefined ? `Rs ${Number(p.PaidAmount).toLocaleString()}` : "",
+    balanceAmount: p.BalanceAmount !== undefined ? `Rs ${Number(p.BalanceAmount).toLocaleString()}` : "",
     collected: p.PaymentTypeCode === "CHEQUE" ? (p.Collected === 1 || p.Collected === true ? "Yes" : "No") : "",
   }))
 

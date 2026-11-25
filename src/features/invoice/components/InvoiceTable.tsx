@@ -87,8 +87,8 @@ export const InvoiceTable = ({ data }: InvoiceTableProps) => {
                     <span className="secondary-text">{sourceText}</span>
                   )}
                 </td>
-                <td className="text-right">${fmt(invoice.Total)}</td>
-                <td className="text-right font-bold">${fmt(invoice.BalanceDue)}</td>
+                <td className="text-right">Rs {fmt(invoice.Total)}</td>
+                <td className="text-right font-bold">Rs {fmt(invoice.BalanceDue)}</td>
                 <td className="text-center">
                   <InvoiceStatusBadge status={invoice.Status} isOverdue={invoice.IsOverdue} />
                 </td>
