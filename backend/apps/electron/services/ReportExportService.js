@@ -2,6 +2,7 @@ const { getHost } = require("../../../platform/runtime")
 const reportService = require("../../../packages/services/reportService")
 const poReportService = require("../../../packages/services/poReportService")
 const cashFlowReportService = require("../../../packages/services/cashFlowReportService")
+const batteryReportService = require("../../../packages/services/batteryReportService")
 
 class ReportExportService {
   /**
@@ -68,6 +69,28 @@ class ReportExportService {
    */
   async exportCashFlowToCsv(params = {}) {
     return cashFlowReportService.exportCashFlowToCsv(params)
+  }
+
+  /**
+   * Exports battery report to CSV and prompts the user with the native Save File dialog.
+   *
+   * @param {object} params Query and export parameters (exportType, preset, fromDate, toDate, branchId, brand, searchTerm)
+   * @param {Electron.WebContents} [senderWebContents] WebContents of the calling renderer to anchor the modal dialog
+   * @returns {Promise<{ success: boolean, canceled?: boolean, filePath?: string, filename?: string }>}
+   */
+  async saveBatteryCsvDialog(params = {}, senderWebContents = null) {
+    const result = await batteryReportService.exportBatteryReportToCsv(params)
+    return this._saveCsv(result, "Export Battery Report to CSV", senderWebContents)
+  }
+
+  /**
+   * Generates battery report CSV content and filename without prompting a file save dialog.
+   *
+   * @param {object} params
+   * @returns {Promise<{ filename: string, csvContent: string, mimeType: string }>}
+   */
+  async exportBatteryToCsv(params = {}) {
+    return batteryReportService.exportBatteryReportToCsv(params)
   }
 
   /**

@@ -5758,6 +5758,11 @@
   background-color: #10b981;
 }
 
+.battery-color, .battery-segment {
+  background-color: #2563eb;
+  height: 100%;
+}
+
 .report-trend-plot {
   position: relative;
   min-height: 240px;
@@ -5849,8 +5854,14 @@
 /* Split Grid for 2-column breakdown & tables */
 .report-split-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--space-5);
+}
+
+@media (max-width: 768px) {
+  .report-split-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .report-breakdown-card,
@@ -5902,6 +5913,56 @@
 .progress-segment {
   height: 100%;
   transition: width 0.3s ease;
+}
+
+.battery-brand-segment {
+  background-color: var(--color-primary, #2563eb);
+}
+
+.battery-app-segment {
+  background-color: var(--color-success, #16a34a);
+}
+
+.report-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.report-breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.report-breakdown-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-heading);
+}
+
+.report-breakdown-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.report-empty-message {
+  padding: var(--space-6) 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.report-overview-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
 .report-channel-list {
@@ -6020,6 +6081,12 @@
 .status-arrived {
   background: rgba(13, 148, 136, 0.12);
   color: #0d9488;
+}
+
+.status-danger,
+.status-badge-inline.status-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .status-badge-inline.status-draft {

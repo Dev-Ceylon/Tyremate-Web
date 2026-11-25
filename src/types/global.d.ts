@@ -150,6 +150,12 @@ import type {
   CashFlowOverview,
   CashFlowLedgerResult,
 } from "../features/reports/cash-flow-reports/models/cashFlowReport"
+import type {
+  BatteryReportQueryParams,
+  ExportBatteryReportParams,
+  BatteryReportOverview,
+  BatteryTransactionsReportResult,
+} from "../features/reports/battery-reports/models/batteryReport"
 import type { GoodsReceiptPayload, GoodsReceiptLineRecord, PendingGoodsReceiptFilters, PendingGoodsReceiptRecord, PendingDagGoodsReceiptRecord, DagGoodsReceiptPayload, DagGoodsReceiptResult } from "../features/goods-receipt/models/goodsReceipt"
 import type {
   InvoiceRecord,
@@ -785,6 +791,11 @@ declare global {
         getCashFlowLedger: (params?: CashFlowReportQueryParams) => Promise<CashFlowLedgerResult>
         exportCashFlowToCsv: (params?: ExportCashFlowParams) => Promise<ReportExportResult>
         saveCashFlowCsv: (params?: ExportCashFlowParams) => Promise<SaveCsvResult>
+
+        getBatteryOverview: (params?: BatteryReportQueryParams) => Promise<BatteryReportOverview>
+        getBatteryTransactions: (params?: BatteryReportQueryParams) => Promise<BatteryTransactionsReportResult>
+        exportBatteryToCsv: (params?: ExportBatteryReportParams) => Promise<ReportExportResult>
+        saveBatteryCsv: (params?: ExportBatteryReportParams) => Promise<SaveCsvResult>
       }
     }
   }

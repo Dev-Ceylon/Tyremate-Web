@@ -733,6 +733,11 @@ const api = {
     getCashFlowLedger: (params) => ipcRenderer.invoke("reports:getCashFlowLedger", params),
     exportCashFlowToCsv: (params) => ipcRenderer.invoke("reports:exportCashFlowToCsv", params),
     saveCashFlowCsv: (params) => ipcRenderer.invoke("reports:saveCashFlowCsv", params),
+
+    getBatteryOverview: (params) => ipcRenderer.invoke("reports:getBatteryOverview", params),
+    getBatteryTransactions: (params) => ipcRenderer.invoke("reports:getBatteryTransactions", params),
+    exportBatteryToCsv: (params) => ipcRenderer.invoke("reports:exportBatteryToCsv", params),
+    saveBatteryCsv: (params) => ipcRenderer.invoke("reports:saveBatteryCsv", params),
   },
 
   // Web edition additions -------------------------------------------------

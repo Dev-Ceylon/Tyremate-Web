@@ -1,6 +1,7 @@
 const reportService = require("../../../packages/services/reportService")
 const poReportService = require("../../../packages/services/poReportService")
 const cashFlowReportService = require("../../../packages/services/cashFlowReportService")
+const batteryReportService = require("../../../packages/services/batteryReportService")
 const reportExportService = require("../services/ReportExportService")
 const { registerIpcHandler } = require("./errorMiddleware")
 
@@ -74,4 +75,28 @@ registerIpcHandler("reports:exportCashFlowToCsv", { permission: "reports.view" }
 // 3d. Save Cash Flow Report CSV to Disk via Native System File Dialog
 registerIpcHandler("reports:saveCashFlowCsv", { permission: "reports.view" }, async (event, params = {}) => {
   return reportExportService.saveCashFlowCsvDialog(params, event.sender)
+})
+
+// ==========================================
+// 4. Battery Reporting IPC Handlers
+// ==========================================
+
+// 4a. Get Battery Overview (Summary, Growth Deltas, Time-Series, Brand & Application Breakdown, Top Models, Health/Expiry)
+registerIpcHandler("reports:getBatteryOverview", { permission: "reports.view" }, async (_event, params = {}) => {
+  return batteryReportService.getBatteryReportOverview(params)
+})
+
+// 4b. Get Paginated Detailed Battery Movement & Transactions Ledger
+registerIpcHandler("reports:getBatteryTransactions", { permission: "reports.view" }, async (_event, params = {}) => {
+  return batteryReportService.getBatteryTransactionsReport(params)
+})
+
+// 4c. Export Battery Report to CSV (Returns Raw Content & Filename)
+registerIpcHandler("reports:exportBatteryToCsv", { permission: "reports.view" }, async (_event, params = {}) => {
+  return reportExportService.exportBatteryToCsv(params)
+})
+
+// 4d. Save Battery Report CSV via Native System File Dialog / Browser Download
+registerIpcHandler("reports:saveBatteryCsv", { permission: "reports.view" }, async (event, params = {}) => {
+  return reportExportService.saveBatteryCsvDialog(params, event.sender)
 })
