@@ -7429,6 +7429,159 @@
   margin: var(--space-1, 0.25rem) 0 0 0;
 }
 
+/* My Targets Cadence Cards */
+.my-targets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4, 1rem);
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.my-target-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-4, 1.25rem);
+  background: var(--surface-panel, #ffffff);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.my-target-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.my-target-card.is-achieved {
+  border-color: rgba(22, 163, 74, 0.35);
+  background: linear-gradient(to bottom right, #ffffff, rgba(22, 163, 74, 0.03));
+}
+
+.my-target-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.my-target-card-cadence {
+  font-size: var(--text-sm, 0.85rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #64748b);
+  margin: 0;
+}
+
+.my-target-card-dates {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+  margin: var(--space-1, 0.15rem) 0 0 0;
+}
+
+.my-target-card-body {
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.my-target-revenue-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-2, 0.4rem);
+}
+
+.my-target-actual-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-heading, inherit);
+  color: var(--text-heading, #0f172a);
+}
+
+.my-target-percentage {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary, #2563eb);
+}
+
+.my-target-percentage.is-achieved {
+  color: var(--color-success, #16a34a);
+}
+
+.my-target-goal-meta {
+  font-size: var(--text-xs, 0.8rem);
+  color: var(--text-muted, #64748b);
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.my-target-remaining-box {
+  margin-top: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border-radius: var(--radius-sm, 6px);
+  background-color: var(--color-accent-subtle, rgba(37, 99, 235, 0.06));
+  font-size: var(--text-xs, 0.8rem);
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+}
+
+.my-target-remaining-box.is-achieved {
+  background-color: rgba(22, 163, 74, 0.08);
+  color: var(--color-success, #16a34a);
+}
+
+.my-target-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  margin-top: var(--space-3, 0.75rem);
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.my-target-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 0.3rem);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-default, #334155);
+  font-weight: 500;
+}
+
+.my-target-notes-callout {
+  margin-top: var(--space-3, 0.75rem);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border-left: 3px solid var(--color-primary, #2563eb);
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 0 var(--radius-sm, 4px) var(--radius-sm, 4px) 0;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #475569);
+  font-style: italic;
+}
+
+.my-target-empty-card {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.my-target-empty-cadence-title {
+  font-size: var(--text-sm, 0.85rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.my-target-empty-desc {
+  font-size: var(--text-xs, 0.8rem);
+  margin: 0;
+}
+
+
 
 
 
