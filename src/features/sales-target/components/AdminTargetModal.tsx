@@ -1,4 +1,15 @@
 import React, { useEffect, useState } from "react"
+import {
+  AlertCircle,
+  Calendar,
+  Check,
+  ChevronDown,
+  Layers,
+  Plus,
+  RotateCw,
+  Target,
+  User,
+} from "lucide-react"
 import { AppModal } from "../../../shared/ui/modal/AppModal"
 import type {
   PeriodType,
@@ -51,6 +62,15 @@ function calculateDefaultDates(period: PeriodType, refDate = new Date()): { star
       return { start, end }
     }
   }
+}
+
+function calculateDurationDays(start: string, end: string): number | null {
+  if (!start || !end) return null
+  const s = new Date(start + "T00:00:00")
+  const e = new Date(end + "T00:00:00")
+  const diffTime = e.getTime() - s.getTime()
+  if (isNaN(diffTime) || diffTime < 0) return null
+  return Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1
 }
 
 export function AdminTargetModal({
@@ -111,6 +131,20 @@ export function AdminTargetModal({
       setEndDate(defaults.end)
     }
   }
+
+  const durationDays = calculateDurationDays(startDate, endDate)
+
+  const formattedRevenuePreview = (() => {
+    const num = parseFloat(targetAmount)
+    if (isNaN(num) || num <= 0) return null
+    return (
+      "Rs. " +
+      num.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    )
+  })()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -185,168 +219,236 @@ export function AdminTargetModal({
       title={isEdit ? `Edit Target #${editingTarget?.TargetID}` : "Assign New Sales Target"}
     >
       <form onSubmit={handleSubmit} className="target-form">
+        <div className="target-modal-intro">
+          <p className="target-modal-subtitle">
+            {isEdit
+              ? "Adjust quota targets, validity dates, or directives for this representative."
+              : "Define dynamic revenue quotas and optional volume targets. Attainment is tracked in real-time."}
+          </p>
+        </div>
+
         {error && (
-          <div className="target-form-error">
-            {error}
+          <div className="target-modal-error-banner" role="alert">
+            <AlertCircle size={18} className="target-error-icon" />
+            <span className="target-error-text">{error}</span>
           </div>
         )}
 
         {/* Sales Representative */}
         <div className="target-form-group">
           <label htmlFor="target-rep" className="target-form-label">
-            Sales Representative *
+            <span>Sales Representative</span>
+            <span className="target-field-required">*</span>
           </label>
-          {isEdit ? (
-            <input
-              type="text"
-              className="input target-form-input-disabled"
-              value={`${editingTarget?.SalesRepName || editingTarget?.SalesRepUsername} (#${editingTarget?.SalesRepID})`}
-              disabled
-            />
-          ) : (
-            <select
-              id="target-rep"
-              className="input select target-form-input"
-              value={salesRepId}
-              onChange={(e) => setSalesRepId(Number(e.target.value))}
-              required
-            >
-              <option value={0} disabled>
-                -- Select Sales Representative --
-              </option>
-              {salesReps.map((rep) => (
-                <option key={rep.id} value={rep.id}>
-                  {rep.displayName || rep.username} ({rep.roleName || "Sales Rep"})
-                </option>
-              ))}
-            </select>
-          )}
+          <div className="target-modal-input-wrap">
+            <User size={16} className="target-modal-input-icon" />
+            {isEdit ? (
+              <input
+                type="text"
+                className="target-modal-input target-modal-input-disabled"
+                value={`${editingTarget?.SalesRepName || editingTarget?.SalesRepUsername} (#${editingTarget?.SalesRepID})`}
+                disabled
+              />
+            ) : (
+              <>
+                <select
+                  id="target-rep"
+                  className="target-modal-select"
+                  value={salesRepId}
+                  onChange={(e) => setSalesRepId(Number(e.target.value))}
+                  required
+                >
+                  <option value={0} disabled>
+                    -- Select Sales Representative --
+                  </option>
+                  {salesReps.map((rep) => (
+                    <option key={rep.id} value={rep.id}>
+                      {rep.displayName || rep.username} ({rep.roleName || "Sales Rep"})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={15} className="target-modal-chevron" />
+              </>
+            )}
+          </div>
         </div>
 
         {/* Period & Category Row */}
         <div className="target-form-row">
           <div className="target-form-group">
             <label htmlFor="target-period" className="target-form-label">
-              Period Cadence *
+              <span>Period Cadence</span>
+              <span className="target-field-required">*</span>
             </label>
-            <select
-              id="target-period"
-              className="input select target-form-input"
-              value={periodType}
-              onChange={(e) => handlePeriodChange(e.target.value as PeriodType)}
-              disabled={isEdit}
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="annually">Annually</option>
-            </select>
+            <div className="target-modal-input-wrap">
+              <Calendar size={16} className="target-modal-input-icon" />
+              <select
+                id="target-period"
+                className="target-modal-select"
+                value={periodType}
+                onChange={(e) => handlePeriodChange(e.target.value as PeriodType)}
+                disabled={isEdit}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="annually">Annually</option>
+              </select>
+              {!isEdit && <ChevronDown size={15} className="target-modal-chevron" />}
+            </div>
           </div>
 
           <div className="target-form-group">
             <label htmlFor="target-category" className="target-form-label">
-              Product Category *
+              <span>Product Category</span>
+              <span className="target-field-required">*</span>
             </label>
-            <select
-              id="target-category"
-              className="input select target-form-input"
-              value={category}
-              onChange={(e) => setCategory(e.target.value as TargetCategory)}
-            >
-              <option value="all">All Products</option>
-              <option value="tyre">Tyres Only</option>
-              <option value="battery">Batteries Only</option>
-            </select>
+            <div className="target-modal-input-wrap">
+              <Layers size={16} className="target-modal-input-icon" />
+              <select
+                id="target-category"
+                className="target-modal-select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as TargetCategory)}
+              >
+                <option value="all">All Products</option>
+                <option value="tyre">Tyres Only</option>
+                <option value="battery">Batteries Only</option>
+              </select>
+              <ChevronDown size={15} className="target-modal-chevron" />
+            </div>
           </div>
         </div>
 
         {/* Start & End Dates */}
         <div className="target-form-row">
           <div className="target-form-group">
-            <label htmlFor="target-start-date" className="target-form-label">
-              Start Date *
-            </label>
-            <input
-              id="target-start-date"
-              type="date"
-              className="input target-form-input"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              required
-            />
+            <div className="target-label-with-meta">
+              <label htmlFor="target-start-date" className="target-form-label">
+                <span>Start Date</span>
+                <span className="target-field-required">*</span>
+              </label>
+            </div>
+            <div className="target-modal-input-wrap">
+              <Calendar size={16} className="target-modal-input-icon" />
+              <input
+                id="target-start-date"
+                type="date"
+                className="target-modal-input target-modal-date-input"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="target-form-group">
-            <label htmlFor="target-end-date" className="target-form-label">
-              End Date *
-            </label>
-            <input
-              id="target-end-date"
-              type="date"
-              className="input target-form-input"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              required
-            />
+            <div className="target-label-with-meta">
+              <label htmlFor="target-end-date" className="target-form-label">
+                <span>End Date</span>
+                <span className="target-field-required">*</span>
+              </label>
+              {durationDays !== null && (
+                <span className="target-duration-badge" title="Total target period duration">
+                  {durationDays} {durationDays === 1 ? "day" : "days"}
+                </span>
+              )}
+            </div>
+            <div className="target-modal-input-wrap">
+              <Calendar size={16} className="target-modal-input-icon" />
+              <input
+                id="target-end-date"
+                type="date"
+                className="target-modal-input target-modal-date-input"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
           </div>
         </div>
 
         {/* Target Amount & Target Quantity */}
         <div className="target-form-row">
           <div className="target-form-group">
-            <label htmlFor="target-amount" className="target-form-label">
-              Target Revenue (LKR / Rs.) *
-            </label>
-            <input
-              id="target-amount"
-              type="number"
-              step="any"
-              min="1"
-              className="input target-form-input"
-              placeholder="e.g. 250000"
-              value={targetAmount}
-              onChange={(e) => setTargetAmount(e.target.value)}
-              required
-            />
+            <div className="target-label-with-meta">
+              <label htmlFor="target-amount" className="target-form-label">
+                <span>Target Revenue (LKR)</span>
+                <span className="target-field-required">*</span>
+              </label>
+              {formattedRevenuePreview && (
+                <span className="target-preview-badge" title="Formatted target revenue">
+                  {formattedRevenuePreview}
+                </span>
+              )}
+            </div>
+            <div className="target-modal-input-wrap">
+              <span className="target-modal-prefix">Rs.</span>
+              <input
+                id="target-amount"
+                type="number"
+                step="any"
+                min="1"
+                className="target-modal-input target-modal-input-with-prefix"
+                placeholder="e.g. 250000"
+                value={targetAmount}
+                onChange={(e) => setTargetAmount(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="target-form-group">
-            <label htmlFor="target-qty" className="target-form-label">
-              Target Volume (Units, optional)
-            </label>
-            <input
-              id="target-qty"
-              type="number"
-              min="0"
-              step="1"
-              className="input target-form-input"
-              placeholder="e.g. 10"
-              value={targetQty}
-              onChange={(e) => setTargetQty(e.target.value)}
-            />
+            <div className="target-label-with-meta">
+              <label htmlFor="target-qty" className="target-form-label">
+                <span>Target Volume</span>
+                <span className="target-field-optional">(Optional)</span>
+              </label>
+              {targetQty && !isNaN(Number(targetQty)) && Number(targetQty) > 0 && (
+                <span className="target-preview-badge">
+                  {Number(targetQty).toLocaleString()} units
+                </span>
+              )}
+            </div>
+            <div className="target-modal-input-wrap">
+              <Target size={16} className="target-modal-input-icon" />
+              <input
+                id="target-qty"
+                type="number"
+                min="0"
+                step="1"
+                className="target-modal-input"
+                placeholder="e.g. 10"
+                value={targetQty}
+                onChange={(e) => setTargetQty(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
         {/* Notes */}
         <div className="target-form-group">
           <label htmlFor="target-notes" className="target-form-label">
-            Notes & Directives (Optional)
+            <span>Notes & Directives</span>
+            <span className="target-field-optional">(Optional)</span>
           </label>
-          <textarea
-            id="target-notes"
-            className="input textarea target-form-textarea"
-            rows={2}
-            placeholder="e.g. Focus on premium truck tyres and commercial accounts this month"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+          <div className="target-modal-textarea-wrap">
+            <textarea
+              id="target-notes"
+              className="target-modal-textarea"
+              rows={3}
+              placeholder="e.g. Focus on premium truck tyres and commercial fleet accounts this month"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Modal Footer Actions */}
         <div className="target-form-actions">
           <button
             type="button"
-            className="secondary-action"
+            className="target-modal-cancel-btn"
             onClick={onClose}
             disabled={saving}
           >
@@ -354,10 +456,25 @@ export function AdminTargetModal({
           </button>
           <button
             type="submit"
-            className="primary-action"
+            className="target-modal-submit-btn"
             disabled={saving}
           >
-            {saving ? "Saving…" : isEdit ? "Update Target" : "Assign Target"}
+            {saving ? (
+              <>
+                <RotateCw size={15} className="target-spin-icon" />
+                <span>Saving…</span>
+              </>
+            ) : isEdit ? (
+              <>
+                <Check size={16} strokeWidth={2.2} />
+                <span>Update Target</span>
+              </>
+            ) : (
+              <>
+                <Plus size={16} strokeWidth={2.2} />
+                <span>Assign Target</span>
+              </>
+            )}
           </button>
         </div>
       </form>
