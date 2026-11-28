@@ -4,6 +4,7 @@ import type {
   DirectInvoicePayload,
   InvoiceDetailedRecord,
   InvoiceRecord,
+  InvoiceSourceType,
   UpdateInvoicePayload,
 } from "../models/invoice"
 import { invoiceClient } from "./invoiceClient"
@@ -21,8 +22,16 @@ export const invoiceService = {
     return invoiceClient.getInvoiceById(invoiceId)
   },
 
+  getBySource(sourceType: InvoiceSourceType, sourceId: number): Promise<InvoiceDetailedRecord | null> {
+    return invoiceClient.getBySource(sourceType, sourceId)
+  },
+
   generateFromSO(soId: number): Promise<InvoiceDetailedRecord> {
     return invoiceClient.generateFromSO(soId)
+  },
+
+  generateFromDAG(dagId: number): Promise<InvoiceDetailedRecord> {
+    return invoiceClient.generateFromDAG(dagId)
   },
 
   generateFromOtherService(osId: number): Promise<InvoiceDetailedRecord> {

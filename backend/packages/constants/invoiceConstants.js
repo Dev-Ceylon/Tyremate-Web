@@ -42,6 +42,7 @@ const INVOICE_SOURCE_CODES = {
   OTHER_SERVICE: 'other_service',
   DIRECT: 'direct',
   DELIVERY: 'delivery',
+  DAG: 'dag',
 }
 
 const INVOICE_SOURCE_NAMES = {
@@ -49,6 +50,7 @@ const INVOICE_SOURCE_NAMES = {
   [INVOICE_SOURCE_CODES.OTHER_SERVICE]: 'Other Service',
   [INVOICE_SOURCE_CODES.DIRECT]: 'Direct',
   [INVOICE_SOURCE_CODES.DELIVERY]: 'Delivery',
+  [INVOICE_SOURCE_CODES.DAG]: 'DAG Retreading',
 }
 
 const INVOICE_SOURCE_IDS = {
@@ -57,6 +59,7 @@ const INVOICE_SOURCE_IDS = {
   OTHER_SERVICE: null,
   DIRECT: null,
   DELIVERY: null,
+  DAG: null,
 }
 
 // Invoice source seed data - single source of truth for seeding.

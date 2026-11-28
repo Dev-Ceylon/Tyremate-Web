@@ -18,7 +18,7 @@ export function PaymentSaleDetails({ payment, title, onClose }: PaymentSaleDetai
         <div className="detail-card-grid">
           <div className="detail-card-row">
             <span className="detail-card-key">Settled Amount</span>
-            <span className="detail-card-val font-bold">${formatCurrency(payment.Amount)}</span>
+            <span className="detail-card-val font-bold">Rs {formatCurrency(payment.Amount)}</span>
           </div>
           {payment.BankName && (
             <div className="detail-card-row">
@@ -58,7 +58,7 @@ export function PaymentSaleDetails({ payment, title, onClose }: PaymentSaleDetai
                       <div className="cell-sub">{line.TyreCode || "-"}</div>
                     </td>
                     <td className="mono-text">{line.SerialNumber || "-"}</td>
-                    <td className="text-right font-bold">${formatCurrency(line.Amount)}</td>
+                    <td className="text-right font-bold">Rs {formatCurrency(line.Amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -71,7 +71,7 @@ export function PaymentSaleDetails({ payment, title, onClose }: PaymentSaleDetai
             <span className="stat-badge">
               {lines.length} tyre{lines.length !== 1 ? "s" : ""}
             </span>
-            <span className="allocated-tyres-take-total">${formatCurrency(total)}</span>
+            <span className="allocated-tyres-take-total">Rs {formatCurrency(total)}</span>
           </div>
         )}
       </div>

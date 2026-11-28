@@ -438,7 +438,9 @@ const api = {
     getInvoices: () => ipcRenderer.invoke("invoice:getAll"),
     getOutstandingInvoices: () => ipcRenderer.invoke("invoice:getOutstanding"),
     getInvoiceById: (invoiceId) => ipcRenderer.invoke("invoice:getById", invoiceId),
+    getBySource: (sourceType, sourceId) => ipcRenderer.invoke("invoice:getBySource", sourceType, sourceId),
     generateFromSO: (soId) => ipcRenderer.invoke("invoice:generateFromSO", soId),
+    generateFromDAG: (dagId) => ipcRenderer.invoke("invoice:generateFromDAG", dagId),
     generateFromOtherService: (osId) => ipcRenderer.invoke("invoice:generateFromOtherService", osId),
     generateFromDelivery: (deliveryId) => ipcRenderer.invoke("invoice:generateFromDelivery", deliveryId),
     createDirect: (data) => ipcRenderer.invoke("invoice:createDirect", data),
@@ -741,6 +743,16 @@ const api = {
   },
 
   // Web edition additions -------------------------------------------------
+  salesTarget: {
+    getAll: (filters) => ipcRenderer.invoke("salesTarget:getAll", filters),
+    getById: (id) => ipcRenderer.invoke("salesTarget:getById", id),
+    getMyActiveTargets: () => ipcRenderer.invoke("salesTarget:getMyActiveTargets"),
+    create: (payload) => ipcRenderer.invoke("salesTarget:create", payload),
+    update: (id, payload) => ipcRenderer.invoke("salesTarget:update", id, payload),
+    delete: (id) => ipcRenderer.invoke("salesTarget:delete", id),
+    getSalesReps: () => ipcRenderer.invoke("salesTarget:getSalesReps"),
+  },
+
   admin: {
     getCloudinaryConfig: () => ipcRenderer.invoke("admin:getCloudinaryConfig"),
     setCloudinaryConfig: (config) => ipcRenderer.invoke("admin:setCloudinaryConfig", config),

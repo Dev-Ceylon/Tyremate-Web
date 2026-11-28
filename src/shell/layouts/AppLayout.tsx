@@ -15,6 +15,11 @@ import { installTableCellWrapping } from "../web/tableCells"
 
 export default function AppLayout() {
   const { logout, user } = useAuthContext()
+  const isAdminOrSuperAdmin = Boolean(
+    user?.roles?.some(
+      (r) => Number(r.roleId) === 0 || Number(r.roleId) === 1 || r.roleName === "Admin" || r.roleName === "Super Admin"
+    )
+  )
   const { hasPermission, hasAnyPermission } = useAuthorization()
   const { pendingCount, loading } = useReminderContext()
   const {
@@ -80,7 +85,7 @@ export default function AppLayout() {
           <NavLink className="ghost-link" to="/">
             Home
           </NavLink>
-          {hasPermission("inquiry.view") && !hasAnyPermission("so.view", "dag.view", "violations.view") ? (
+          {hasPermission("inquiry.view") && !hasAnyPermission("so.view", "dag.view", "violations.view", "targets.manage", "targets.view_own") ? (
             <NavLink className="ghost-link" to="/inquiries">
               Inquiries
             </NavLink>
@@ -96,6 +101,8 @@ export default function AppLayout() {
                 hasPermission("dag.view") && { label: "DAG", to: "/dag" },
                 hasPermission("so.view") && { label: "Used Tyre Sales", to: "/used-tyres" },
                 hasPermission("reports.view") && { label: "Sales Reports", to: "/reports/sales" },
+                hasPermission("targets.manage") && { label: "Sales Targets", to: "/sales-targets" },
+                !isAdminOrSuperAdmin && hasPermission("targets.view_own") && { label: "My Targets", to: "/my-targets" },
               ].filter(Boolean) as any[]}
             />
           )}

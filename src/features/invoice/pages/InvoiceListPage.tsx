@@ -1,15 +1,36 @@
-import { useInvoices, type InvoiceListFilter } from "../hooks/useInvoices"
+import { useInvoices, type InvoiceListFilter, type InvoiceSourceFilter } from "../hooks/useInvoices"
 import { InvoiceTable } from "../components/InvoiceTable"
 import { LoadingState } from "../../../shared/ui/progress"
 
-const FILTERS: { key: InvoiceListFilter; label: string }[] = [
+const STATUS_FILTERS: { key: InvoiceListFilter; label: string }[] = [
   { key: "all", label: "All Invoices" },
   { key: "outstanding", label: "Unpaid" },
   { key: "overdue", label: "Overdue" },
 ]
 
+const SOURCE_FILTERS: { key: InvoiceSourceFilter; label: string }[] = [
+  { key: "all", label: "All Sources" },
+  { key: "dag", label: "DAG Retreading" },
+  { key: "so", label: "Sales Orders" },
+  { key: "other_service", label: "Other Services" },
+  { key: "delivery", label: "Deliveries" },
+  { key: "direct", label: "Direct" },
+]
+
 export default function InvoiceListPage() {
-  const { visibleInvoices, loading, error, filter, setFilter } = useInvoices()
+  const {
+    invoices,
+    visibleInvoices,
+    loading,
+    error,
+    filter,
+    setFilter,
+    sourceFilter,
+    setSourceFilter,
+    searchQuery,
+    setSearchQuery,
+    isFiltering,
+  } = useInvoices()
 
   return (
     <main className="app-shell">
@@ -25,7 +46,7 @@ export default function InvoiceListPage() {
         <div className="table-panel-header">
           <h2>Invoice List</h2>
           <div className="header-actions">
-            {FILTERS.map((f) => (
+            {STATUS_FILTERS.map((f) => (
               <button
                 key={f.key}
                 type="button"
@@ -38,6 +59,49 @@ export default function InvoiceListPage() {
           </div>
         </div>
 
+        <div className="invoice-filter-bar">
+          <div className="invoice-search-wrapper">
+            <input
+              type="text"
+              className="text-input invoice-search-input"
+              placeholder="Search by invoice #, customer, DAG / SO #..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="search-clear-button"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <div className="invoice-filter-group">
+            {SOURCE_FILTERS.map((sf) => (
+              <button
+                key={sf.key}
+                type="button"
+                className={sourceFilter === sf.key ? "primary-action table-action" : "secondary-action table-action"}
+                onClick={() => setSourceFilter(sf.key)}
+              >
+                {sf.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isFiltering && (
+          <div className="search-results-info">
+            <p className="hero-text">
+              Showing {visibleInvoices.length} of {invoices.length} invoices
+            </p>
+          </div>
+        )}
+
         {loading ? (
           <LoadingState message="Loading invoices…" />
         ) : error ? (
@@ -49,3 +113,4 @@ export default function InvoiceListPage() {
     </main>
   )
 }
+

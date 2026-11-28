@@ -24,6 +24,10 @@ const chequePaymentReceiptRepo = require("../repositories/chequePaymentReceiptRe
 const cashPaymentService = require("./cashPaymentService")
 const chequePaymentService = require("./chequePaymentService")
 const bankTransferPaymentService = require("./bankTransferPaymentService")
+const invoiceService = require("./invoiceService")
+const invoiceSettlementService = require("./invoiceSettlementService")
+const invoiceLinkRepo = require("../repositories/invoicePaymentLinkRepository")
+const bankDetailsRepo = require("../repositories/bankDetailsRepository")
 const { PAYMENT_TYPE_CODES, PAYMENT_TYPE_NAMES, getPaymentTypeIdByCode } = require("../constants/paymentTypeConstants")
 const { STATUS_CODES, getStatusId } = require("../constants/statusConstants")
 const { getStorageSourceId } = require("../constants/storageSourceConstants")
@@ -176,12 +180,12 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
 
   const payment = {
     CashPayment: rawPaymentPayload.CashPayment ? {
-      PaymentTypeCode: String(rawPaymentPayload.CashPayment.PaymentTypeCode || "").trim(),
+      PaymentTypeCode: String(rawPaymentPayload.CashPayment.PaymentTypeCode || PAYMENT_TYPE_CODES.CASH).trim(),
       AmountReceived: normalizeNumber(rawPaymentPayload.CashPayment.AmountReceived, "AmountReceived"),
       BalanceToReturn: normalizeNumber(rawPaymentPayload.CashPayment.BalanceToReturn, "BalanceToReturn")
     } : null,
     ChequePayment: rawPaymentPayload.ChequePayment ? {
-          PaymentTypeCode: String(rawPaymentPayload.ChequePayment.PaymentTypeCode || "").trim(),
+          PaymentTypeCode: String(rawPaymentPayload.ChequePayment.PaymentTypeCode || PAYMENT_TYPE_CODES.CHEQUE).trim(),
           ChequeNumber: String(rawPaymentPayload.ChequePayment.ChequeNumber || "").trim(),
           ChequeDate: normalizeRequiredDate(rawPaymentPayload.ChequePayment.ChequeDate, "ChequeDate"),
           BankName: String(rawPaymentPayload.ChequePayment.BankName || "").trim(),
@@ -189,7 +193,7 @@ const normalizePaymentPayload = (rawPaymentPayload) => {
           Collected: normalizeBooleanFlag(rawPaymentPayload.ChequePayment.Collected, "Collected"),
         } : null,
     BankTransferPayment: rawPaymentPayload.BankTransferPayment ? {
-      PaymentTypeCode: String(rawPaymentPayload.BankTransferPayment.PaymentTypeCode || "").trim(),
+      PaymentTypeCode: String(rawPaymentPayload.BankTransferPayment.PaymentTypeCode || PAYMENT_TYPE_CODES.BANK_TRANSFER).trim(),
       BankDetailsID: normalizeId(rawPaymentPayload.BankTransferPayment.BankDetailsID, "BankDetailsID"),
       Amount: normalizeNumber(rawPaymentPayload.BankTransferPayment.Amount, "Amount")
     } : null
@@ -314,11 +318,24 @@ const createPaymentForDag = (dagId, paymentData) => {
 
 const getDAGPaymentDetails = (paymentId) => {
   try {
+    const paymentRecord = paymentRepo.getPaymentById(paymentId)
+    const createdAt = paymentRecord?.CreatedDate ?? null
+    const invoiceLinks = invoiceLinkRepo.getLinksByPaymentId(paymentId) || []
+    const invoices = invoiceLinks.map((link) => ({
+      InvoiceID: link.InvoiceID,
+      InvoiceNumber: link.InvoiceNumber,
+    }))
+
     const paymentItem = {
       PaymentID: paymentId,
       PaymentTypeCode: null,
       PaymentTypeName: null,
       Amount: 0,
+      CreatedAt: createdAt,
+      PaymentDate: createdAt,
+      ReferenceNumber: null,
+      BankName: null,
+      Invoices: invoices,
     }
 
     const cashPayment = cashPaymentService.getCashPaymentByPaymentId(paymentId)
@@ -328,6 +345,8 @@ const getDAGPaymentDetails = (paymentId) => {
       paymentItem.Amount = (cashPayment.AmountReceived || 0) - (cashPayment.BalanceToReturn || 0)
       paymentItem.AmountReceived = cashPayment.AmountReceived
       paymentItem.BalanceToReturn = cashPayment.BalanceToReturn
+      paymentItem.PaidAmount = cashPayment.AmountReceived
+      paymentItem.BalanceAmount = cashPayment.BalanceToReturn
       // Include receipt fields for frontend receipt preview
       paymentItem.ReceiptPath = cashPayment.ReceiptPath ?? null
       paymentItem.ReceiptEncIV = cashPayment.ReceiptEncIV ?? null
@@ -342,7 +361,9 @@ const getDAGPaymentDetails = (paymentId) => {
       paymentItem.PaymentTypeName = PAYMENT_TYPE_NAMES[PAYMENT_TYPE_CODES.CHEQUE]
       paymentItem.Amount = chequePayment.Amount || 0
       paymentItem.ChequeNumber = chequePayment.ChequeNumber
+      paymentItem.ReferenceNumber = chequePayment.ChequeNumber
       paymentItem.ChequeDate = chequePayment.ChequeDate
+      paymentItem.PaymentDate = chequePayment.ChequeDate || createdAt
       paymentItem.BankName = chequePayment.BankName
       paymentItem.Collected = chequePayment.Collected ?? 0
       // Include receipts for cheque payments
@@ -363,6 +384,11 @@ const getDAGPaymentDetails = (paymentId) => {
       paymentItem.PaymentTypeName = PAYMENT_TYPE_NAMES[PAYMENT_TYPE_CODES.BANK_TRANSFER]
       paymentItem.Amount = bankTransferPayment.Amount || 0
       paymentItem.BankDetailsID = bankTransferPayment.BankDetailsID
+      if (bankTransferPayment.BankDetailsID) {
+        const bank = bankDetailsRepo.getBankDetailsById(bankTransferPayment.BankDetailsID)
+        paymentItem.BankName = bank?.BankName ?? null
+        paymentItem.ReferenceNumber = bank?.AccountNumber ?? null
+      }
       // Include receipt fields for frontend receipt preview
       paymentItem.ReceiptPath = bankTransferPayment.ReceiptPath ?? null
       paymentItem.ReceiptEncIV = bankTransferPayment.ReceiptEncIV ?? null
@@ -693,6 +719,7 @@ exports.getDetailedDAGById = (id) => {
           dagPayment.PaymentID,
           normalizedId
         )
+        details.IsAdvance = (!details.SaleLines || details.SaleLines.length === 0) ? 1 : 0
         return details
       })
       .filter(Boolean)
@@ -817,7 +844,7 @@ exports.createDAG = (payload) => {
   })()
 }
 
-exports.createDAGWithTyres = (payload) => {
+exports.createDAGWithTyres = (payload, ctx) => {
   const data = toDAGCreateWithTyresPayload(payload)
 
   const createTransaction = db.transaction(() => {
@@ -899,7 +926,17 @@ exports.createDAGWithTyres = (payload) => {
     return { dag, tyres }
   })
 
-  return createTransaction()
+  const result = createTransaction()
+
+  if (data.Payment) {
+    try {
+      invoiceService.generateInvoiceFromDAG(result.dag.ID, ctx)
+    } catch (invoiceError) {
+      console.error(`Failed to auto-generate invoice for DAG ${result.dag.ID}:`, invoiceError)
+    }
+  }
+
+  return result
 }
 
 /**
@@ -1689,7 +1726,16 @@ exports.sellDAGTyres = (id, payload = {}, ctx) => {
     }
   })
 
-  return sellTransaction()
+  const result = sellTransaction()
+  invoiceSettlementService.syncInvoiceSettlementsForDAG(normalizedId)
+
+  try {
+    invoiceService.generateInvoiceFromDAG(normalizedId, ctx)
+  } catch (invoiceError) {
+    console.error(`Failed to auto-generate invoice for DAG ${normalizedId}:`, invoiceError)
+  }
+
+  return result
 }
 
 /**
@@ -1741,7 +1787,9 @@ exports.completeChequePayment = (dagId, paymentId, ctx) => {
     }
   })
 
-  return completePaymentTransaction()
+  const result = completePaymentTransaction()
+  invoiceSettlementService.syncInvoiceSettlementsForDAG(dagId)
+  return result
 }
 
 exports.processPayments = processPayments

@@ -1,4 +1,12 @@
 import type { SupplierPayload, SupplierRecord, SupplierTypeRecord } from "../features/master-data/suppliers/models/supplier"
+import type {
+  ActiveTargetsMap,
+  SalesRepUser,
+  SalesTargetFilter,
+  SalesTargetPayload,
+  SalesTargetRecord,
+  SalesTargetUpdatePayload,
+} from "../features/sales-target/models/salesTarget"
 import type { ContractorPayload, ContractorRecord } from "../features/master-data/contractors/models/contractor"
 import type { CustomerPayload, CustomerRecord } from "../features/master-data/customers/models/customer"
 import type { BranchPayload, BranchRecord } from "../features/master-data/branches/models/branch"
@@ -160,6 +168,7 @@ import type { GoodsReceiptPayload, GoodsReceiptLineRecord, PendingGoodsReceiptFi
 import type {
   InvoiceRecord,
   InvoiceDetailedRecord,
+  InvoiceSourceType,
   DirectInvoicePayload,
   UpdateInvoicePayload,
   CancelInvoicePayload,
@@ -437,7 +446,9 @@ declare global {
         getInvoices: () => Promise<InvoiceRecord[]>
         getOutstandingInvoices: () => Promise<InvoiceRecord[]>
         getInvoiceById: (invoiceId: number) => Promise<InvoiceDetailedRecord>
+        getBySource: (sourceType: InvoiceSourceType, sourceId: number) => Promise<InvoiceDetailedRecord | null>
         generateFromSO: (soId: number) => Promise<InvoiceDetailedRecord>
+        generateFromDAG: (dagId: number) => Promise<InvoiceDetailedRecord>
         generateFromOtherService: (osId: number) => Promise<InvoiceDetailedRecord>
         generateFromDelivery: (deliveryId: number) => Promise<InvoiceDetailedRecord>
         createDirect: (data: DirectInvoicePayload) => Promise<InvoiceDetailedRecord>
@@ -760,6 +771,17 @@ declare global {
         getSchemaStatus: () => Promise<any>
         getTableCounts: () => Promise<{ name: string; rows: number }[]>
         seedSampleData: (options: { includeStock?: boolean }) => Promise<any>
+      }
+
+      // Sales Targets (salesTarget.ipc.js)
+      salesTarget: {
+        getAll: (filter?: SalesTargetFilter) => Promise<SalesTargetRecord[]>
+        getById: (id: number) => Promise<SalesTargetRecord>
+        getMyActiveTargets: () => Promise<ActiveTargetsMap>
+        create: (payload: SalesTargetPayload) => Promise<SalesTargetRecord>
+        update: (id: number, payload: SalesTargetUpdatePayload) => Promise<SalesTargetRecord>
+        delete: (id: number) => Promise<{ success: boolean; message?: string }>
+        getSalesReps: () => Promise<SalesRepUser[]>
       }
 
       onError: (callback: (info: IpcErrorInfo) => void) => () => void

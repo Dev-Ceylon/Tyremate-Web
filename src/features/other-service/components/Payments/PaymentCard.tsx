@@ -16,7 +16,7 @@ export function PaymentCard({ payment, onCompleteCheque, submitting }: PaymentCa
       <div className="detail-card-grid">
         <div className="detail-card-row">
           <span className="detail-card-key">Settled Amount</span>
-          <span className="detail-card-val">${fmt(payment.Amount)}</span>
+          <span className="detail-card-val">Rs {fmt(payment.Amount)}</span>
         </div>
         {payment.ReferenceNumber && (
           <div className="detail-card-row">
@@ -39,13 +39,13 @@ export function PaymentCard({ payment, onCompleteCheque, submitting }: PaymentCa
         {payment.PaidAmount !== undefined && (
           <div className="detail-card-row">
             <span className="detail-card-key">Received</span>
-            <span className="detail-card-val">${fmt(payment.PaidAmount)}</span>
+            <span className="detail-card-val">Rs {fmt(payment.PaidAmount)}</span>
           </div>
         )}
         {payment.BalanceAmount !== undefined && (
           <div className="detail-card-row">
             <span className="detail-card-key">Balance Return</span>
-            <span className="detail-card-val">${fmt(payment.BalanceAmount)}</span>
+            <span className="detail-card-val">Rs {fmt(payment.BalanceAmount)}</span>
           </div>
         )}
       </div>

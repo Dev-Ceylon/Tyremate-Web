@@ -1,11 +1,11 @@
 const inquiryService = require("../../../packages/services/inquiryService")
-const { registerIpcHandler } = require("./errorMiddleware")
+const { registerIpcHandler, registerServiceHandler } = require("./errorMiddleware")
 
 registerIpcHandler("inquiries:getAll", { permission: "inquiry.view" }, () => inquiryService.getInquiries())
 
 registerIpcHandler("inquiries:getById", { permission: "inquiry.view" }, (_event, inquiryId) => inquiryService.getInquiryById(inquiryId))
 
-registerIpcHandler("inquiries:create", { permission: "inquiry.create" }, (_event, payload) => inquiryService.createInquiry(payload))
+registerServiceHandler("inquiries:create", { permission: "inquiry.create" }, inquiryService, "createInquiry")
 
 registerIpcHandler("inquiries:update", { permission: "inquiry.edit" }, (_event, inquiryId, payload) => inquiryService.updateInquiry(inquiryId, payload))
 

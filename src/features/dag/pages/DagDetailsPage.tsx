@@ -1,7 +1,9 @@
+import { useCallback } from "react"
 import { useParams, useNavigate } from "@/lib/router"
 import { useDagDetails } from "../hooks/useDagDetails"
 import { useDagDetailsActions } from "../hooks/useDagDetailsActions"
 import { useDagReceiptViewer } from "../hooks/useDagReceiptViewer"
+import { useDagInvoice } from "../hooks/useDagInvoice"
 import { PaymentModalController } from "../../../shared/payment/ui/PaymentModalController"
 import { ReceiptPreviewModal } from "../../../shared/payment/ui/ReceiptPreviewModal"
 import { DagSummaryCard } from "../components/details/DagSummaryCard"
@@ -12,6 +14,8 @@ import { DagPaymentDetailsSection } from "../components/details/DagPaymentDetail
 import { AssignContractorDialog } from "../components/AssignContractorDialog"
 import { IssueGatePassDialog } from "../components/IssueGatePassDialog"
 import { DeliveryDateDialog } from "../components/DeliveryDateDialog"
+import { PrinterModal } from "../../printer/components/PrinterModal"
+import { usePrintDagPaymentReceipt } from "../hooks/usePrintDagPaymentReceipt"
 import { STATUS_CODES } from "../../../shared/constants/statusConstants"
 import { LoadingState } from "../../../shared/ui/progress"
 import type { DagPaymentDetail } from "../models/dag"
@@ -44,6 +48,18 @@ export function DagDetailsPage() {
     updateDeliveryDate,
     completeChequePayment,
   } = useDagDetails(id)
+
+  const {
+    invoice,
+    loading: invoiceLoading,
+    isGenerating: isGeneratingInvoice,
+    generateInvoice,
+    refreshInvoice,
+  } = useDagInvoice(id)
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([refresh(), refreshInvoice()])
+  }, [refresh, refreshInvoice])
 
   const {
     totals,
@@ -85,7 +101,7 @@ export function DagDetailsPage() {
     saveCosts,
     saveCostsError: error,
     handleSerialInputChange,
-    refresh,
+    refresh: refreshAll,
     assignContractor,
     updateContractorApproval,
     issueGatePass,
@@ -98,8 +114,21 @@ export function DagDetailsPage() {
   const dagPayments = (totals?.payments ?? []) as DagPaymentDetail[]
   const receiptViewer = useDagReceiptViewer({
     payments: dagPayments,
-    onReceiptsChanged: () => void refresh(),
+    onReceiptsChanged: () => void refreshAll(),
   })
+
+  const {
+    printingPaymentId,
+    downloadingPaymentId,
+    isPrintingSummary,
+    isDownloadingSummary,
+    isPrinterModalOpen,
+    handlePrint: handlePrintPaymentReceipt,
+    handleDownload: handleDownloadPaymentReceipt,
+    handlePrintSummary: handlePrintPaymentSummary,
+    handleDownloadSummary: handleDownloadPaymentSummary,
+    closePrinterModal,
+  } = usePrintDagPaymentReceipt(dag)
 
   if (loading) {
     return (
@@ -126,6 +155,22 @@ export function DagDetailsPage() {
           <p className="hero-text">Detailed breakdown of delivery advice note and tyre allocation.</p>
         </div>
         <div className="header-actions">
+          {invoice ? (
+            <button
+              className="primary-action"
+              onClick={() => navigate(`/invoices/${invoice.InvoiceID}`)}
+            >
+              View Invoice
+            </button>
+          ) : (
+            <button
+              className="secondary-action"
+              onClick={generateInvoice}
+              disabled={isGeneratingInvoice}
+            >
+              {isGeneratingInvoice ? "Generating Invoice…" : "Generate Invoice"}
+            </button>
+          )}
           {showMarkArriving && (
             <button className="primary-action" onClick={openArrivingDialog}>
               Set Delivery Date
@@ -156,7 +201,13 @@ export function DagDetailsPage() {
 
       <section className="content-grid">
         <DagSummaryCard dag={dag} />
-        <DagFinancialOverviewCard totals={totals} />
+        <DagFinancialOverviewCard
+          totals={totals}
+          invoice={invoice}
+          loadingInvoice={invoiceLoading}
+          onGenerateInvoice={generateInvoice}
+          isGeneratingInvoice={isGeneratingInvoice}
+        />
       </section>
 
       <DagContractorCard
@@ -190,6 +241,14 @@ export function DagDetailsPage() {
           onViewReceipts={receiptViewer.openReceipt}
           onCompleteCheque={handleCompleteCheque}
           completingChequeId={completingChequeId}
+          onPrintCustomerReceipt={handlePrintPaymentReceipt}
+          onDownloadCustomerReceipt={handleDownloadPaymentReceipt}
+          printingReceiptPaymentId={printingPaymentId}
+          downloadingReceiptPaymentId={downloadingPaymentId}
+          onPrintSummaryReceipt={handlePrintPaymentSummary}
+          onDownloadSummaryReceipt={handleDownloadPaymentSummary}
+          isPrintingSummaryReceipt={isPrintingSummary}
+          isDownloadingSummaryReceipt={isDownloadingSummary}
         />
       )}
 
@@ -208,6 +267,11 @@ export function DagDetailsPage() {
         receipts={receiptViewer.previewReceipts}
         title={receiptViewer.previewTitle}
         manage={receiptViewer.manage}
+      />
+
+      <PrinterModal
+        isOpen={isPrinterModalOpen}
+        onClose={closePrinterModal}
       />
 
       <AssignContractorDialog

@@ -9,6 +9,7 @@ exports.getAllSOs = (category) => {
       s.IsAdminApproved,
       s.IsCompleted,
       s.IsPaymentCompleted,
+      s.SalesRepID,
       COALESCE(s.Category, 'tyre') AS Category,
       COALESCE(c.Name, swc.CustomerName) AS CustomerName,
       c.CustomerCode,
@@ -49,6 +50,7 @@ exports.getSOById = (soId) => {
         s.IsAdminApproved,
         s.IsCompleted,
         s.IsPaymentCompleted,
+        s.SalesRepID,
         COALESCE(s.Category, 'tyre') AS Category,
         COALESCE(c.Name, swc.CustomerName) AS CustomerName,
         c.CustomerCode,
@@ -143,16 +145,18 @@ exports.createSO = (so) => {
         CreatedDateTime,
         IsAdminApproved,
         IsCompleted,
-        IsPaymentCompleted
+        IsPaymentCompleted,
+        SalesRepID
       )
-      VALUES (?, ?, datetime('now', 'localtime'), ?, ?, ?)
+      VALUES (?, ?, datetime('now', 'localtime'), ?, ?, ?, ?)
     `)
     .run(
       so.Date,
       so.Category || "tyre",
       so.IsAdminApproved,
       so.IsCompleted,
-      so.IsPaymentCompleted
+      so.IsPaymentCompleted,
+      so.SalesRepID || null
     )
 
   return exports.getSOById(result.lastInsertRowid)
@@ -167,7 +171,8 @@ exports.updateSO = (soId, so) => {
         Category = COALESCE(?, Category, 'tyre'),
         IsAdminApproved = ?,
         IsCompleted = ?,
-        IsPaymentCompleted = ?
+        IsPaymentCompleted = ?,
+        SalesRepID = COALESCE(?, SalesRepID)
       WHERE SoID = ?
     `)
     .run(
@@ -176,6 +181,7 @@ exports.updateSO = (soId, so) => {
       so.IsAdminApproved,
       so.IsCompleted,
       so.IsPaymentCompleted,
+      so.SalesRepID !== undefined ? so.SalesRepID : null,
       soId
     )
 

@@ -11,6 +11,15 @@ type DagPaymentDetailsSectionProps = {
   onViewReceipts?: (paymentId: number) => void
   onCompleteCheque?: (paymentId: number) => void
   completingChequeId?: number | null
+  onPrintCustomerReceipt?: (payment: DagPaymentDetail) => void
+  onDownloadCustomerReceipt?: (payment: DagPaymentDetail) => void
+  printingReceiptPaymentId?: number | null
+  downloadingReceiptPaymentId?: number | null
+  onPrintSummaryReceipt?: () => void
+  onDownloadSummaryReceipt?: () => void
+  isPrintingSummaryReceipt?: boolean
+  isDownloadingSummaryReceipt?: boolean
+  disabled?: boolean
 }
 
 const ordinal = (idx: number) => {
@@ -39,6 +48,15 @@ export function DagPaymentDetailsSection({
   onViewReceipts,
   onCompleteCheque,
   completingChequeId,
+  onPrintCustomerReceipt,
+  onDownloadCustomerReceipt,
+  printingReceiptPaymentId,
+  downloadingReceiptPaymentId,
+  onPrintSummaryReceipt,
+  onDownloadSummaryReceipt,
+  isPrintingSummaryReceipt = false,
+  isDownloadingSummaryReceipt = false,
+  disabled = false,
 }: DagPaymentDetailsSectionProps) {
   const [activePayment, setActivePayment] = useState<DagPaymentDetail | null>(null)
 
@@ -51,6 +69,30 @@ export function DagPaymentDetailsSection({
             label={isPaymentCompleted === 1 ? "Completed" : "Pending"}
             tone={isPaymentCompleted === 1 ? "completed" : "pending"}
           />
+          {payments.length > 0 && (
+            <>
+              {onPrintSummaryReceipt && (
+                <button
+                  className="secondary-action"
+                  type="button"
+                  onClick={onPrintSummaryReceipt}
+                  disabled={disabled || isPrintingSummaryReceipt || isDownloadingSummaryReceipt}
+                >
+                  {isPrintingSummaryReceipt ? "Printing summary..." : "Print all payments"}
+                </button>
+              )}
+              {onDownloadSummaryReceipt && (
+                <button
+                  className="secondary-action"
+                  type="button"
+                  onClick={onDownloadSummaryReceipt}
+                  disabled={disabled || isPrintingSummaryReceipt || isDownloadingSummaryReceipt}
+                >
+                  {isDownloadingSummaryReceipt ? "Preparing PDF..." : "Download payment summary"}
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -84,18 +126,18 @@ export function DagPaymentDetailsSection({
                   </div>
                   <div className="detail-card-row">
                     <span className="detail-card-key">Settled Amount</span>
-                    <span className="detail-card-val font-bold">${formatCurrency(payment.Amount)}</span>
+                    <span className="detail-card-val font-bold">Rs {formatCurrency(payment.Amount)}</span>
                   </div>
                   {payment.AmountReceived !== undefined && payment.AmountReceived !== null && (
                     <div className="detail-card-row">
                       <span className="detail-card-key">Received</span>
-                      <span className="detail-card-val">${formatCurrency(payment.AmountReceived)}</span>
+                      <span className="detail-card-val">Rs {formatCurrency(payment.AmountReceived)}</span>
                     </div>
                   )}
                   {payment.BalanceToReturn !== undefined && payment.BalanceToReturn !== null && (
                     <div className="detail-card-row">
                       <span className="detail-card-key">Balance Return</span>
-                      <span className="detail-card-val">${formatCurrency(payment.BalanceToReturn)}</span>
+                      <span className="detail-card-val">Rs {formatCurrency(payment.BalanceToReturn)}</span>
                     </div>
                   )}
                   {payment.ChequeNumber && (
@@ -122,6 +164,20 @@ export function DagPaymentDetailsSection({
                       <span className="detail-card-val">{payment.Collected === 1 ? "Yes" : "No"}</span>
                     </div>
                   )}
+                  {payment.ReferenceNumber && !payment.ChequeNumber && (
+                    <div className="detail-card-row">
+                      <span className="detail-card-key">Ref / Acc #</span>
+                      <span className="detail-card-val">{payment.ReferenceNumber}</span>
+                    </div>
+                  )}
+                  {payment.Invoices && payment.Invoices.length > 0 && (
+                    <div className="detail-card-row">
+                      <span className="detail-card-key">Invoice</span>
+                      <span className="detail-card-val font-semibold">
+                        {payment.Invoices.map((inv) => inv.InvoiceNumber || `#${inv.InvoiceID}`).join(", ")}
+                      </span>
+                    </div>
+                  )}
                   <div className="detail-card-row">
                     <span className="detail-card-key">Tyres Taken</span>
                     <span className="detail-card-val">{payment.SaleLines?.length ?? 0}</span>
@@ -136,6 +192,26 @@ export function DagPaymentDetailsSection({
                       disabled={isCompleting}
                     >
                       {isCompleting ? "Processing..." : "Complete the cheque payment"}
+                    </button>
+                  )}
+                  {paymentId != null && onPrintCustomerReceipt && (
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      onClick={() => onPrintCustomerReceipt(payment)}
+                      disabled={disabled || printingReceiptPaymentId === paymentId || downloadingReceiptPaymentId === paymentId}
+                    >
+                      {printingReceiptPaymentId === paymentId ? "Printing receipt..." : "Print payment receipt"}
+                    </button>
+                  )}
+                  {paymentId != null && onDownloadCustomerReceipt && (
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      onClick={() => onDownloadCustomerReceipt(payment)}
+                      disabled={disabled || printingReceiptPaymentId === paymentId || downloadingReceiptPaymentId === paymentId}
+                    >
+                      {downloadingReceiptPaymentId === paymentId ? "Preparing PDF..." : "Download receipt PDF"}
                     </button>
                   )}
                   {paymentId != null && onViewReceipts && (

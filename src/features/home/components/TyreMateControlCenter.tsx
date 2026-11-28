@@ -11,6 +11,9 @@ type TyreMateControlCenterProps = {
   onSignOut: () => void
 }
 
+const formatCurrency = (val: number) =>
+  `Rs. ${Number(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
 export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps) {
   const { products } = useProducts()
   const { summary } = useTodaySales()
@@ -102,7 +105,7 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
         <PermissionGate permission="so.view">
           <article className="metric-card panel">
             <span className="metric-label">Today's sales</span>
-            <strong>${summary.TotalSale.toFixed(2)}</strong>
+            <strong>{formatCurrency(summary.TotalSale)}</strong>
             <p>{summary.OrderCount} {summary.OrderCount === 1 ? "order" : "orders"} created today.</p>
           </article>
         </PermissionGate>
@@ -140,13 +143,13 @@ export function TyreMateControlCenter({ onSignOut }: TyreMateControlCenterProps)
 
           <article className="metric-card panel">
             <span className="metric-label">Average price</span>
-            <strong>${averagePrice.toFixed(2)}</strong>
+            <strong>{formatCurrency(averagePrice)}</strong>
             <p>A quick pricing snapshot across all listed products.</p>
           </article>
 
           <article className="metric-card panel">
             <span className="metric-label">Highest price</span>
-            <strong>${highestPrice.toFixed(2)}</strong>
+            <strong>{formatCurrency(highestPrice)}</strong>
             <p>The most premium item currently in your product table.</p>
           </article>
         </PermissionGate>

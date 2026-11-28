@@ -3,6 +3,7 @@ const invoiceLinkRepo = require("../repositories/invoicePaymentLinkRepository")
 const chequePaymentRepo = require("../repositories/chequePaymentRepository")
 const soDeliveryRepo = require("../repositories/soDeliveryRepository")
 const soPaymentRepo = require("../repositories/soPaymentRepository")
+const dagPaymentRepo = require("../repositories/dagPaymentRepository")
 const paymentProcessingService = require("./paymentProcessingService")
 const { PAYMENT_TYPE_CODES } = require("../constants/paymentTypeConstants")
 const {
@@ -183,11 +184,76 @@ const syncInvoiceSettlementsForSO = (soId) => {
 }
 
 /**
+ * Synchronizes all invoice settlements for a DAG:
+ * 1. Recomputes settlement for all invoices currently linked to any payment belonging to this DAG.
+ * 2. Gathers all settled payments for this DAG and allocates any unallocated settled amounts
+ *    to an unpaid DAG invoice.
+ */
+const syncInvoiceSettlementsForDAG = (dagId) => {
+  const normalizedDagId = Number(dagId)
+  if (!normalizedDagId) return
+
+  const dagPayments = dagPaymentRepo.getDAGPaymentsByDAGId(normalizedDagId) || []
+  if (dagPayments.length === 0) return
+
+  for (const dagPayment of dagPayments) {
+    const links = invoiceLinkRepo.getLinksByPaymentId(dagPayment.PaymentID) || []
+    for (const link of links) {
+      recomputeInvoiceSettlement(link.InvoiceID)
+    }
+  }
+
+  const dagSourceTypeId = getInvoiceSourceIdByCode(INVOICE_SOURCE_CODES.DAG)
+  const invoice = invoiceRepo.getInvoiceBySource(dagSourceTypeId, normalizedDagId)
+  if (
+    !invoice ||
+    invoice.IsCreditNote === 1 ||
+    invoice.StatusId === getInvoiceStatusIdByCode(INVOICE_STATUS_CODES.CANCELLED) ||
+    (invoice.BalanceDue ?? 0) <= 0
+  ) {
+    return
+  }
+
+  let remainingDue = round2(invoice.BalanceDue)
+  for (const dagPayment of dagPayments) {
+    if (remainingDue <= 0) break
+
+    const summary = paymentProcessingService.getPaymentSummaryById(dagPayment.PaymentID)
+    if (!summary) continue
+
+    const isSettled =
+      summary.PaymentTypeCode === PAYMENT_TYPE_CODES.CASH ||
+      summary.PaymentTypeCode === PAYMENT_TYPE_CODES.BANK_TRANSFER ||
+      (summary.PaymentTypeCode === PAYMENT_TYPE_CODES.CHEQUE && summary.Collected === 1)
+
+    if (!isSettled) continue
+
+    const totalAmount = round2(summary.Amount || 0)
+    const links = invoiceLinkRepo.getLinksByPaymentId(dagPayment.PaymentID) || []
+    const alreadyApplied = links.reduce((sum, l) => sum + (Number(l.AmountApplied) || 0), 0)
+    const unallocated = Math.max(0, round2(totalAmount - alreadyApplied))
+
+    if (unallocated > 0) {
+      const toApply = round2(Math.min(unallocated, remainingDue))
+      invoiceLinkRepo.linkPaymentToInvoice({
+        InvoiceID: invoice.InvoiceID,
+        PaymentID: dagPayment.PaymentID,
+        AmountApplied: toApply,
+      })
+      remainingDue = round2(remainingDue - toApply)
+    }
+  }
+
+  recomputeInvoiceSettlement(invoice.InvoiceID)
+}
+
+/**
  * Synchronizes invoice settlements when a cheque payment is marked as collected.
  * 1. Recomputes settlement for all invoices already linked to this payment.
  * 2. If soId is provided, also synchronizes all SO invoices with any unallocated settled funds.
+ * 3. If dagId is provided, also synchronizes DAG invoice with any unallocated settled funds.
  */
-const syncInvoiceSettlementOnChequeCollected = (paymentId, soId = null) => {
+const syncInvoiceSettlementOnChequeCollected = (paymentId, soId = null, dagId = null) => {
   const normalizedPaymentId = Number(paymentId)
   if (!normalizedPaymentId) return
 
@@ -200,6 +266,11 @@ const syncInvoiceSettlementOnChequeCollected = (paymentId, soId = null) => {
   // 2. If soId is provided, also synchronize all SO invoices with any unallocated settled funds
   if (soId) {
     syncInvoiceSettlementsForSO(soId)
+  }
+
+  // 3. If dagId is provided, also synchronize DAG invoices with any unallocated settled funds
+  if (dagId) {
+    syncInvoiceSettlementsForDAG(dagId)
   }
 }
 
@@ -233,6 +304,7 @@ module.exports = {
   findInvoiceBySource,
   recomputeInvoiceSettlement,
   syncInvoiceSettlementsForSO,
+  syncInvoiceSettlementsForDAG,
   syncInvoiceSettlementOnChequeCollected,
   settleInvoicePayment,
 }

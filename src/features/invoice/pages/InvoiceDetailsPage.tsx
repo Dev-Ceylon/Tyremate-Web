@@ -1,4 +1,4 @@
-import { useNavigate } from "@/lib/router"
+import { Link, useNavigate } from "@/lib/router"
 import { InvoiceStatusBadge } from "../components/InvoiceStatusBadge"
 import { CreditNoteDialog } from "../components/CreditNoteDialog"
 import { CancelInvoiceDialog } from "../components/CancelInvoiceDialog"
@@ -27,6 +27,8 @@ export default function InvoiceDetailsPage() {
     paymentForm,
     receiptViewer,
     sourceText,
+    sourceLabel,
+    sourceLink,
     isCancelled,
     isCreditNote,
     canCreditNote,
@@ -61,6 +63,15 @@ export default function InvoiceDetailsPage() {
           </p>
         </div>
         <div className="header-actions">
+          {sourceLink && (
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={() => navigate(sourceLink)}
+            >
+              View {sourceLabel}
+            </button>
+          )}
           {canRecordPayment && (
             <button className="primary-action" onClick={openPaymentModal}>
               Record Payment
@@ -116,7 +127,15 @@ export default function InvoiceDetailsPage() {
           <div className="detail-card-grid">
             <div className="detail-card-row">
               <span className="detail-card-key">Source</span>
-              <span className="detail-card-val">{sourceText}</span>
+              <span className="detail-card-val">
+                {sourceLink ? (
+                  <Link to={sourceLink} className="invoice-source-link">
+                    {sourceText}
+                  </Link>
+                ) : (
+                  sourceText
+                )}
+              </span>
             </div>
             <div className="detail-card-row">
               <span className="detail-card-key">Status</span>
@@ -126,29 +145,29 @@ export default function InvoiceDetailsPage() {
             </div>
             <div className="detail-card-row">
               <span className="detail-card-key">Subtotal</span>
-              <span className="detail-card-val">${fmt(record.Subtotal)}</span>
+              <span className="detail-card-val">Rs {fmt(record.Subtotal)}</span>
             </div>
             <div className="detail-card-row">
               <span className="detail-card-key">Discount</span>
-              <span className="detail-card-val">- ${fmt(record.DiscountTotal)}</span>
+              <span className="detail-card-val">- Rs {fmt(record.DiscountTotal)}</span>
             </div>
             {record.TaxAmount > 0 && (
               <div className="detail-card-row">
                 <span className="detail-card-key">{record.TaxLabel || "Tax"}</span>
-                <span className="detail-card-val">${fmt(record.TaxAmount)}</span>
+                <span className="detail-card-val">Rs {fmt(record.TaxAmount)}</span>
               </div>
             )}
             <div className="detail-card-row">
               <span className="detail-card-key">Total</span>
-              <span className="detail-card-val font-bold">${fmt(record.Total)}</span>
+              <span className="detail-card-val font-bold">Rs {fmt(record.Total)}</span>
             </div>
             <div className="detail-card-row">
               <span className="detail-card-key">Amount Paid</span>
-              <span className="detail-card-val">${fmt(record.AmountPaid)}</span>
+              <span className="detail-card-val">Rs {fmt(record.AmountPaid)}</span>
             </div>
             <div className="detail-card-row">
               <span className="detail-card-key">Balance Due</span>
-              <span className="detail-card-val font-bold">${fmt(record.BalanceDue)}</span>
+              <span className="detail-card-val font-bold">Rs {fmt(record.BalanceDue)}</span>
             </div>
           </div>
         </div>
@@ -192,9 +211,9 @@ export default function InvoiceDetailsPage() {
                       {line.SerialNo && <span className="notification-code">SN {line.SerialNo}</span>}
                     </td>
                     <td className="text-right">{line.Qty}</td>
-                    <td className="text-right">${fmt(line.UnitPrice)}</td>
+                    <td className="text-right">Rs {fmt(line.UnitPrice)}</td>
                     <td className="text-right">{line.Discount}</td>
-                    <td className="text-right font-bold">${fmt(line.LineTotal)}</td>
+                    <td className="text-right font-bold">Rs {fmt(line.LineTotal)}</td>
                   </tr>
                 )
               })}
@@ -223,7 +242,7 @@ export default function InvoiceDetailsPage() {
                   <tr key={cn.InvoiceID}>
                     <td className="mono-text">{cn.InvoiceNumber}</td>
                     <td className="secondary-text">{cn.InvoiceDate}</td>
-                    <td className="text-right font-bold">${fmt(cn.Total)}</td>
+                    <td className="text-right font-bold">Rs {fmt(cn.Total)}</td>
                     <td className="text-center">
                       <button
                         type="button"

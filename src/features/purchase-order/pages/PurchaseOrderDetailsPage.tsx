@@ -108,7 +108,7 @@ export default function PurchaseOrderDetailsPage() {
           <h2>{order.Category === "battery" ? "Battery Line Items" : "Tyre Line Items"}</h2>
           <div className="header-actions">
             <span className="stat-badge">{displayRows.length} allocation{displayRows.length !== 1 ? "s" : ""}</span>
-            <span className="stat-badge">${totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="stat-badge">Rs {totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
         <div className="table-scroll">

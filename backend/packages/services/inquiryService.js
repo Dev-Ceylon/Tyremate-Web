@@ -185,7 +185,7 @@ exports.getInquiryDetailsByReminderId = (reminderId) => {
   };
 };
 
-exports.createInquiry = (payload) => {
+exports.createInquiry = (payload, ctx = {}) => {
   let inquiryId;
   const customerId = normalizeOptionalCustomerId(payload.CustomerID);
   const walkinData = customerId ? null : toWalkinCustomerPayload(payload.WalkinCustomer);
@@ -201,8 +201,10 @@ exports.createInquiry = (payload) => {
       Category: category,
       CustomerID: customerId,
       Notes: payload.Notes || "",
-      IsAdminApproved: 0,
-      ConvertedSOID: null
+      IsAdminApproved: payload.IsAdminApproved ? 1 : 0,
+      ConvertedSOID: null,
+      IsCompleted: 0,
+      SalesRepID: payload.SalesRepID ? Number(payload.SalesRepID) : (ctx && ctx.user && ctx.user.id ? Number(ctx.user.id) : null),
     };
 
     inquiryId = inquiryRepo.createInquiry(inquiryData);
@@ -296,7 +298,8 @@ exports.updateInquiry = (id, payload) => {
     CustomerID: customerId,
     Notes: payload.Notes !== undefined ? payload.Notes : existing.Notes,
     IsAdminApproved: payload.IsAdminApproved !== undefined ? (payload.IsAdminApproved ? 1 : 0) : existing.IsAdminApproved,
-    ConvertedSOID: payload.ConvertedSOID !== undefined ? payload.ConvertedSOID : existing.ConvertedSOID
+    ConvertedSOID: payload.ConvertedSOID !== undefined ? payload.ConvertedSOID : existing.ConvertedSOID,
+    IsCompleted: payload.IsCompleted !== undefined ? (payload.IsCompleted ? 1 : 0) : (existing.IsCompleted ? 1 : 0),
   };
 
   const updateTransaction = db.transaction(() => {

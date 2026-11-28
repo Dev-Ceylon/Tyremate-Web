@@ -150,7 +150,7 @@ export function DagTyresTable({
                                   )}
                                   <span className="serial-chip-code">{serial.SerialNumber || "-"}</span>
                                   <div className="serial-chip-cost">
-                                    <span className="serial-chip-currency">$</span>
+                                    <span className="serial-chip-currency">Rs</span>
                                     <input
                                       className="serial-chip-input"
                                       type="number"
@@ -185,7 +185,7 @@ export function DagTyresTable({
         <div className="allocated-tyres-take-bar">
           <div className="allocated-tyres-take-summary">
             <span className="stat-badge">{selectionCount} selected</span>
-            <span className="allocated-tyres-take-total">${formatCurrency(selectedCost)}</span>
+            <span className="allocated-tyres-take-total">Rs {formatCurrency(selectedCost)}</span>
           </div>
           <button className="primary-action" type="button" onClick={onTakeSelected}>
             Take Selected

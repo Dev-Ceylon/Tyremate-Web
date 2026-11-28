@@ -39,6 +39,7 @@ const soTyreReturnRepo = require("../repositories/soTyreReturnRepository")
 const salesReturnRepo = require("../repositories/salesReturnRepository")
 const soReminderRepo = require("../repositories/soReminderRepository")
 const inquiryRepo = require("../repositories/inquiryRepository")
+const inquirySoRepo = require("../repositories/inquirySoRepository")
 const { PAYMENT_TYPE_CODES, PAYMENT_TYPE_NAMES } = require("../constants/paymentTypeConstants")
 const { STATUS_CODES, getStatusId, getStatusIdByCode } = require("../constants/statusConstants")
 const reminderRepo = require("../repositories/reminderRepository");
@@ -327,18 +328,32 @@ const collectInquiryIds = (payload = {}) => {
   )]
 }
 
-const toSOPayload = (payload = {}) => {
+const toSOPayload = (payload = {}, ctx = null) => {
+  let repId = payload.SalesRepID ? Number(payload.SalesRepID) : null
+  if (!repId && payload.InquiryID) {
+    const linkedInquiry = inquiryRepo.getInquiryById(Number(payload.InquiryID))
+    if (linkedInquiry && linkedInquiry.SalesRepID) {
+      repId = Number(linkedInquiry.SalesRepID)
+    }
+  }
+  if (!repId && ctx && ctx.user && ctx.user.id) {
+    const isRep = ctx.user.roles && ctx.user.roles.some((r) => Number(r.roleId) === 4 || r.roleName === "SalesRep")
+    if (isRep) {
+      repId = Number(ctx.user.id)
+    }
+  }
   return {
     Date: normalizeDate(payload.Date, "Date"),
     Category: payload.Category || "tyre",
     IsAdminApproved: normalizeBooleanFlag(payload.IsAdminApproved, "IsAdminApproved"),
     IsCompleted: normalizeBooleanFlag(payload.IsCompleted, "IsCompleted"),
-    IsPaymentCompleted: normalizeBooleanFlag(payload.IsPaymentCompleted, "IsPaymentCompleted")
+    IsPaymentCompleted: normalizeBooleanFlag(payload.IsPaymentCompleted, "IsPaymentCompleted"),
+    SalesRepID: repId || null,
   }
 }
 
-const toSalesOrderCreatePayload = (payload = {}) => {
-  const so = toSOPayload(payload)
+const toSalesOrderCreatePayload = (payload = {}, ctx = null) => {
+  const so = toSOPayload(payload, ctx)
   const isBattery = so.Category === "battery"
   const customerId = payload.CustomerID ? normalizePositiveId(payload.CustomerID, "CustomerID") : null
   const linesInput = Array.isArray(payload.Lines) ? payload.Lines : []
@@ -809,7 +824,7 @@ exports.getDeliveryWarehouseDispatch = (soId, deliveryId) => {
 }
 
 exports.createSO = (payload, ctx) => {
-  const so = toSOPayload(payload)
+  const so = toSOPayload(payload, ctx)
   const created = soRepo.createSO(so)
 
   const inquiryIds = collectInquiryIds(payload)
@@ -1446,7 +1461,7 @@ const recordSkippedOldStockViolation = ({ so, soTyre, line, violations, ctx }) =
 }
 
 exports.createSOWithAutoPO = (payload, ctx) => {
-  const data = toSalesOrderCreatePayload(payload)
+  const data = toSalesOrderCreatePayload(payload, ctx)
   const isBattery = data.Category === "battery"
   const isPaymentCompleted = deriveIsPaymentCompleted(data.Lines, data.Payment)
 
@@ -1459,6 +1474,7 @@ exports.createSOWithAutoPO = (payload, ctx) => {
       IsAdminApproved: data.IsAdminApproved,
       IsCompleted: data.IsCompleted,
       IsPaymentCompleted: isPaymentCompleted,
+      SalesRepID: data.SalesRepID,
     })
 
     const customerLink = data.CustomerID
@@ -2308,6 +2324,15 @@ exports.completeSO = (soId, ctx) => {
       throw new Error("Failed to mark SO as completed");
     }
 
+    // Auto-Close / Complete linked Inquiries and ensure approval
+    const linkedInquiries = inquirySoRepo.getLinkedInquiriesBySoId(normalizedSoId);
+    linkedInquiries.forEach((inq) => {
+      inquiryRepo.updateCompletionStatus(inq.InquiryID, 1);
+      inquiryRepo.updateApprovalStatus(inq.InquiryID, 1);
+      inquiryRepo.approveAllTyresForInquiry(inq.InquiryID);
+      inquiryRepo.approveAllBatteriesForInquiry(inq.InquiryID);
+    });
+
     const after = exports.getSOById(normalizedSoId);
 
     soAuditLogService.recordSOAction({
@@ -2339,11 +2364,32 @@ exports.completeSO = (soId, ctx) => {
 exports.updateSO = (soId, payload, ctx) => {
   const normalizedId = normalizeSOId(soId)
   const before = exports.getSOById(normalizedId)
-  const so = toSOPayload(payload)
+  const so = toSOPayload(payload, ctx)
   const updatedSO = soRepo.updateSO(normalizedId, so)
 
   if (!updatedSO) {
     throw new Error("SO not found")
+  }
+
+  // Auto-cascade approval to linked inquiries if SO is approved
+  if (so.IsAdminApproved === 1) {
+    const linkedInquiries = inquirySoRepo.getLinkedInquiriesBySoId(normalizedId)
+    linkedInquiries.forEach((inq) => {
+      inquiryRepo.updateApprovalStatus(inq.InquiryID, 1)
+      inquiryRepo.approveAllTyresForInquiry(inq.InquiryID)
+      inquiryRepo.approveAllBatteriesForInquiry(inq.InquiryID)
+    })
+  }
+
+  // Auto-cascade completion to linked inquiries if SO is completed
+  if (so.IsCompleted === 1) {
+    const linkedInquiries = inquirySoRepo.getLinkedInquiriesBySoId(normalizedId)
+    linkedInquiries.forEach((inq) => {
+      inquiryRepo.updateCompletionStatus(inq.InquiryID, 1)
+      inquiryRepo.updateApprovalStatus(inq.InquiryID, 1)
+      inquiryRepo.approveAllTyresForInquiry(inq.InquiryID)
+      inquiryRepo.approveAllBatteriesForInquiry(inq.InquiryID)
+    })
   }
 
   const after = exports.getSOById(normalizedId)
@@ -2483,7 +2529,21 @@ exports.deleteSO = (soId, ctx) => {
 
     manufactureOrderRepo.deleteManufactureOrdersBySoId(normalizedId)
     soReminderRepo.deleteSORemindersBySoId(normalizedId)
+    const linkedInquiriesForDelete = inquirySoRepo.getLinkedInquiriesBySoId(normalizedId)
     inquiryRepo.clearConvertedSOIDBySoId(normalizedId)
+    linkedInquiriesForDelete.forEach((inq) => {
+      const remainingLinkedSos = inquirySoRepo.getLinkedSosByInquiryId(inq.InquiryID).filter((s) => s.SoID !== normalizedId)
+      const anyCompleted = remainingLinkedSos.some((s) => s.IsCompleted === 1)
+      inquiryRepo.updateCompletionStatus(inq.InquiryID, anyCompleted ? 1 : 0)
+      if (inq.ConvertedSOID === normalizedId) {
+        const nextConvertedSoId = remainingLinkedSos.length > 0 ? remainingLinkedSos[0].SoID : null
+        inquiryRepo.updateInquiry(inq.InquiryID, {
+          ...inq,
+          ConvertedSOID: nextConvertedSoId,
+          IsCompleted: anyCompleted ? 1 : 0,
+        })
+      }
+    })
     soCustomerRepo.deleteSoCustomersBySoId(normalizedId)
     soWalkinLinkRepo.unlinkSoWalkin(normalizedId)
     soTyreReturnRepo.deleteReturnsBySoId(normalizedId)

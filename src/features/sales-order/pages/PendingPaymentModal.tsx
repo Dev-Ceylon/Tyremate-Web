@@ -31,19 +31,19 @@ export function PendingPaymentModal({
         <div className="cash-payment-form">
           <div className="cash-payment-form-header">
             <p className="section-label">Payment Settlement Summary</p>
-            <span className="table-count">Total Order: ${totalAmount.toFixed(2)}</span>
+            <span className="table-count">Total Order: Rs {totalAmount.toFixed(2)}</span>
           </div>
 
           <div className="login-form">
             <div className="details-summary details-summary-full">
               <div className="summary-item summary-item-row">
                 <span className="label">Already Paid</span>
-                <span className="value">${paidAmount.toFixed(2)}</span>
+                <span className="value">Rs {paidAmount.toFixed(2)}</span>
               </div>
               <div className="summary-item summary-item-row-total">
                 <span className="label">Remaining Pending</span>
                 <span className="value font-bold summary-item-value-highlight">
-                  ${pendingAmount.toFixed(2)}
+                  Rs {pendingAmount.toFixed(2)}
                 </span>
               </div>
             </div>

@@ -16,7 +16,7 @@ registerServiceHandler("dag:sellTyres", { permission: "dag.edit" }, dagService, 
 
 registerIpcHandler("dag:create", { permission: "dag.create" }, (_event, payload) => dagService.createDAG(payload))
 
-registerIpcHandler("dag:createWithTyres", { permission: "dag.create" }, (_event, payload) => dagService.createDAGWithTyres(payload))
+registerServiceHandler("dag:createWithTyres", { permission: "dag.create" }, dagService, "createDAGWithTyres")
 
 registerIpcHandler("dag:updateTyreSerialCost", { permission: "dag.edit" }, (_event, id, cost) => dagService.updateDAGTyreSerialCost(id, cost))
 

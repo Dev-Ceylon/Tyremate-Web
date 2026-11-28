@@ -53,6 +53,7 @@ export interface InquiryPayload {
   Notes?: string
   IsAdminApproved?: number
   ConvertedSOID?: number | null
+  IsCompleted?: number
   tyres?: InquiryTyrePayload[]
   batteries?: InquiryBatteryPayload[]
 }
@@ -77,6 +78,7 @@ export interface InquiryRecord {
   CustomerName?: string
   CustomerCode?: string
   IsAdminApproved: number
+  IsCompleted?: number
   Notes: string
   ConvertedSOID: number | null
   Customer?: InquiryCustomerSummary

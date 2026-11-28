@@ -53,10 +53,10 @@ export const SalesOrderTable = ({ data, deletingId, onDelete, deliveryProgressMa
                   </div>
                 </td>
                 <td className="text-right font-bold">
-                  ${(so.TotalSale ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  Rs {(so.TotalSale ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td className="text-right secondary-text">
-                  ${(so.TotalDiscount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  Rs {(so.TotalDiscount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td className="text-center">
                   <div className="flex-center gap-2">

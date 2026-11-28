@@ -34,11 +34,13 @@ exports.linkInquiryToSo = (inquiryId, soId, ctx) => {
   const normalizedInquiryId = normalizeId(inquiryId, "InquiryID")
   const normalizedSoId = normalizeId(soId, "SOID")
 
-  if (!inquiryRepo.getInquiryById(normalizedInquiryId)) {
+  const existingInquiry = inquiryRepo.getInquiryById(normalizedInquiryId)
+  if (!existingInquiry) {
     throw new Error("Inquiry not found")
   }
 
-  if (!soRepo.getSOById(normalizedSoId)) {
+  const so = soRepo.getSOById(normalizedSoId)
+  if (!so) {
     throw new Error("Sales order not found")
   }
 
@@ -47,6 +49,29 @@ exports.linkInquiryToSo = (inquiryId, soId, ctx) => {
     SOID: normalizedSoId,
     CreatedBy: ctx && ctx.changedBy ? ctx.changedBy : null,
   })
+
+  // Auto-cascade approval and completion if SO is already approved or completed
+  if (so.IsAdminApproved === 1) {
+    inquiryRepo.updateApprovalStatus(normalizedInquiryId, 1)
+    inquiryRepo.approveAllTyresForInquiry(normalizedInquiryId)
+    inquiryRepo.approveAllBatteriesForInquiry(normalizedInquiryId)
+  }
+
+  if (so.IsCompleted === 1) {
+    inquiryRepo.updateCompletionStatus(normalizedInquiryId, 1)
+    inquiryRepo.updateApprovalStatus(normalizedInquiryId, 1)
+    inquiryRepo.approveAllTyresForInquiry(normalizedInquiryId)
+    inquiryRepo.approveAllBatteriesForInquiry(normalizedInquiryId)
+  }
+
+  if (!existingInquiry.ConvertedSOID) {
+    inquiryRepo.updateInquiry(normalizedInquiryId, {
+      ...existingInquiry,
+      ConvertedSOID: normalizedSoId,
+      IsAdminApproved: so.IsAdminApproved === 1 ? 1 : existingInquiry.IsAdminApproved,
+      IsCompleted: so.IsCompleted === 1 ? 1 : (existingInquiry.IsCompleted || 0),
+    })
+  }
 
   return inquirySoRepo.getLinkedSosByInquiryId(normalizedInquiryId)
 }
@@ -57,6 +82,22 @@ exports.unlinkInquiryFromSo = (inquiryId, soId) => {
 
   inquirySoRepo.unlinkInquiryFromSo(normalizedInquiryId, normalizedSoId)
 
+  const existingInquiry = inquiryRepo.getInquiryById(normalizedInquiryId)
+  if (existingInquiry) {
+    const remainingLinkedSos = inquirySoRepo.getLinkedSosByInquiryId(normalizedInquiryId)
+    const anyCompleted = remainingLinkedSos.some((s) => s.IsCompleted === 1)
+    const nextCompleted = anyCompleted ? 1 : 0
+    let nextConvertedSoId = existingInquiry.ConvertedSOID
+    if (existingInquiry.ConvertedSOID === normalizedSoId) {
+      nextConvertedSoId = remainingLinkedSos.length > 0 ? remainingLinkedSos[0].SoID : null
+    }
+    inquiryRepo.updateInquiry(normalizedInquiryId, {
+      ...existingInquiry,
+      ConvertedSOID: nextConvertedSoId,
+      IsCompleted: nextCompleted,
+    })
+  }
+
   return inquirySoRepo.getLinkedSosByInquiryId(normalizedInquiryId)
 }
 
@@ -64,6 +105,7 @@ exports.linkSoToInquiries = (soId, inquiryIds, ctx) => {
   const normalizedSoId = normalizeId(soId, "SOID")
   const ids = normalizeInquiryIds(inquiryIds)
   const changedBy = ctx && ctx.changedBy ? ctx.changedBy : null
+  const so = soRepo.getSOById(normalizedSoId)
 
   const linkMany = db.transaction(() => {
     ids.forEach((inquiryId) => {
@@ -78,10 +120,26 @@ exports.linkSoToInquiries = (soId, inquiryIds, ctx) => {
         CreatedBy: changedBy,
       })
 
+      // Auto-cascade approval if the SO is approved or converted to SO
+      if (so && so.IsAdminApproved === 1) {
+        inquiryRepo.updateApprovalStatus(inquiryId, 1)
+        inquiryRepo.approveAllTyresForInquiry(inquiryId)
+        inquiryRepo.approveAllBatteriesForInquiry(inquiryId)
+      }
+
+      if (so && so.IsCompleted === 1) {
+        inquiryRepo.updateCompletionStatus(inquiryId, 1)
+        inquiryRepo.updateApprovalStatus(inquiryId, 1)
+        inquiryRepo.approveAllTyresForInquiry(inquiryId)
+        inquiryRepo.approveAllBatteriesForInquiry(inquiryId)
+      }
+
       if (!existingInquiry.ConvertedSOID) {
         inquiryRepo.updateInquiry(inquiryId, {
           ...existingInquiry,
           ConvertedSOID: normalizedSoId,
+          IsAdminApproved: so && so.IsAdminApproved === 1 ? 1 : existingInquiry.IsAdminApproved,
+          IsCompleted: so && so.IsCompleted === 1 ? 1 : (existingInquiry.IsCompleted || 0),
         })
       }
     })

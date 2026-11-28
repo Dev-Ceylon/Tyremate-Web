@@ -52,6 +52,8 @@ const PERMISSIONS_SEED = [
   ['violations.view',   'View policy violations'],
   ['violations.create', 'Create policy violations'],
   ['violations.approve', 'Approve/Reject policy violations'],
+  ['targets.view_own',  'View own assigned sales targets and progress'],
+  ['targets.manage',    'Create, update, and manage all sales targets'],
   ['god',              'Super access - bypasses all permission checks'],
 ]
 
@@ -71,6 +73,7 @@ const ROLE_PERMISSIONS = {
     'suppliers.view', 'suppliers.manage',
     'reports.view',
     'violations.view', 'violations.create', 'violations.approve',
+    'targets.manage', 'targets.view_own',
   ],
   3: [
     'so.view', 'so.create',
@@ -86,6 +89,7 @@ const ROLE_PERMISSIONS = {
     'inquiry.create',
     'inquiry.edit',
     'inquiry.delete',
+    'targets.view_own',
   ],
 }
 

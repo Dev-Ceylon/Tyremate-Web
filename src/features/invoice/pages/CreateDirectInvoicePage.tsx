@@ -224,7 +224,7 @@ export default function CreateDirectInvoicePage() {
                         min="0"
                       />
                     </td>
-                    <td className="text-right font-bold">${fmt(lineTotal)}</td>
+                    <td className="text-right font-bold">Rs {fmt(lineTotal)}</td>
                     <td className="text-center">
                       <button
                         type="button"
@@ -245,15 +245,15 @@ export default function CreateDirectInvoicePage() {
         <div className="detail-card-grid">
           <div className="detail-card-row">
             <span className="detail-card-key">Subtotal</span>
-            <span className="detail-card-val">${fmt(form.totals.subtotal)}</span>
+            <span className="detail-card-val">Rs {fmt(form.totals.subtotal)}</span>
           </div>
           <div className="detail-card-row">
             <span className="detail-card-key">Discount Total</span>
-            <span className="detail-card-val">- ${fmt(form.totals.discountTotal)}</span>
+            <span className="detail-card-val">- Rs {fmt(form.totals.discountTotal)}</span>
           </div>
           <div className="detail-card-row">
             <span className="detail-card-key">Total</span>
-            <span className="detail-card-val font-bold">${fmt(form.totals.total)}</span>
+            <span className="detail-card-val font-bold">Rs {fmt(form.totals.total)}</span>
           </div>
         </div>
 

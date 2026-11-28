@@ -25,7 +25,7 @@ export function ProductTable({ products }: ProductTableProps) {
             <tr key={p.id}>
               <td>{p.id}</td>
               <td>{p.name}</td>
-              <td>${p.price.toFixed(2)}</td>
+              <td>Rs {p.price.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>

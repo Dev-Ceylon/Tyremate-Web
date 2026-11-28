@@ -118,6 +118,8 @@ export const STATIC_PAGES = new Set<string>([
   "/reports/po",
   "/reports/cash-flow",
   "/reports/batteries",
+  "/sales-targets",
+  "/my-targets",
 ])
 
 interface ParsedTo {
