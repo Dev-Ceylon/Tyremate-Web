@@ -88,6 +88,28 @@ function resolvePeriodDates(periodType, referenceDateStr) {
 }
 
 /**
+ * Checks if a user has an administrator or super administrator role.
+ * Admins and Super Admins only assign targets and do not receive them.
+ */
+function isAdministrator(user) {
+  if (!user) return false
+  const roles = user.roles || []
+  const roleIds = user.roleIds || []
+  return (
+    roles.some(
+      (r) =>
+        Number(r.roleId) === 0 ||
+        Number(r.roleId) === 1 ||
+        r.roleName === "Admin" ||
+        r.roleName === "Super Admin"
+    ) ||
+    roleIds.some((id) => Number(id) === 0 || Number(id) === 1) ||
+    user.username === "admin" ||
+    user.username === "superadmin"
+  )
+}
+
+/**
  * Checks if a user has admin/management permission for sales targets.
  */
 function canManageTargets(user) {
@@ -98,11 +120,11 @@ function canManageTargets(user) {
 
 /**
  * Checks if a user has permission to view their own sales targets.
+ * Excludes administrators, as administrators do not receive targets.
  */
 function canViewOwnTargets(user) {
   if (!user || !user.permissions) return false
-  if (user.permissions.includes("god")) return true
-  if (user.permissions.includes("targets.manage")) return true
+  if (isAdministrator(user)) return false
   if (user.permissions.includes("targets.view_own")) return true
   return Boolean(user.roles && user.roles.some((r) => Number(r.roleId) === 4 || r.roleName === "SalesRep"))
 }
@@ -286,6 +308,10 @@ exports.createTarget = (payload = {}, ctx = {}) => {
   const repId = Number(payload.SalesRepID)
   if (!Number.isInteger(repId) || repId <= 0) {
     throw new Error("A valid Sales Representative must be selected")
+  }
+
+  if (!salesTargetRepo.isEligibleSalesRep(repId)) {
+    throw new Error("Cannot assign target: The selected user is not an eligible sales representative (administrators do not receive targets)")
   }
 
   const periodType = (payload.PeriodType || "").toLowerCase()

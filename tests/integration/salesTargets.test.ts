@@ -22,6 +22,25 @@ describe("Sales Targets & Performance Calculation Engine", () => {
     expect(salesRepUser).toBeDefined()
     expect(salesRepUser.id).toBeDefined()
 
+    // Verify admin and superadmin are strictly excluded from eligible sales reps (they only assign targets, do not receive them)
+    expect(reps.some((r: any) => r.username === "admin")).toBe(false)
+    expect(reps.some((r: any) => r.username === "superadmin")).toBe(false)
+
+    // Attempting to assign a target to an admin user must fail
+    await expect(
+      backend.invoke("salesTarget:create", {
+        SalesRepID: adminLogin.id,
+        PeriodType: "daily",
+        TargetAmount: 100000,
+        Category: "all",
+      })
+    ).rejects.toThrow(/not an eligible sales representative/i)
+
+    // Admin calling getMyActiveTargets is blocked because administrators do not receive targets
+    await expect(
+      backend.invoke("salesTarget:getMyActiveTargets")
+    ).rejects.toThrow(/do not have permission/i)
+
     // Create a second sales rep user to verify multi-rep privacy
     const userAdmin = await backend.invoke("admin:createUser", {
       username: "john_sales",

@@ -1,5 +1,7 @@
 "use client"
 import React from "react"
+import { useAuthContext } from "../../auth/hooks/AuthProvider"
+import { Navigate } from "@/lib/router"
 import { useMyTargets } from "../hooks/useMyTargets"
 import { MyActiveTargetCard } from "../components/MyActiveTargetCard"
 import { MyTargetHistoryTable } from "../components/MyTargetHistoryTable"
@@ -15,6 +17,13 @@ const TABS: Array<{ id: PeriodType | "all"; label: string }> = [
 ]
 
 export default function MyTargetsPage() {
+  const { user } = useAuthContext()
+  const isAdminOrSuperAdmin = Boolean(
+    user?.roles?.some(
+      (r) => Number(r.roleId) === 0 || Number(r.roleId) === 1 || r.roleName === "Admin" || r.roleName === "Super Admin"
+    )
+  )
+
   const {
     activeTargets,
     historyTargets,
@@ -26,6 +35,11 @@ export default function MyTargetsPage() {
     setSelectedCadence,
     refresh,
   } = useMyTargets()
+
+  // Administrators only assign targets and do not receive them; redirect to Admin management
+  if (isAdminOrSuperAdmin) {
+    return <Navigate to="/sales-targets" replace />
+  }
 
   return (
     <main className="app-shell tm-admin">

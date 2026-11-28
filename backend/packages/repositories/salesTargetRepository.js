@@ -242,6 +242,7 @@ exports.getActualSalesForRep = ({ repId, startDate, endDate, category = "all" })
 
 /**
  * Returns all active users eligible to receive sales targets (SalesRep role or view_own permission).
+ * Excludes Administrators (Role 1) and Super Administrators (Role 0), as admins only assign targets and do not receive them.
  */
 exports.getEligibleSalesReps = () => {
   return db
@@ -256,8 +257,34 @@ exports.getEligibleSalesReps = () => {
       JOIN rolePermissions rp ON rp.roleId = ur.roleId
       JOIN permissions p ON p.permissionId = rp.permissionId
       WHERE (p.permissionKey = 'targets.view_own' OR ur.roleId = 4)
+        AND u.id NOT IN (
+          SELECT userId FROM userRoles WHERE roleId IN (0, 1)
+        )
         AND u.isActive = 1
       ORDER BY COALESCE(u.displayName, u.username) ASC
     `)
     .all()
+}
+
+/**
+ * Checks whether a user ID belongs to an active, eligible sales representative (non-admin).
+ */
+exports.isEligibleSalesRep = (userId) => {
+  const row = db
+    .prepare(`
+      SELECT 1
+      FROM users u
+      JOIN userRoles ur ON ur.userId = u.id
+      JOIN rolePermissions rp ON rp.roleId = ur.roleId
+      JOIN permissions p ON p.permissionId = rp.permissionId
+      WHERE u.id = ?
+        AND (p.permissionKey = 'targets.view_own' OR ur.roleId = 4)
+        AND u.id NOT IN (
+          SELECT userId FROM userRoles WHERE roleId IN (0, 1)
+        )
+        AND u.isActive = 1
+      LIMIT 1
+    `)
+    .get(Number(userId))
+  return Boolean(row)
 }
