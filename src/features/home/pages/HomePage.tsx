@@ -1,11 +1,25 @@
+import React from "react"
 import { useAuthContext } from "../../auth/hooks/AuthProvider"
 import { useAuthorization } from "../../../shared/hooks/auth/useAuthorization"
 import TyreMateControlCenter from "../components/TyreMateControlCenter"
 import SalesRepWorkspace from "../components/SalesRepWorkspace"
+import { SalesRepHomeTargets } from "../../sales-target/components/SalesRepHomeTargets"
 
 export default function HomePage() {
   const { user, logout } = useAuthContext()
-  const { hasAnyPermission } = useAuthorization()
+  const { hasAnyPermission, hasPermission } = useAuthorization()
+
+  const isAdminOrSuperAdmin = Boolean(
+    user?.roles?.some(
+      (r) =>
+        Number(r.roleId) === 0 ||
+        Number(r.roleId) === 1 ||
+        r.roleName === "Admin" ||
+        r.roleName === "Super Admin"
+    )
+  )
+
+  const isEligibleSalesRep = !isAdminOrSuperAdmin && hasPermission("targets.view_own")
 
   const canViewControlCenter = hasAnyPermission(
     "inventory.manage",
@@ -19,6 +33,13 @@ export default function HomePage() {
       {canViewControlCenter ? (
         <>
           <TyreMateControlCenter onSignOut={logout} />
+
+          {/* Sales Target Progress for Eligible Sales Representatives */}
+          {isEligibleSalesRep && (
+            <div className="target-section-mb">
+              <SalesRepHomeTargets />
+            </div>
+          )}
 
           <section className="content-grid">
             <article className="info-panel panel panel-strong">

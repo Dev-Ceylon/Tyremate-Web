@@ -1,6 +1,8 @@
+import React from "react"
 import { Link } from "@/lib/router"
 import PermissionGate from "../../../shared/components/PermissionGate"
 import { useInquiryList } from "../../inquiry/hooks/useInquiryList"
+import { SalesRepHomeTargets } from "../../sales-target/components/SalesRepHomeTargets"
 
 type SalesRepWorkspaceProps = {
   onSignOut?: () => void
@@ -15,13 +17,13 @@ export function SalesRepWorkspace(_props: SalesRepWorkspaceProps = {}) {
 
   return (
     <>
-      <section className="page-header panel">
+      <section className="page-header panel target-section-mb">
         <div>
           <p className="eyebrow">Sales Representative</p>
-          <h1>Inquiry Workspace</h1>
+          <h1>Sales Dashboard</h1>
           <p className="hero-text">
-            Welcome to TyreMate. Create new customer inquiries, track quotes and requested
-            quantities, and manage follow-ups.
+            Welcome to TyreMate. Monitor your real-time target quotas, create and track customer
+            inquiries, and follow up on quotes.
           </p>
         </div>
 
@@ -34,27 +36,52 @@ export function SalesRepWorkspace(_props: SalesRepWorkspaceProps = {}) {
           <Link className="secondary-action" to="/inquiries">
             View Inquiries
           </Link>
+          <PermissionGate permission="targets.view_own">
+            <Link className="secondary-action" to="/my-targets">
+              My Targets
+            </Link>
+          </PermissionGate>
         </div>
       </section>
 
-      <section className="metrics-grid">
-        <article className="metric-card panel">
-          <span className="metric-label">Active / Open Inquiries</span>
-          <strong>{loading ? "..." : openInquiries}</strong>
-          <p>Pending quotation or order conversion.</p>
-        </article>
+      {/* Target Quota & Performance Section */}
+      <PermissionGate permission="targets.view_own">
+        <SalesRepHomeTargets />
+      </PermissionGate>
 
-        <article className="metric-card panel">
-          <span className="metric-label">Converted to Orders</span>
-          <strong>{loading ? "..." : convertedInquiries}</strong>
-          <p>Inquiries successfully turned into Sales Orders.</p>
-        </article>
+      {/* Inquiry Pipeline Section */}
+      <section className="panel target-section-mb">
+        <div className="table-panel-header">
+          <div>
+            <p className="section-label">Inquiry Pipeline</p>
+            <h2>Customer Inquiries</h2>
+          </div>
+          <div className="header-actions">
+            <Link className="secondary-action" to="/inquiries">
+              All Inquiries
+            </Link>
+          </div>
+        </div>
 
-        <article className="metric-card panel">
-          <span className="metric-label">Total Inquiries</span>
-          <strong>{loading ? "..." : totalInquiries}</strong>
-          <p>Total customer inquiries logged in system.</p>
-        </article>
+        <div className="metrics-grid">
+          <article className="metric-card panel">
+            <span className="metric-label">Active / Open Inquiries</span>
+            <strong>{loading ? "..." : openInquiries}</strong>
+            <p>Pending quotation or order conversion.</p>
+          </article>
+
+          <article className="metric-card panel">
+            <span className="metric-label">Converted to Orders</span>
+            <strong>{loading ? "..." : convertedInquiries}</strong>
+            <p>Inquiries successfully turned into Sales Orders.</p>
+          </article>
+
+          <article className="metric-card panel">
+            <span className="metric-label">Total Inquiries</span>
+            <strong>{loading ? "..." : totalInquiries}</strong>
+            <p>Total customer inquiries logged in system.</p>
+          </article>
+        </div>
       </section>
     </>
   )
