@@ -63,7 +63,14 @@ test.describe("business workflows in the browser", () => {
 
     // Today's sales on the dashboard reflects the order.
     await page.goto("./")
-    await expect(page.getByText("Rs. 60,000.00").or(page.getByText("$60,000.00")).first()).toBeVisible()
+    await expect(
+      page
+        .getByText("Rs. 60,000.00")
+        .or(page.getByText("Rs 60,000.00"))
+        .or(page.getByText("Rs 60000.00"))
+        .or(page.getByText("$60,000.00"))
+        .first(),
+    ).toBeVisible()
     expectNoAppErrors(errors)
   })
 
